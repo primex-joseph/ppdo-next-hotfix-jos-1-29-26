@@ -291,6 +291,133 @@ export default defineSchema({
     .index("updatedAt", ["updatedAt"])
     .index("particulars", ["particulars"]),
 
+  /**
+   * Projects.
+   * Tracks individual projects with budget allocation, timelines, and progress.
+   * Can be linked to budget items for hierarchical budget tracking.
+   */
+  projects: defineTable({
+    /**
+     * Name of the project.
+     */
+    projectName: v.string(),
+    
+    /**
+     * Office or department implementing the project.
+     */
+    implementingOffice: v.string(),
+    
+    /**
+     * Initial budget allocated for this project (in currency).
+     */
+    allocatedBudget: v.number(),
+    
+    /**
+     * Revised budget after adjustments (in currency).
+     * If not set, allocatedBudget is used for calculations.
+     */
+    revisedBudget: v.optional(v.number()),
+    
+    /**
+     * Total budget utilized so far (in currency).
+     */
+    totalBudgetUtilized: v.number(),
+    
+    /**
+     * Utilization rate as a percentage (0-100).
+     * Calculated as: (totalBudgetUtilized / effectiveBudget) * 100
+     * where effectiveBudget is revisedBudget if set, otherwise allocatedBudget
+     */
+    utilizationRate: v.number(),
+    
+    /**
+     * Remaining budget balance (in currency).
+     * Calculated as: effectiveBudget - totalBudgetUtilized
+     */
+    balance: v.number(),
+    
+    /**
+     * Date when the project started (milliseconds since epoch).
+     */
+    dateStarted: v.number(),
+    
+    /**
+     * Target or actual completion date (milliseconds since epoch).
+     * Optional until project is completed.
+     */
+    completionDate: v.optional(v.number()),
+    
+    /**
+     * Expected completion date (milliseconds since epoch).
+     * Used to track if project is delayed.
+     */
+    expectedCompletionDate: v.optional(v.number()),
+    
+    /**
+     * Project accomplishment/progress percentage (0-100).
+     */
+    projectAccomplishment: v.number(),
+    
+    /**
+     * Current status of the project.
+     * - on_track: Project is progressing as planned
+     * - delayed: Project is behind schedule
+     * - completed: Project is finished
+     * - cancelled: Project was cancelled
+     * - on_hold: Project is temporarily paused
+     * @default "on_track"
+     */
+    status: v.optional(
+      v.union(
+        v.literal("on_track"),
+        v.literal("delayed"),
+        v.literal("completed"),
+        v.literal("cancelled"),
+        v.literal("on_hold")
+      )
+    ),
+    
+    /**
+     * Optional remarks or notes about the project.
+     */
+    remarks: v.optional(v.string()),
+    
+    /**
+     * Optional: Link to parent budget item if this project is part of a larger budget allocation.
+     */
+    budgetItemId: v.optional(v.id("budgetItems")),
+    
+    /**
+     * User who created this project record.
+     */
+    createdBy: v.id("users"),
+    
+    /**
+     * Timestamp when the project record was created (milliseconds since epoch).
+     */
+    createdAt: v.number(),
+    
+    /**
+     * Timestamp when the project record was last updated (milliseconds since epoch).
+     */
+    updatedAt: v.number(),
+    
+    /**
+     * Optional: User who last updated this project record.
+     */
+    updatedBy: v.optional(v.id("users")),
+  })
+    .index("projectName", ["projectName"])
+    .index("implementingOffice", ["implementingOffice"])
+    .index("status", ["status"])
+    .index("dateStarted", ["dateStarted"])
+    .index("completionDate", ["completionDate"])
+    .index("createdBy", ["createdBy"])
+    .index("createdAt", ["createdAt"])
+    .index("budgetItemId", ["budgetItemId"])
+    .index("statusAndOffice", ["status", "implementingOffice"])
+    .index("officeAndStatus", ["implementingOffice", "status"]),
+
   numbers: defineTable({
     value: v.number(),
   }),

@@ -1,3 +1,5 @@
+// app/dashboard/budget/[particularId]/data.ts
+
 import { Project, BudgetParticular, PARTICULAR_FULL_NAMES } from "../types";
 
 // Mock project data - in production, this would come from an API
@@ -15,9 +17,11 @@ export function getProjectsByParticular(
       dateStarted: "2024-01-15",
       completionDate: "2024-06-30",
       revisedBudget: 707000,
+      totalBudgetUtilized: 500000,
       utilizationRate: 70.7,
-      balance: 293000,
+      balance: 207000,
       projectAccomplishment: 65.0,
+      status: "on_track",
       remarks: "On track with quarterly milestones",
     },
     {
@@ -28,9 +32,11 @@ export function getProjectsByParticular(
       dateStarted: "2024-02-01",
       completionDate: "2024-05-31",
       revisedBudget: 450000,
+      totalBudgetUtilized: 405000,
       utilizationRate: 90.0,
-      balance: 50000,
+      balance: 45000,
       projectAccomplishment: 85.0,
+      status: "on_track",
       remarks: "Ahead of schedule",
     },
     {
@@ -41,9 +47,11 @@ export function getProjectsByParticular(
       dateStarted: "2024-03-01",
       completionDate: "2024-12-31",
       revisedBudget: 750000,
+      totalBudgetUtilized: 300000,
       utilizationRate: 40.0,
       balance: 450000,
       projectAccomplishment: 35.0,
+      status: "on_track",
       remarks: "Initial phase completed",
     },
     {
@@ -54,9 +62,11 @@ export function getProjectsByParticular(
       dateStarted: "2024-04-15",
       completionDate: "2024-08-15",
       revisedBudget: 300000,
+      totalBudgetUtilized: 75000,
       utilizationRate: 25.0,
       balance: 225000,
       projectAccomplishment: 20.0,
+      status: "delayed",
       remarks: "Planning phase",
     },
     {
@@ -67,9 +77,11 @@ export function getProjectsByParticular(
       dateStarted: "2024-05-01",
       completionDate: "2024-10-31",
       revisedBudget: 600000,
+      totalBudgetUtilized: 300000,
       utilizationRate: 50.0,
       balance: 300000,
       projectAccomplishment: 45.0,
+      status: "on_track",
       remarks: "Mid-implementation",
     },
   ];

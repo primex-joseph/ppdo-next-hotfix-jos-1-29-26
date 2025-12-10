@@ -16,12 +16,14 @@ export interface Project {
   projectName: string;
   implementingOffice: string;
   allocatedBudget: number;
-  dateStarted: string;
-  completionDate: string;
   revisedBudget: number;
+  totalBudgetUtilized: number;
   utilizationRate: number;
   balance: number;
+  dateStarted: string; // ISO date string for frontend
+  completionDate: string; // ISO date string for frontend
   projectAccomplishment: number;
+  status?: "on_track" | "delayed" | "completed" | "cancelled" | "on_hold";
   remarks: string;
 }
 

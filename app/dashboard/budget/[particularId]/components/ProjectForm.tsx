@@ -1,8 +1,11 @@
+// app/dashboard/budget/[particularId]/components/ProjectForm.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { Project } from "../../types";
 import { useAccentColor } from "../../../contexts/AccentColorContext";
+
+import { Project } from "../../types";
 
 interface ProjectFormProps {
   project?: Project | null;
@@ -16,16 +19,18 @@ export function ProjectForm({
   onCancel,
 }: ProjectFormProps) {
   const { accentColorValue } = useAccentColor();
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<Omit<Project, "id">>({
     projectName: project?.projectName || "",
     implementingOffice: project?.implementingOffice || "",
     allocatedBudget: project?.allocatedBudget || 0,
     dateStarted: project?.dateStarted || "",
     completionDate: project?.completionDate || "",
     revisedBudget: project?.revisedBudget || 0,
+    totalBudgetUtilized: project?.totalBudgetUtilized || 0,
     utilizationRate: project?.utilizationRate || 0,
     balance: project?.balance || 0,
     projectAccomplishment: project?.projectAccomplishment || 0,
+    status: project?.status || "on_track",
     remarks: project?.remarks || "",
   });
 
@@ -38,13 +43,30 @@ export function ProjectForm({
         dateStarted: project.dateStarted,
         completionDate: project.completionDate,
         revisedBudget: project.revisedBudget,
+        totalBudgetUtilized: project.totalBudgetUtilized,
         utilizationRate: project.utilizationRate,
         balance: project.balance,
         projectAccomplishment: project.projectAccomplishment,
+        status: project.status || "on_track",
         remarks: project.remarks,
       });
     }
   }, [project]);
+
+  // Auto-calculate utilization rate and balance when budget values change
+  useEffect(() => {
+    const effectiveBudget = formData.revisedBudget || formData.allocatedBudget;
+    const utilizationRate = effectiveBudget > 0 
+      ? (formData.totalBudgetUtilized / effectiveBudget) * 100 
+      : 0;
+    const balance = effectiveBudget - formData.totalBudgetUtilized;
+
+    setFormData(prev => ({
+      ...prev,
+      utilizationRate,
+      balance,
+    }));
+  }, [formData.allocatedBudget, formData.revisedBudget, formData.totalBudgetUtilized]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +140,25 @@ export function ProjectForm({
               })
             }
             className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-offset-0"
+            min="0"
+            step="0.01"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+            Budget Utilized
+          </label>
+          <input
+            type="number"
+            value={formData.totalBudgetUtilized}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                totalBudgetUtilized: parseFloat(e.target.value) || 0,
+              })
+            }
+            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-offset-0"
             required
             min="0"
             step="0.01"
@@ -150,71 +191,87 @@ export function ProjectForm({
               setFormData({ ...formData, completionDate: e.target.value })
             }
             className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-offset-0"
-            required
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-            Utilization Rate (%)
+            Project Status
           </label>
-          <input
-            type="number"
-            value={formData.utilizationRate}
+          <select
+            value={formData.status}
             onChange={(e) =>
-              setFormData({
-                ...formData,
-                utilizationRate: parseFloat(e.target.value) || 0,
+              setFormData({ 
+                ...formData, 
+                status: e.target.value as Project["status"]
               })
             }
             className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-offset-0"
-            required
-            min="0"
-            max="100"
-            step="0.1"
-          />
+          >
+            <option value="on_track">On Track</option>
+            <option value="delayed">Delayed</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+            <option value="on_hold">On Hold</option>
+          </select>
         </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-            Balance
-          </label>
-          <input
-            type="number"
-            value={formData.balance}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                balance: parseFloat(e.target.value) || 0,
-              })
-            }
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-offset-0"
-            required
-            min="0"
-            step="0.01"
-          />
+      {/* Auto-calculated fields - Display only */}
+      <div className="bg-zinc-50 dark:bg-zinc-900/50 rounded-lg p-4 border border-zinc-200 dark:border-zinc-800 space-y-2">
+        <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300 mb-3">
+          Calculated Values
+        </h4>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+              Utilization Rate
+            </label>
+            <div
+              className="text-sm font-semibold"
+              style={{ color: accentColorValue }}
+            >
+              {formData.utilizationRate.toFixed(2)}%
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-zinc-600 dark:text-zinc-400 mb-1">
+              Balance
+            </label>
+            <div
+              className="text-sm font-semibold"
+              style={{ color: accentColorValue }}
+            >
+              {new Intl.NumberFormat("en-PH", {
+                style: "currency",
+                currency: "PHP",
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+              }).format(formData.balance)}
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div>
-          <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
-            Project Accomplishment (%)
-          </label>
-          <input
-            type="number"
-            value={formData.projectAccomplishment}
-            onChange={(e) =>
-              setFormData({
-                ...formData,
-                projectAccomplishment: parseFloat(e.target.value) || 0,
-              })
-            }
-            className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-offset-0"
-            required
-            min="0"
-            max="100"
-            step="0.1"
-          />
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-2">
+          Project Accomplishment (%)
+        </label>
+        <input
+          type="number"
+          value={formData.projectAccomplishment}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              projectAccomplishment: parseFloat(e.target.value) || 0,
+            })
+          }
+          className="w-full px-3 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-offset-0"
+          required
+          min="0"
+          max="100"
+          step="0.1"
+        />
       </div>
 
       <div>
@@ -250,4 +307,3 @@ export function ProjectForm({
     </form>
   );
 }
-

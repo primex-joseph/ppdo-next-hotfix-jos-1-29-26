@@ -1,42 +1,153 @@
+// app/dashboard/budget/[particularId]/page.tsx
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
+import { Id } from "../../../../convex/_generated/dataModel";
 import { ProjectsTable } from "./components/ProjectsTable";
-import { getProjectsByParticular, getParticularFullName } from "./data";
-import { Project } from "../types";
 import { useAccentColor } from "../../contexts/AccentColorContext";
 
+// Helper function to get full name from particular ID
+const getParticularFullName = (particular: string): string => {
+  const mapping: { [key: string]: string } = {
+    GAD: "Gender and Development (GAD)",
+    LDRRMP: "Local Disaster Risk Reduction and Management Plan",
+    LCCAP: "Local Climate Change Action Plan",
+    LCPC: "Local Council for the Protection of Children",
+    SCPD: "Sectoral Committee for Persons with Disabilities",
+    POPS: "Provincial Operations",
+    CAIDS: "Community Affairs and Information Development Services",
+    LNP: "Local Nutrition Program",
+    PID: "Provincial Information Department",
+    ACDP: "Agricultural Competitiveness Development Program",
+    LYDP: "Local Youth Development Program",
+    "20% DF": "20% Development Fund",
+  };
+  return mapping[particular] || particular;
+};
+
 export default function ParticularProjectsPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [particular, setParticular] = useState<string>("");
   const router = useRouter();
   const params = useParams();
   const { accentColorValue } = useAccentColor();
+  const particular = decodeURIComponent(params.particularId as string);
+  
+  // Get budget item by particular name using the existing function name
+  const budgetItems = useQuery(api.budgetItems.list);
+  const budgetItem = budgetItems?.find(item => item.particulars === particular);
+  
+  // Get projects for this budget item
+  const projects = useQuery(
+    api.projects.getProjectsByBudgetItem,
+    budgetItem ? { budgetItemId: budgetItem._id } : "skip"
+  );
 
-  useEffect(() => {
-    const auth = localStorage.getItem("authenticated");
-    if (auth === "true") {
-      setIsAuthenticated(true);
-      const particularId = params.particularId as string;
-      if (particularId) {
-        setParticular(particularId);
-        // In production, fetch from API
-        const fetchedProjects = getProjectsByParticular(particularId as any);
-        setProjects(fetchedProjects);
-      }
-    } else {
-      router.push("/");
-    }
-  }, [router, params]);
-
-  if (!isAuthenticated) {
-    return null;
-  }
+  // Mutations
+  const createProject = useMutation(api.projects.create);
+  const updateProject = useMutation(api.projects.update);
+  const deleteProject = useMutation(api.projects.remove);
 
   const particularFullName = getParticularFullName(particular);
+
+  const handleAddProject = async (projectData: any) => {
+    try {
+      // Convert date strings to timestamps
+      const dateStarted = new Date(projectData.dateStarted).getTime();
+      const completionDate = projectData.completionDate 
+        ? new Date(projectData.completionDate).getTime() 
+        : undefined;
+
+      await createProject({
+        projectName: projectData.projectName,
+        implementingOffice: projectData.implementingOffice,
+        allocatedBudget: projectData.allocatedBudget,
+        revisedBudget: projectData.revisedBudget || undefined,
+        totalBudgetUtilized: projectData.totalBudgetUtilized || 0,
+        dateStarted,
+        completionDate,
+        projectAccomplishment: projectData.projectAccomplishment || 0,
+        status: projectData.status || "on_track",
+        remarks: projectData.remarks || undefined,
+        budgetItemId: budgetItem?._id,
+      });
+    } catch (error) {
+      console.error("Error creating project:", error);
+      alert("Failed to create project. Please try again.");
+    }
+  };
+
+  const handleEditProject = async (id: string, projectData: any) => {
+    try {
+      // Convert date strings to timestamps
+      const dateStarted = new Date(projectData.dateStarted).getTime();
+      const completionDate = projectData.completionDate 
+        ? new Date(projectData.completionDate).getTime() 
+        : undefined;
+
+      await updateProject({
+        id: id as Id<"projects">,
+        projectName: projectData.projectName,
+        implementingOffice: projectData.implementingOffice,
+        allocatedBudget: projectData.allocatedBudget,
+        revisedBudget: projectData.revisedBudget || undefined,
+        totalBudgetUtilized: projectData.totalBudgetUtilized || 0,
+        dateStarted,
+        completionDate,
+        projectAccomplishment: projectData.projectAccomplishment || 0,
+        status: projectData.status || "on_track",
+        remarks: projectData.remarks || undefined,
+        budgetItemId: budgetItem?._id,
+      });
+    } catch (error) {
+      console.error("Error updating project:", error);
+      alert("Failed to update project. Please try again.");
+    }
+  };
+
+  const handleDeleteProject = async (id: string) => {
+    try {
+      await deleteProject({ id: id as Id<"projects"> });
+    } catch (error) {
+      console.error("Error deleting project:", error);
+      alert("Failed to delete project. Please try again.");
+    }
+  };
+
+  // Transform Convex projects to match component interface
+  const transformedProjects = projects?.map(project => ({
+    id: project._id,
+    projectName: project.projectName,
+    implementingOffice: project.implementingOffice,
+    allocatedBudget: project.allocatedBudget,
+    revisedBudget: project.revisedBudget ?? project.allocatedBudget,
+    totalBudgetUtilized: project.totalBudgetUtilized,
+    utilizationRate: project.utilizationRate,
+    balance: project.balance,
+    dateStarted: new Date(project.dateStarted).toISOString().split('T')[0],
+    completionDate: project.completionDate 
+      ? new Date(project.completionDate).toISOString().split('T')[0] 
+      : "",
+    projectAccomplishment: project.projectAccomplishment,
+    status: project.status,
+    remarks: project.remarks ?? "",
+  })) ?? [];
+
+  // Calculate summary statistics
+  const totalAllocatedBudget = transformedProjects.reduce(
+    (sum, project) => sum + project.allocatedBudget,
+    0
+  );
+  const totalRevisedBudget = transformedProjects.reduce(
+    (sum, project) => sum + project.revisedBudget,
+    0
+  );
+  const avgUtilizationRate = transformedProjects.length > 0
+    ? transformedProjects.reduce((sum, project) => sum + project.utilizationRate, 0) / transformedProjects.length
+    : 0;
 
   return (
     <>
@@ -85,12 +196,7 @@ export default function ParticularProjectsPage() {
               currency: "PHP",
               minimumFractionDigits: 0,
               maximumFractionDigits: 0,
-            }).format(
-              projects.reduce(
-                (sum, project) => sum + project.allocatedBudget,
-                0
-              )
-            )}
+            }).format(totalAllocatedBudget)}
           </p>
         </div>
 
@@ -104,9 +210,7 @@ export default function ParticularProjectsPage() {
               currency: "PHP",
               minimumFractionDigits: 0,
               maximumFractionDigits: 0,
-            }).format(
-              projects.reduce((sum, project) => sum + project.revisedBudget, 0)
-            )}
+            }).format(totalRevisedBudget)}
           </p>
         </div>
 
@@ -115,15 +219,7 @@ export default function ParticularProjectsPage() {
             Average Utilization Rate
           </p>
           <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-            {projects.length > 0
-              ? (
-                  projects.reduce(
-                    (sum, project) => sum + project.utilizationRate,
-                    0
-                  ) / projects.length
-                ).toFixed(1)
-              : 0}
-            %
+            {avgUtilizationRate.toFixed(1)}%
           </p>
         </div>
 
@@ -132,32 +228,27 @@ export default function ParticularProjectsPage() {
             Total Projects
           </p>
           <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-            {projects.length}
+            {transformedProjects.length}
           </p>
         </div>
       </div>
 
       {/* Projects Table */}
       <div className="mb-6">
-        <ProjectsTable
-          projects={projects}
-          particularId={particular}
-          onAdd={(project) => {
-            const newProject: Project = {
-              ...project,
-              id: Date.now().toString(),
-            };
-            setProjects([...projects, newProject]);
-          }}
-          onEdit={(id, project) => {
-            setProjects(
-              projects.map((p) => (p.id === id ? { ...project, id } : p))
-            );
-          }}
-          onDelete={(id) => {
-            setProjects(projects.filter((p) => p.id !== id));
-          }}
-        />
+        {projects === undefined ? (
+          <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-12 text-center">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-zinc-300 border-t-transparent dark:border-zinc-700 dark:border-t-transparent"></div>
+            <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">Loading projects...</p>
+          </div>
+        ) : (
+          <ProjectsTable
+            projects={transformedProjects}
+            particularId={particular}
+            onAdd={handleAddProject}
+            onEdit={handleEditProject}
+            onDelete={handleDeleteProject}
+          />
+        )}
       </div>
     </>
   );
