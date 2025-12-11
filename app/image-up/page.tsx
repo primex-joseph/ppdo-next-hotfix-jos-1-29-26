@@ -16,11 +16,13 @@ interface PreviewFile {
 }
 
 export default function MediaGallery() {
-  const media = useQuery(api.media.getMyMedia);
+  const uploadSessions = useQuery(api.media.getMyUploadSessions);
   
   const generateUploadUrl = useMutation(api.media.generateUploadUrl);
+  const createUploadSession = useMutation(api.media.createUploadSession);
   const uploadMedia = useMutation(api.media.uploadMedia);
   const deleteMediaMutation = useMutation(api.media.deleteMedia);
+  const deleteUploadSessionMutation = useMutation(api.media.deleteUploadSession);
   
   const [selectedFiles, setSelectedFiles] = useState<PreviewFile[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -67,7 +69,6 @@ export default function MediaGallery() {
       setError('');
     }
 
-    // Reset input
     e.target.value = '';
   };
 
@@ -83,7 +84,14 @@ export default function MediaGallery() {
     const progress: { [key: string]: boolean } = {};
 
     try {
-      for (const fileItem of selectedFiles) {
+      // Create an upload session for these images
+      const sessionId = await createUploadSession({
+        imageCount: selectedFiles.length,
+      });
+
+      // Upload each file
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const fileItem = selectedFiles[i];
         const uploadUrl = await generateUploadUrl();
         
         const result = await fetch(uploadUrl, {
@@ -103,6 +111,8 @@ export default function MediaGallery() {
           name: fileItem.file.name,
           type: fileItem.file.type,
           size: fileItem.file.size,
+          sessionId,
+          orderInSession: i,
         });
 
         progress[fileItem.id] = true;
@@ -120,7 +130,33 @@ export default function MediaGallery() {
     }
   };
 
-  if (media === undefined) {
+  const handleDeleteImage = async (mediaId: any) => {
+    if (!confirm('Are you sure you want to delete this image?')) {
+      return;
+    }
+
+    try {
+      await deleteMediaMutation({ mediaId: mediaId as any });
+    } catch (err) {
+      console.error('Delete error:', err);
+      setError(err instanceof Error ? err.message : 'Delete failed');
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: any) => {
+    if (!confirm('Are you sure you want to delete this entire upload?')) {
+      return;
+    }
+
+    try {
+      await deleteUploadSessionMutation({ sessionId: sessionId as any });
+    } catch (err) {
+      console.error('Delete session error:', err);
+      setError(err instanceof Error ? err.message : 'Delete failed');
+    }
+  };
+
+  if (uploadSessions === undefined) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center">
         <div className="text-center">
@@ -148,7 +184,7 @@ export default function MediaGallery() {
                 <span className="text-lg font-medium text-slate-700 mb-2">
                   Click to upload images
                 </span>
-                <span className="text-sm text-slate-500">Select multiple PNG, JPG, GIF (up to 5MB each)</span>
+                <span className="text-sm text-slate-500">Select single or multiple PNG, JPG, GIF (up to 5MB each)</span>
                 <Input
                   type="file"
                   accept="image/*"
@@ -247,14 +283,14 @@ export default function MediaGallery() {
           </Alert>
         )}
 
-        {/* Gallery Section - Tile View (Facebook Style) */}
+        {/* Gallery Section - Facebook Style */}
         <div className="mb-4">
           <h2 className="text-2xl font-bold text-slate-900">
-            Gallery <span className="text-slate-500 text-lg">({media?.length ?? 0})</span>
+            Gallery <span className="text-slate-500 text-lg">({uploadSessions?.length ?? 0} uploads)</span>
           </h2>
         </div>
 
-        {!media || media.length === 0 ? (
+        {!uploadSessions || uploadSessions.length === 0 ? (
           <Card className="bg-white">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <Image className="w-16 h-16 text-slate-300 mb-4" />
@@ -263,91 +299,195 @@ export default function MediaGallery() {
             </CardContent>
           </Card>
         ) : (
-          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
-            {media.map((item) => (
-              <div key={item._id} className="break-inside-avoid">
-                <Card className="group overflow-hidden bg-white hover:shadow-xl transition-all duration-300">
-                  <CardContent className="p-0">
-                    {item.url ? (
-                      <div className="relative">
+          <div className="space-y-6">
+            {uploadSessions.map((session) => (
+              <Card key={session._id} className="bg-white overflow-hidden">
+                <CardContent className="p-4">
+                  {/* Session Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className="text-sm text-slate-500">
+                        {new Date(session.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1">
+                        {session.imageCount} image{session.imageCount !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => handleDeleteSession(session._id)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" />
+                      Delete All
+                    </Button>
+                  </div>
+
+                  {/* Images Grid - Facebook style */}
+                  {session.media.length === 1 ? (
+                    // Single image - full width
+                    <div className="relative group">
+                      <img
+                        src={session.media[0].url || ''}
+                        alt={session.media[0].name}
+                        className="w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => setViewImage(session.media[0].url || '')}
+                        style={{ maxHeight: '600px', objectFit: 'contain' }}
+                      />
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteImage(session.media[0]._id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ) : session.media.length === 2 ? (
+                    // Two images - side by side
+                    <div className="grid grid-cols-2 gap-1">
+                      {session.media.map((item) => (
+                        <div key={item._id} className="relative group">
+                          <img
+                            src={item.url || ''}
+                            alt={item.name}
+                            className="w-full h-64 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setViewImage(item.url || '')}
+                          />
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteImage(item._id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : session.media.length === 3 ? (
+                    // Three images - 1 large + 2 small
+                    <div className="grid grid-cols-2 gap-1">
+                      <div className="relative group row-span-2">
                         <img
-                          src={item.url}
-                          alt={item.name}
-                          className="w-full h-auto cursor-pointer"
-                          onClick={() => setViewImage(item.url!)}
-                          style={{ 
-                            display: 'block',
-                            width: '100%',
-                            height: 'auto'
-                          }}
-                          onError={(e) => {
-                            const img = e.currentTarget;
-                            img.style.display = 'none';
-                            const parent = img.parentElement;
-                            if (parent) {
-                              parent.innerHTML = '<div style="width:100%;height:200px;display:flex;align-items:center;justify-content:center;background:#fee;color:#c00;">Failed to load</div>';
-                            }
-                          }}
+                          src={session.media[0].url || ''}
+                          alt={session.media[0].name}
+                          className="w-full h-full object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setViewImage(session.media[0].url || '')}
                         />
-                        
-                        {/* Hover Overlay */}
-                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-60 transition-all duration-300 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <Button
                             variant="secondary"
                             size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setViewImage(item.url!);
-                            }}
-                          >
-                            View
-                          </Button>
-                          <a
-                            href={item.url}
-                            download={item.name}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <Button variant="secondary" size="sm">
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </a>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(item._id);
+                              handleDeleteImage(session.media[0]._id);
                             }}
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
-                    ) : (
-                      <div className="w-full h-48 flex items-center justify-center bg-slate-100">
-                        <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
-                      </div>
-                    )}
-                    
-                    {/* Image Info */}
-                    <div className="p-3">
-                      <p className="text-sm font-medium text-slate-900 truncate" title={item.name}>
-                        {item.name}
-                      </p>
-                      <div className="flex items-center justify-between mt-1">
-                        <p className="text-xs text-slate-500">
-                          {new Date(item.uploadedAt).toLocaleDateString()}
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          {(item.size / 1024).toFixed(0)} KB
-                        </p>
-                      </div>
+                      {session.media.slice(1).map((item) => (
+                        <div key={item._id} className="relative group">
+                          <img
+                            src={item.url || ''}
+                            alt={item.name}
+                            className="w-full h-48 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setViewImage(item.url || '')}
+                          />
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteImage(item._id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
+                  ) : session.media.length === 4 ? (
+                    // Four images - 2x2 grid
+                    <div className="grid grid-cols-2 gap-1">
+                      {session.media.map((item) => (
+                        <div key={item._id} className="relative group">
+                          <img
+                            src={item.url || ''}
+                            alt={item.name}
+                            className="w-full h-56 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setViewImage(item.url || '')}
+                          />
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteImage(item._id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    // Five or more images - show first 4 and "+X more"
+                    <div className="grid grid-cols-2 gap-1">
+                      {session.media.slice(0, 4).map((item, idx) => (
+                        <div key={item._id} className="relative group">
+                          <img
+                            src={item.url || ''}
+                            alt={item.name}
+                            className="w-full h-56 object-cover rounded cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setViewImage(item.url || '')}
+                          />
+                          {idx === 3 && session.media.length > 4 && (
+                            <div className="absolute inset-0 bg-black bg-opacity-60 rounded flex items-center justify-center cursor-pointer"
+                                 onClick={() => setViewImage(item.url || '')}>
+                              <span className="text-white text-3xl font-bold">
+                                +{session.media.length - 4}
+                              </span>
+                            </div>
+                          )}
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteImage(item._id);
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
             ))}
           </div>
         )}
@@ -370,12 +510,6 @@ export default function MediaGallery() {
                 alt="Full view"
                 className="max-w-full max-h-[90vh] object-contain rounded-lg"
                 onClick={(e) => e.stopPropagation()}
-                style={{
-                  display: 'block',
-                  maxWidth: '100%',
-                  maxHeight: '90vh',
-                  objectFit: 'contain'
-                }}
               />
             </div>
           </div>

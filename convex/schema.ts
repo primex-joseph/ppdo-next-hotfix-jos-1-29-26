@@ -418,10 +418,39 @@ export default defineSchema({
     .index("statusAndOffice", ["status", "implementingOffice"])
     .index("officeAndStatus", ["implementingOffice", "status"]),
 
+  /**
+   * Upload Sessions.
+   * Groups multiple images uploaded together (like Facebook albums).
+   * When a user uploads 1 or more images at once, they belong to the same session.
+   */
+  uploadSessions: defineTable({
+    /**
+     * User who created this upload session.
+     */
+    userId: v.id("users"),
+    
+    /**
+     * Number of images in this upload session.
+     */
+    imageCount: v.number(),
+    
+    /**
+     * Timestamp when the upload session was created (milliseconds since epoch).
+     */
+    createdAt: v.number(),
+    
+    /**
+     * Optional caption or description for the entire upload.
+     */
+    caption: v.optional(v.string()),
+  })
+    .index("userId", ["userId"])
+    .index("createdAt", ["createdAt"])
+    .index("userIdAndCreatedAt", ["userId", "createdAt"]),
 
   /**
    * Media files.
-   * Stores uploaded images and other media with user ownership.
+   * Each media item belongs to an upload session.
    */
   media: defineTable({
     /**
@@ -450,6 +479,17 @@ export default defineSchema({
     userId: v.id("users"),
     
     /**
+     * Upload session this media belongs to.
+     * Multiple images uploaded together share the same sessionId.
+     */
+    sessionId: v.id("uploadSessions"),
+    
+    /**
+     * Order/position of this image within the upload session (0-indexed).
+     */
+    orderInSession: v.number(),
+    
+    /**
      * Timestamp when the media was uploaded (milliseconds since epoch).
      */
     uploadedAt: v.number(),
@@ -465,9 +505,11 @@ export default defineSchema({
     updatedAt: v.number(),
   })
     .index("userId", ["userId"])
+    .index("sessionId", ["sessionId"])
     .index("uploadedAt", ["uploadedAt"])
     .index("type", ["type"])
-    .index("userIdAndUploadedAt", ["userId", "uploadedAt"]),
+    .index("userIdAndUploadedAt", ["userId", "uploadedAt"])
+    .index("sessionIdAndOrder", ["sessionId", "orderInSession"]),
 
   numbers: defineTable({
     value: v.number(),
