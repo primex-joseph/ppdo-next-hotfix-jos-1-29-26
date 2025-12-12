@@ -5,11 +5,179 @@ import { v } from "convex/values";
 
 export default defineSchema({
   /**
+   * Departments.
+   * Organizational units with hierarchical structure support.
+   */
+  departments: defineTable({
+    /**
+     * Department name (e.g., "Finance Department", "HR Department")
+     */
+    name: v.string(),
+    
+    /**
+     * Short code for the department (e.g., "FIN", "HR", "ENG")
+     * Used for quick reference and categorization
+     */
+    code: v.string(),
+    
+    /**
+     * Full description of the department's responsibilities
+     */
+    description: v.optional(v.string()),
+    
+    /**
+     * Parent department ID for hierarchical structure
+     * null for top-level departments
+     */
+    parentDepartmentId: v.optional(v.id("departments")),
+    
+    /**
+     * Department head/manager user ID
+     */
+    headUserId: v.optional(v.id("users")),
+    
+    /**
+     * Contact email for the department
+     */
+    email: v.optional(v.string()),
+    
+    /**
+     * Contact phone number
+     */
+    phone: v.optional(v.string()),
+    
+    /**
+     * Physical location/office
+     */
+    location: v.optional(v.string()),
+    
+    /**
+     * Whether this department is currently active
+     */
+    isActive: v.boolean(),
+    
+    /**
+     * Display order for sorting departments
+     */
+    displayOrder: v.optional(v.number()),
+    
+    /**
+     * User who created this department
+     */
+    createdBy: v.id("users"),
+    
+    /**
+     * Timestamp when created
+     */
+    createdAt: v.number(),
+    
+    /**
+     * Timestamp when last updated
+     */
+    updatedAt: v.number(),
+    
+    /**
+     * User who last updated this department
+     */
+    updatedBy: v.optional(v.id("users")),
+  })
+    .index("name", ["name"])
+    .index("code", ["code"])
+    .index("parentDepartmentId", ["parentDepartmentId"])
+    .index("headUserId", ["headUserId"])
+    .index("isActive", ["isActive"])
+    .index("displayOrder", ["displayOrder"]),
+
+  /**
+   * Permissions.
+   * Defines granular permissions that can be assigned to roles.
+   */
+  permissions: defineTable({
+    /**
+     * Unique permission key (e.g., "users.create", "projects.delete", "budgets.approve")
+     */
+    key: v.string(),
+    
+    /**
+     * Human-readable permission name
+     */
+    name: v.string(),
+    
+    /**
+     * Description of what this permission allows
+     */
+    description: v.string(),
+    
+    /**
+     * Category for grouping permissions (e.g., "users", "projects", "budgets", "reports")
+     */
+    category: v.string(),
+    
+    /**
+     * Whether this permission is currently active
+     */
+    isActive: v.boolean(),
+    
+    /**
+     * Timestamp when created
+     */
+    createdAt: v.number(),
+    
+    /**
+     * Timestamp when last updated
+     */
+    updatedAt: v.number(),
+  })
+    .index("key", ["key"])
+    .index("category", ["category"])
+    .index("isActive", ["isActive"]),
+
+  /**
+   * Role Permissions.
+   * Maps which permissions are assigned to each role.
+   * This allows flexible permission management per role.
+   */
+  rolePermissions: defineTable({
+    /**
+     * Role this permission is assigned to
+     */
+    role: v.union(
+      v.literal("super_admin"),
+      v.literal("admin"),
+      v.literal("user")
+    ),
+    
+    /**
+     * Permission ID being assigned
+     */
+    permissionId: v.id("permissions"),
+    
+    /**
+     * Whether this permission is granted (true) or denied (false)
+     * Allows for explicit denials if needed
+     */
+    isGranted: v.boolean(),
+    
+    /**
+     * Timestamp when this permission was assigned
+     */
+    createdAt: v.number(),
+    
+    /**
+     * User who assigned this permission
+     */
+    createdBy: v.id("users"),
+  })
+    .index("role", ["role"])
+    .index("permissionId", ["permissionId"])
+    .index("roleAndPermission", ["role", "permissionId"]),
+
+  /**
    * Users.
-   * Extended with role-based access control and account status tracking.
+   * Enhanced with RBAC, department relationship, and account status tracking.
    */
   users: defineTable({
-    // Existing fields
+    // Basic user information
     name: v.optional(v.string()),
     image: v.optional(v.string()),
     email: v.optional(v.string()),
@@ -18,21 +186,35 @@ export default defineSchema({
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
     
-    // New fields for user management
     /**
-     * User role for access control.
-     * - administrator: Full system access, can manage all users and resources
-     * - user: Standard access, can manage own resources
-     * - viewer: Read-only access, cannot modify resources
+     * User role for RBAC.
+     * - super_admin: Full system access, manage all users, departments, and system settings
+     * - admin: Department-level admin, can manage users and resources within their department
+     * - user: Standard user access, can manage own resources
      * @default "user"
      */
     role: v.optional(
       v.union(
-        v.literal("administrator"),
-        v.literal("user"),
-        v.literal("viewer")
+        v.literal("super_admin"),
+        v.literal("admin"),
+        v.literal("user")
       )
     ),
+    
+    /**
+     * Department this user belongs to
+     */
+    departmentId: v.optional(v.id("departments")),
+    
+    /**
+     * Job title or position
+     */
+    position: v.optional(v.string()),
+    
+    /**
+     * Employee ID or staff number
+     */
+    employeeId: v.optional(v.string()),
     
     /**
      * Account status.
@@ -50,51 +232,101 @@ export default defineSchema({
     ),
     
     /**
-     * Last successful login timestamp (milliseconds since epoch).
-     * Updated on each successful authentication.
+     * Last successful login timestamp
      */
     lastLogin: v.optional(v.number()),
     
     /**
-     * Timestamp when the user was created (milliseconds since epoch).
-     * Set once during user registration.
+     * Timestamp when the user was created
      */
     createdAt: v.optional(v.number()),
     
     /**
-     * Timestamp when the user record was last updated (milliseconds since epoch).
-     * Updated on any user data modification.
+     * Timestamp when the user record was last updated
      */
     updatedAt: v.optional(v.number()),
     
     /**
-     * Optional: Reason for suspension (only relevant when status is "suspended").
+     * Reason for suspension (only relevant when status is "suspended")
      */
     suspensionReason: v.optional(v.string()),
     
     /**
-     * Optional: ID of the administrator who suspended the account.
+     * ID of the administrator who suspended the account
      */
     suspendedBy: v.optional(v.id("users")),
     
     /**
-     * Optional: Timestamp when the suspension was applied.
+     * Timestamp when the suspension was applied
      */
     suspendedAt: v.optional(v.number()),
+    
+    /**
+     * User preferences (stored as JSON string)
+     * Can include theme, language, notification settings, etc.
+     */
+    preferences: v.optional(v.string()),
   })
     .index("email", ["email"])
     .index("phone", ["phone"])
-    // New indexes for efficient queries
     .index("role", ["role"])
     .index("status", ["status"])
+    .index("departmentId", ["departmentId"])
+    .index("employeeId", ["employeeId"])
     .index("roleAndStatus", ["role", "status"])
+    .index("departmentAndRole", ["departmentId", "role"])
     .index("lastLogin", ["lastLogin"])
     .index("createdAt", ["createdAt"]),
 
   /**
+   * User Permissions Override.
+   * Allows granting or denying specific permissions to individual users,
+   * overriding their role's default permissions.
+   */
+  userPermissions: defineTable({
+    /**
+     * User receiving the permission override
+     */
+    userId: v.id("users"),
+    
+    /**
+     * Permission being granted or denied
+     */
+    permissionId: v.id("permissions"),
+    
+    /**
+     * Whether this permission is granted (true) or denied (false)
+     */
+    isGranted: v.boolean(),
+    
+    /**
+     * Optional reason for the override
+     */
+    reason: v.optional(v.string()),
+    
+    /**
+     * Timestamp when this override was created
+     */
+    createdAt: v.number(),
+    
+    /**
+     * User who created this override
+     */
+    createdBy: v.id("users"),
+    
+    /**
+     * Optional expiration date for temporary permissions
+     */
+    expiresAt: v.optional(v.number()),
+  })
+    .index("userId", ["userId"])
+    .index("permissionId", ["permissionId"])
+    .index("userAndPermission", ["userId", "permissionId"])
+    .index("expiresAt", ["expiresAt"]),
+
+  /**
    * Sessions.
    * A single user can have multiple active sessions.
-   * See [Session document lifecycle](https://labs.convex.dev/auth/advanced#session-document-lifecycle).
    */
   authSessions: defineTable({
     userId: v.id("users"),
@@ -102,9 +334,7 @@ export default defineSchema({
   }).index("userId", ["userId"]),
 
   /**
-   * Accounts. An account corresponds to
-   * a single authentication provider.
-   * A single user can have multiple accounts linked.
+   * Accounts.
    */
   authAccounts: defineTable({
     userId: v.id("users"),
@@ -165,208 +395,136 @@ export default defineSchema({
   }).index("identifier", ["identifier"]),
 
   /**
-   * Audit log for user management actions.
-   * Tracks administrative actions for compliance and debugging.
+   * Audit log for user management and permission changes.
+   * Enhanced to track permission and department changes.
    */
   userAuditLog: defineTable({
     /**
-     * The user who performed the action.
+     * The user who performed the action
      */
     performedBy: v.id("users"),
     
     /**
-     * The user who was affected by the action.
+     * The user who was affected by the action (null for system-level actions)
      */
-    targetUserId: v.id("users"),
+    targetUserId: v.optional(v.id("users")),
     
     /**
-     * Type of action performed.
+     * Department affected (if applicable)
+     */
+    targetDepartmentId: v.optional(v.id("departments")),
+    
+    /**
+     * Type of action performed
      */
     action: v.union(
       v.literal("role_changed"),
       v.literal("status_changed"),
       v.literal("user_created"),
       v.literal("user_updated"),
-      v.literal("user_deleted")
+      v.literal("user_deleted"),
+      v.literal("permission_granted"),
+      v.literal("permission_revoked"),
+      v.literal("department_assigned"),
+      v.literal("department_created"),
+      v.literal("department_updated"),
+      v.literal("department_deleted")
     ),
     
     /**
-     * Previous values before the change (JSON string).
+     * Previous values before the change (JSON string)
      */
     previousValues: v.optional(v.string()),
     
     /**
-     * New values after the change (JSON string).
+     * New values after the change (JSON string)
      */
     newValues: v.optional(v.string()),
     
     /**
-     * Optional reason or notes for the action.
+     * Optional reason or notes for the action
      */
     notes: v.optional(v.string()),
     
     /**
-     * Timestamp when the action was performed.
+     * Timestamp when the action was performed
      */
     timestamp: v.number(),
     
     /**
-     * IP address from which the action was performed (if available).
+     * IP address from which the action was performed
      */
     ipAddress: v.optional(v.string()),
+    
+    /**
+     * User agent string
+     */
+    userAgent: v.optional(v.string()),
   })
     .index("targetUserId", ["targetUserId"])
+    .index("targetDepartmentId", ["targetDepartmentId"])
     .index("performedBy", ["performedBy"])
     .index("timestamp", ["timestamp"])
     .index("action", ["action"]),
 
   /**
    * Budget Items.
-   * Tracks budget allocation and utilization for different particulars/projects.
+   * Now linked to departments for better organization.
    */
   budgetItems: defineTable({
-    /**
-     * Name or description of the budget item (e.g., "GAD", "Infrastructure", etc.)
-     */
     particulars: v.string(),
-    
-    /**
-     * Total budget allocated for this item (in currency).
-     */
     totalBudgetAllocated: v.number(),
-    
-    /**
-     * Total budget utilized so far (in currency).
-     */
     totalBudgetUtilized: v.number(),
-    
-    /**
-     * Utilization rate as a percentage (0-100).
-     * Calculated as: (totalBudgetUtilized / totalBudgetAllocated) * 100
-     */
     utilizationRate: v.number(),
-    
-    /**
-     * Project completion percentage (0-100).
-     */
     projectCompleted: v.number(),
-    
-    /**
-     * Project delayed percentage (0-100).
-     */
     projectDelayed: v.number(),
-    
-    /**
-     * Projects on track percentage (0-100).
-     */
     projectsOnTrack: v.number(),
     
     /**
-     * User who created this budget item.
+     * Department responsible for this budget item
      */
+    departmentId: v.optional(v.id("departments")),
+    
+    /**
+     * Fiscal year for this budget (e.g., 2024, 2025)
+     */
+    fiscalYear: v.optional(v.number()),
+    
     createdBy: v.id("users"),
-    
-    /**
-     * Timestamp when the budget item was created (milliseconds since epoch).
-     */
     createdAt: v.number(),
-    
-    /**
-     * Timestamp when the budget item was last updated (milliseconds since epoch).
-     */
     updatedAt: v.number(),
-    
-    /**
-     * Optional: User who last updated this budget item.
-     */
     updatedBy: v.optional(v.id("users")),
-    
-    /**
-     * Optional: Additional notes or remarks about this budget item.
-     */
     notes: v.optional(v.string()),
   })
     .index("createdBy", ["createdBy"])
     .index("createdAt", ["createdAt"])
     .index("updatedAt", ["updatedAt"])
-    .index("particulars", ["particulars"]),
+    .index("particulars", ["particulars"])
+    .index("departmentId", ["departmentId"])
+    .index("fiscalYear", ["fiscalYear"])
+    .index("departmentAndYear", ["departmentId", "fiscalYear"]),
 
   /**
    * Projects.
-   * Tracks individual projects with budget allocation, timelines, and progress.
-   * Can be linked to budget items for hierarchical budget tracking.
+   * Enhanced with department relationship.
    */
   projects: defineTable({
-    /**
-     * Name of the project.
-     */
     projectName: v.string(),
     
     /**
-     * Office or department implementing the project.
+     * Replaced implementingOffice string with department reference
      */
-    implementingOffice: v.string(),
+    departmentId: v.id("departments"),
     
-    /**
-     * Initial budget allocated for this project (in currency).
-     */
     allocatedBudget: v.number(),
-    
-    /**
-     * Revised budget after adjustments (in currency).
-     * If not set, allocatedBudget is used for calculations.
-     */
     revisedBudget: v.optional(v.number()),
-    
-    /**
-     * Total budget utilized so far (in currency).
-     */
     totalBudgetUtilized: v.number(),
-    
-    /**
-     * Utilization rate as a percentage (0-100).
-     * Calculated as: (totalBudgetUtilized / effectiveBudget) * 100
-     * where effectiveBudget is revisedBudget if set, otherwise allocatedBudget
-     */
     utilizationRate: v.number(),
-    
-    /**
-     * Remaining budget balance (in currency).
-     * Calculated as: effectiveBudget - totalBudgetUtilized
-     */
     balance: v.number(),
-    
-    /**
-     * Date when the project started (milliseconds since epoch).
-     */
     dateStarted: v.number(),
-    
-    /**
-     * Target or actual completion date (milliseconds since epoch).
-     * Optional until project is completed.
-     */
     completionDate: v.optional(v.number()),
-    
-    /**
-     * Expected completion date (milliseconds since epoch).
-     * Used to track if project is delayed.
-     */
     expectedCompletionDate: v.optional(v.number()),
-    
-    /**
-     * Project accomplishment/progress percentage (0-100).
-     */
     projectAccomplishment: v.number(),
-    
-    /**
-     * Current status of the project.
-     * - on_track: Project is progressing as planned
-     * - delayed: Project is behind schedule
-     * - completed: Project is finished
-     * - cancelled: Project was cancelled
-     * - on_hold: Project is temporarily paused
-     * @default "on_track"
-     */
     status: v.optional(
       v.union(
         v.literal("on_track"),
@@ -376,72 +534,38 @@ export default defineSchema({
         v.literal("on_hold")
       )
     ),
-    
-    /**
-     * Optional remarks or notes about the project.
-     */
     remarks: v.optional(v.string()),
-    
-    /**
-     * Optional: Link to parent budget item if this project is part of a larger budget allocation.
-     */
     budgetItemId: v.optional(v.id("budgetItems")),
     
     /**
-     * User who created this project record.
+     * Project manager/lead
      */
+    projectManagerId: v.optional(v.id("users")),
+    
     createdBy: v.id("users"),
-    
-    /**
-     * Timestamp when the project record was created (milliseconds since epoch).
-     */
     createdAt: v.number(),
-    
-    /**
-     * Timestamp when the project record was last updated (milliseconds since epoch).
-     */
     updatedAt: v.number(),
-    
-    /**
-     * Optional: User who last updated this project record.
-     */
     updatedBy: v.optional(v.id("users")),
   })
     .index("projectName", ["projectName"])
-    .index("implementingOffice", ["implementingOffice"])
+    .index("departmentId", ["departmentId"])
     .index("status", ["status"])
     .index("dateStarted", ["dateStarted"])
     .index("completionDate", ["completionDate"])
     .index("createdBy", ["createdBy"])
     .index("createdAt", ["createdAt"])
     .index("budgetItemId", ["budgetItemId"])
-    .index("statusAndOffice", ["status", "implementingOffice"])
-    .index("officeAndStatus", ["implementingOffice", "status"]),
+    .index("projectManagerId", ["projectManagerId"])
+    .index("statusAndDepartment", ["status", "departmentId"])
+    .index("departmentAndStatus", ["departmentId", "status"]),
 
   /**
    * Upload Sessions.
-   * Groups multiple images uploaded together (like Facebook albums).
-   * When a user uploads 1 or more images at once, they belong to the same session.
    */
   uploadSessions: defineTable({
-    /**
-     * User who created this upload session.
-     */
     userId: v.id("users"),
-    
-    /**
-     * Number of images in this upload session.
-     */
     imageCount: v.number(),
-    
-    /**
-     * Timestamp when the upload session was created (milliseconds since epoch).
-     */
     createdAt: v.number(),
-    
-    /**
-     * Optional caption or description for the entire upload.
-     */
     caption: v.optional(v.string()),
   })
     .index("userId", ["userId"])
@@ -450,58 +574,17 @@ export default defineSchema({
 
   /**
    * Media files.
-   * Each media item belongs to an upload session.
    */
   media: defineTable({
-    /**
-     * Reference to the file in Convex storage.
-     */
     storageId: v.id("_storage"),
-    
-    /**
-     * Original filename.
-     */
     name: v.string(),
-    
-    /**
-     * MIME type (e.g., "image/jpeg", "image/png").
-     */
     type: v.string(),
-    
-    /**
-     * File size in bytes.
-     */
     size: v.number(),
-    
-    /**
-     * User who uploaded this media.
-     */
     userId: v.id("users"),
-    
-    /**
-     * Upload session this media belongs to.
-     * Multiple images uploaded together share the same sessionId.
-     */
     sessionId: v.id("uploadSessions"),
-    
-    /**
-     * Order/position of this image within the upload session (0-indexed).
-     */
     orderInSession: v.number(),
-    
-    /**
-     * Timestamp when the media was uploaded (milliseconds since epoch).
-     */
     uploadedAt: v.number(),
-    
-    /**
-     * Timestamp when the media record was created (milliseconds since epoch).
-     */
     createdAt: v.number(),
-    
-    /**
-     * Timestamp when the media record was last updated (milliseconds since epoch).
-     */
     updatedAt: v.number(),
   })
     .index("userId", ["userId"])
@@ -513,97 +596,27 @@ export default defineSchema({
 
   /**
    * Inspections.
-   * Tracks field inspections, site visits, and project monitoring activities.
-   * Each inspection can have multiple images and is linked to a specific project.
    */
   inspections: defineTable({
-    /**
-     * The project this inspection is associated with.
-     */
     projectId: v.id("projects"),
-    
-    /**
-     * Optional: Link to budget item (for inspections at the budget level).
-     */
     budgetItemId: v.optional(v.id("budgetItems")),
-    
-    /**
-     * Program/reference number for this inspection (e.g., "12", "08", "15").
-     */
     programNumber: v.string(),
-    
-    /**
-     * Title of the inspection.
-     */
     title: v.string(),
-    
-    /**
-     * Category/type of inspection (e.g., "Skill Development", "Healthcare", "Infrastructure").
-     */
     category: v.string(),
-    
-    /**
-     * Date when the inspection was conducted (milliseconds since epoch).
-     */
     inspectionDate: v.number(),
-    
-    /**
-     * Detailed remarks, findings, or notes from the inspection.
-     * Can include multiple paragraphs and observations.
-     */
     remarks: v.string(),
-    
-    /**
-     * Current status of the inspection.
-     * - completed: Inspection finished and documented
-     * - in_progress: Inspection ongoing or follow-up needed
-     * - pending: Inspection scheduled but not yet conducted
-     * - cancelled: Inspection was cancelled
-     * @default "pending"
-     */
     status: v.union(
       v.literal("completed"),
       v.literal("in_progress"),
       v.literal("pending"),
       v.literal("cancelled")
     ),
-    
-    /**
-     * View count for engagement tracking.
-     * Incremented each time the inspection details are viewed.
-     */
     viewCount: v.number(),
-    
-    /**
-     * Upload session containing all images from this inspection.
-     * Links to uploadSessions table where images are grouped together.
-     */
     uploadSessionId: v.optional(v.id("uploadSessions")),
-    
-    /**
-     * User who created/conducted this inspection.
-     */
     createdBy: v.id("users"),
-    
-    /**
-     * Timestamp when the inspection record was created (milliseconds since epoch).
-     */
     createdAt: v.number(),
-    
-    /**
-     * Timestamp when the inspection record was last updated (milliseconds since epoch).
-     */
     updatedAt: v.number(),
-    
-    /**
-     * Optional: User who last updated this inspection record.
-     */
     updatedBy: v.optional(v.id("users")),
-    
-    /**
-     * Optional: Additional metadata (JSON string for flexible data).
-     * Can store things like weather conditions, attendees, equipment used, etc.
-     */
     metadata: v.optional(v.string()),
   })
     .index("projectId", ["projectId"])
@@ -620,47 +633,13 @@ export default defineSchema({
 
   /**
    * Remarks.
-   * Tracks notes, updates, and comments for projects and inspections.
-   * Each remark can be linked to either a project (general remarks) or 
-   * a specific inspection (inspection-specific remarks).
    */
   remarks: defineTable({
-    /**
-     * The project this remark is associated with.
-     * Required - every remark must belong to a project.
-     */
     projectId: v.id("projects"),
-    
-    /**
-     * Optional: Link to specific inspection if this is an inspection-specific remark.
-     * If null, this is a general project remark.
-     */
     inspectionId: v.optional(v.id("inspections")),
-    
-    /**
-     * Optional: Link to budget item if this is a budget-level remark.
-     */
     budgetItemId: v.optional(v.id("budgetItems")),
-    
-    /**
-     * The content/body of the remark.
-     * Can be multi-line text with detailed notes and observations.
-     */
     content: v.string(),
-    
-    /**
-     * Optional: Category or type of remark for filtering/organization.
-     * Examples: "Budget Utilization", "Timeline", "Quality", "Risk", "General"
-     */
     category: v.optional(v.string()),
-    
-    /**
-     * Optional: Priority level for the remark.
-     * Helps identify which remarks need immediate attention.
-     * - high: Urgent issues requiring immediate action
-     * - medium: Important but not urgent
-     * - low: Informational or nice-to-have
-     */
     priority: v.optional(
       v.union(
         v.literal("high"),
@@ -668,43 +647,12 @@ export default defineSchema({
         v.literal("low")
       )
     ),
-    
-    /**
-     * User who created this remark.
-     * Links to users table to show full name and email.
-     */
     createdBy: v.id("users"),
-    
-    /**
-     * Timestamp when the remark was created (milliseconds since epoch).
-     */
     createdAt: v.number(),
-    
-    /**
-     * Timestamp when the remark was last updated (milliseconds since epoch).
-     */
     updatedAt: v.number(),
-    
-    /**
-     * User who last updated this remark (if different from creator).
-     */
     updatedBy: v.id("users"),
-    
-    /**
-     * Optional: Tags for flexible categorization and filtering.
-     * JSON array stored as string: ["urgent", "follow-up", "documentation"]
-     */
     tags: v.optional(v.string()),
-    
-    /**
-     * Optional: Flag for pinned/important remarks that should be prominently displayed.
-     */
     isPinned: v.optional(v.boolean()),
-    
-    /**
-     * Optional: Attachments or references (JSON string).
-     * Can store links to documents, images, or other related resources.
-     */
     attachments: v.optional(v.string()),
   })
     .index("projectId", ["projectId"])
@@ -724,8 +672,6 @@ export default defineSchema({
 
   /**
    * Obligations.
-   * Tracks financial obligations/transactions for projects.
-   * Used in the Overview page "Recent Obligations" section.
    */
   obligations: defineTable({
     projectId: v.id("projects"),

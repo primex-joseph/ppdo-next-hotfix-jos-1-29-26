@@ -28,11 +28,11 @@ export const getProjectsByBudgetItem = query({
 });
 
 /**
- * Get all projects (optionally filtered by implementing office)
+ * Get all projects (optionally filtered by department)
  */
 export const list = query({
   args: {
-    implementingOffice: v.optional(v.string()),
+    departmentId: v.optional(v.id("departments")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -42,11 +42,11 @@ export const list = query({
 
     let projects;
     
-    if (args.implementingOffice !== undefined) {
+    if (args.departmentId !== undefined) {
       projects = await ctx.db
         .query("projects")
-        .withIndex("implementingOffice", (q) => 
-          q.eq("implementingOffice", args.implementingOffice!)
+        .withIndex("departmentId", (q) => 
+          q.eq("departmentId", args.departmentId!)
         )
         .order("desc")
         .collect();
@@ -57,7 +57,19 @@ export const list = query({
         .collect();
     }
 
-    return projects;
+    // Enrich with department information
+    const projectsWithDepartments = await Promise.all(
+      projects.map(async (project) => {
+        const department = await ctx.db.get(project.departmentId);
+        return {
+          ...project,
+          departmentName: department?.name,
+          departmentCode: department?.code,
+        };
+      })
+    );
+
+    return projectsWithDepartments;
   },
 });
 
@@ -75,7 +87,19 @@ export const get = query({
     }
 
     const project = await ctx.db.get(args.id);
-    return project;
+    
+    if (!project) {
+      return null;
+    }
+    
+    // Enrich with department information
+    const department = await ctx.db.get(project.departmentId);
+    
+    return {
+      ...project,
+      departmentName: department?.name,
+      departmentCode: department?.code,
+    };
   },
 });
 
@@ -85,7 +109,7 @@ export const get = query({
 export const create = mutation({
   args: {
     projectName: v.string(),
-    implementingOffice: v.string(),
+    departmentId: v.id("departments"),
     allocatedBudget: v.number(),
     revisedBudget: v.optional(v.number()),
     totalBudgetUtilized: v.number(),
@@ -104,11 +128,18 @@ export const create = mutation({
     ),
     remarks: v.optional(v.string()),
     budgetItemId: v.optional(v.id("budgetItems")),
+    projectManagerId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) {
       throw new Error("Not authenticated");
+    }
+
+    // Verify department exists
+    const department = await ctx.db.get(args.departmentId);
+    if (!department) {
+      throw new Error("Department not found");
     }
 
     const now = Date.now();
@@ -122,7 +153,7 @@ export const create = mutation({
 
     const projectId = await ctx.db.insert("projects", {
       projectName: args.projectName,
-      implementingOffice: args.implementingOffice,
+      departmentId: args.departmentId,
       allocatedBudget: args.allocatedBudget,
       revisedBudget: args.revisedBudget,
       totalBudgetUtilized: args.totalBudgetUtilized,
@@ -135,6 +166,7 @@ export const create = mutation({
       status: args.status ?? "on_track",
       remarks: args.remarks,
       budgetItemId: args.budgetItemId,
+      projectManagerId: args.projectManagerId,
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
@@ -151,7 +183,7 @@ export const update = mutation({
   args: {
     id: v.id("projects"),
     projectName: v.string(),
-    implementingOffice: v.string(),
+    departmentId: v.id("departments"),
     allocatedBudget: v.number(),
     revisedBudget: v.optional(v.number()),
     totalBudgetUtilized: v.number(),
@@ -170,6 +202,7 @@ export const update = mutation({
     ),
     remarks: v.optional(v.string()),
     budgetItemId: v.optional(v.id("budgetItems")),
+    projectManagerId: v.optional(v.id("users")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -180,6 +213,12 @@ export const update = mutation({
     const existingProject = await ctx.db.get(args.id);
     if (!existingProject) {
       throw new Error("Project not found");
+    }
+
+    // Verify department exists
+    const department = await ctx.db.get(args.departmentId);
+    if (!department) {
+      throw new Error("Department not found");
     }
 
     const now = Date.now();
@@ -193,7 +232,7 @@ export const update = mutation({
 
     await ctx.db.patch(args.id, {
       projectName: args.projectName,
-      implementingOffice: args.implementingOffice,
+      departmentId: args.departmentId,
       allocatedBudget: args.allocatedBudget,
       revisedBudget: args.revisedBudget,
       totalBudgetUtilized: args.totalBudgetUtilized,
@@ -206,6 +245,7 @@ export const update = mutation({
       status: args.status ?? "on_track",
       remarks: args.remarks,
       budgetItemId: args.budgetItemId,
+      projectManagerId: args.projectManagerId,
       updatedBy: userId,
       updatedAt: now,
     });
@@ -249,6 +289,7 @@ export const getProjectsByStatus = query({
       v.literal("cancelled"),
       v.literal("on_hold")
     ),
+    departmentId: v.optional(v.id("departments")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -256,10 +297,21 @@ export const getProjectsByStatus = query({
       throw new Error("Not authenticated");
     }
 
-    const projects = await ctx.db
-      .query("projects")
-      .withIndex("status", (q) => q.eq("status", args.status))
-      .collect();
+    let projects;
+
+    if (args.departmentId !== undefined) {
+      projects = await ctx.db
+        .query("projects")
+        .withIndex("statusAndDepartment", (q) => 
+          q.eq("status", args.status).eq("departmentId", args.departmentId!)
+        )
+        .collect();
+    } else {
+      projects = await ctx.db
+        .query("projects")
+        .withIndex("status", (q) => q.eq("status", args.status))
+        .collect();
+    }
 
     return projects;
   },
@@ -271,6 +323,7 @@ export const getProjectsByStatus = query({
 export const getStatistics = query({
   args: {
     budgetItemId: v.optional(v.id("budgetItems")),
+    departmentId: v.optional(v.id("departments")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -280,10 +333,15 @@ export const getStatistics = query({
 
     let projects;
     
-    if (args.budgetItemId) {
+    if (args.budgetItemId !== undefined) {
       projects = await ctx.db
         .query("projects")
-        .withIndex("budgetItemId", (q) => q.eq("budgetItemId", args.budgetItemId))
+        .withIndex("budgetItemId", (q) => q.eq("budgetItemId", args.budgetItemId!))
+        .collect();
+    } else if (args.departmentId !== undefined) {
+      projects = await ctx.db
+        .query("projects")
+        .withIndex("departmentId", (q) => q.eq("departmentId", args.departmentId!))
         .collect();
     } else {
       projects = await ctx.db

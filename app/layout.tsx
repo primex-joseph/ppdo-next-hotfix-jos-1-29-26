@@ -6,6 +6,7 @@ import "./globals.css";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { Toaster } from "@/components/ui/sonner";
 
 const cinzel = Cinzel({
   subsets: ["latin"],
@@ -44,6 +45,7 @@ export default function RootLayout({
           <ConvexClientProvider>
             <ThemeProvider>
               {children}
+              <Toaster />
             </ThemeProvider>
           </ConvexClientProvider>
         </body>

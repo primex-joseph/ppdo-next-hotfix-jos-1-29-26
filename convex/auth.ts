@@ -3,7 +3,7 @@
 import { Password } from "@convex-dev/auth/providers/Password";
 import { convexAuth } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { mutation, query, internalMutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
@@ -111,15 +111,15 @@ export const getCurrentUser = query({
 });
 
 /**
- * Update user role (admin only)
+ * Update user role (super_admin or admin only)
  */
 export const updateUserRole = mutation({
   args: {
     userId: v.id("users"),
     newRole: v.union(
-      v.literal("administrator"),
-      v.literal("user"),
-      v.literal("viewer")
+      v.literal("super_admin"),
+      v.literal("admin"),
+      v.literal("user")
     ),
   },
   handler: async (ctx, args) => {
@@ -129,8 +129,15 @@ export const updateUserRole = mutation({
     }
 
     const currentUser = await ctx.db.get(currentUserId);
-    if (!currentUser || currentUser.role !== "administrator") {
+    
+    // Only super_admin and admin can change roles
+    if (!currentUser || (currentUser.role !== "super_admin" && currentUser.role !== "admin")) {
       throw new Error("Not authorized - administrator access required");
+    }
+    
+    // Only super_admin can create other super_admins
+    if (args.newRole === "super_admin" && currentUser.role !== "super_admin") {
+      throw new Error("Not authorized - only super_admin can create other super_admins");
     }
 
     const targetUser = await ctx.db.get(args.userId);
@@ -159,7 +166,7 @@ export const updateUserRole = mutation({
 });
 
 /**
- * Update user status (admin only)
+ * Update user status (super_admin or admin only)
  */
 export const updateUserStatus = mutation({
   args: {
@@ -178,13 +185,20 @@ export const updateUserStatus = mutation({
     }
 
     const currentUser = await ctx.db.get(currentUserId);
-    if (!currentUser || currentUser.role !== "administrator") {
+    
+    // Only super_admin and admin can change status
+    if (!currentUser || (currentUser.role !== "super_admin" && currentUser.role !== "admin")) {
       throw new Error("Not authorized - administrator access required");
     }
 
     const targetUser = await ctx.db.get(args.userId);
     if (!targetUser) {
       throw new Error("User not found");
+    }
+    
+    // Admin cannot suspend/deactivate super_admin
+    if (currentUser.role === "admin" && targetUser.role === "super_admin") {
+      throw new Error("Not authorized - cannot modify super_admin status");
     }
 
     const now = Date.now();
@@ -224,11 +238,66 @@ export const updateUserStatus = mutation({
 });
 
 /**
- * List all users (admin only)
+ * Update user department
+ */
+export const updateUserDepartment = mutation({
+  args: {
+    userId: v.id("users"),
+    departmentId: v.optional(v.id("departments")),
+  },
+  handler: async (ctx, args) => {
+    const currentUserId = await getAuthUserId(ctx);
+    if (!currentUserId) {
+      throw new Error("Not authenticated");
+    }
+
+    const currentUser = await ctx.db.get(currentUserId);
+    
+    // Only super_admin and admin can assign departments
+    if (!currentUser || (currentUser.role !== "super_admin" && currentUser.role !== "admin")) {
+      throw new Error("Not authorized - administrator access required");
+    }
+
+    const targetUser = await ctx.db.get(args.userId);
+    if (!targetUser) {
+      throw new Error("User not found");
+    }
+    
+    // Verify department exists if provided
+    if (args.departmentId) {
+      const department = await ctx.db.get(args.departmentId);
+      if (!department) {
+        throw new Error("Department not found");
+      }
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(args.userId, {
+      departmentId: args.departmentId,
+      updatedAt: now,
+    });
+
+    // Log the action
+    await ctx.db.insert("userAuditLog", {
+      performedBy: currentUserId,
+      targetUserId: args.userId,
+      action: "department_assigned",
+      previousValues: JSON.stringify({ departmentId: targetUser.departmentId }),
+      newValues: JSON.stringify({ departmentId: args.departmentId }),
+      timestamp: now,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * List all users (super_admin or admin only)
  */
 export const listAllUsers = query({
   args: {
     limit: v.optional(v.number()),
+    departmentId: v.optional(v.id("departments")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -237,31 +306,68 @@ export const listAllUsers = query({
     }
 
     const currentUser = await ctx.db.get(userId);
-    if (!currentUser || currentUser.role !== "administrator") {
+    
+    // Only super_admin and admin can list users
+    if (!currentUser || (currentUser.role !== "super_admin" && currentUser.role !== "admin")) {
       throw new Error("Not authorized - administrator access required");
     }
 
     const limit = args.limit || 100;
-    const users = await ctx.db
-      .query("users")
-      .order("desc")
-      .take(limit);
+    let users;
+    
+    if (args.departmentId) {
+      // Filter by department
+      users = await ctx.db
+        .query("users")
+        .withIndex("departmentId", (q) => q.eq("departmentId", args.departmentId))
+        .order("desc")
+        .take(limit);
+    } else if (currentUser.role === "admin" && currentUser.departmentId) {
+      // Admins can only see users in their department (unless they're super_admin)
+      users = await ctx.db
+        .query("users")
+        .withIndex("departmentId", (q) => q.eq("departmentId", currentUser.departmentId))
+        .order("desc")
+        .take(limit);
+    } else {
+      // Super_admin can see all users
+      users = await ctx.db
+        .query("users")
+        .order("desc")
+        .take(limit);
+    }
 
-    return users.map((user) => ({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      status: user.status,
-      lastLogin: user.lastLogin,
-      createdAt: user.createdAt,
-      suspensionReason: user.suspensionReason,
-    }));
+    // Get department info for each user
+    const usersWithDepartments = await Promise.all(
+      users.map(async (user) => {
+        let department = null;
+        if (user.departmentId) {
+          department = await ctx.db.get(user.departmentId);
+        }
+        
+        return {
+          _id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          status: user.status,
+          lastLogin: user.lastLogin,
+          createdAt: user.createdAt,
+          suspensionReason: user.suspensionReason,
+          departmentId: user.departmentId,
+          departmentName: department?.name,
+          position: user.position,
+          employeeId: user.employeeId,
+        };
+      })
+    );
+
+    return usersWithDepartments;
   },
 });
 
 /**
- * Get user audit log (admin only)
+ * Get user audit log (super_admin or admin only)
  */
 export const getUserAuditLog = query({
   args: {
@@ -275,7 +381,9 @@ export const getUserAuditLog = query({
     }
 
     const currentUser = await ctx.db.get(currentUserId);
-    if (!currentUser || currentUser.role !== "administrator") {
+    
+    // Only super_admin and admin can view audit logs
+    if (!currentUser || (currentUser.role !== "super_admin" && currentUser.role !== "admin")) {
       throw new Error("Not authorized - administrator access required");
     }
 
@@ -300,14 +408,24 @@ export const getUserAuditLog = query({
     const enrichedLogs = await Promise.all(
       logs.map(async (log) => {
         const performedByUser = await ctx.db.get(log.performedBy);
-        const targetUser = await ctx.db.get(log.targetUserId);
+        
+        // Handle optional targetUserId
+        let targetUser = null;
+        let targetUserEmail = null;
+        let targetUserName = null;
+        
+        if (log.targetUserId) {
+          targetUser = await ctx.db.get(log.targetUserId);
+          targetUserEmail = targetUser?.email;
+          targetUserName = targetUser?.name;
+        }
         
         return {
           ...log,
           performedByEmail: performedByUser?.email,
           performedByName: performedByUser?.name,
-          targetUserEmail: targetUser?.email,
-          targetUserName: targetUser?.name,
+          targetUserEmail,
+          targetUserName,
         };
       })
     );
