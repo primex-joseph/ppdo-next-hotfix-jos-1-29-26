@@ -1,7 +1,7 @@
-// components/types.ts
+// app/dashboard/budget/[particularId]/[projectId]/components/types.ts
 
 import { type ReactNode } from "react"
-// Assuming `Remark` is imported from "../../../types"
+import { Id } from "@/convex/_generated/dataModel"
 
 // Core Data Structures
 export interface FinancialBreakdownItem {
@@ -22,7 +22,7 @@ export interface InspectionItem {
   category: string
   date: string
   remarks: string
-  status: string // "Completed", "In Progress", "Pending", etc.
+  status: string
   images: string[]
   views: string
 }
@@ -30,9 +30,11 @@ export interface InspectionItem {
 export interface InspectionFormData {
   programNumber: string
   title: string
+  category: string
   date: string
   remarks: string
   images: File[]
+  uploadSessionId?: Id<"uploadSessions">
 }
 
 export interface RemarkItem {
@@ -44,7 +46,6 @@ export interface RemarkItem {
   category: string
   priority: "Low" | "Medium" | "High"
 }
-
 
 // Component Props
 export interface FinancialBreakdownTabsProps {
@@ -102,5 +103,5 @@ export interface NewInspectionFormProps {
 export interface InspectionDetailsModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  inspection: InspectionItem | null
+  inspection: any | null
 }

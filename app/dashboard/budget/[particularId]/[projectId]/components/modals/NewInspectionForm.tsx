@@ -1,77 +1,124 @@
-// components/modals/NewInspectionForm.tsx
+// app/dashboard/budget/[particularId]/[projectId]/components/modals/NewInspectionForm.tsx
 
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { type InspectionFormData, type NewInspectionFormProps } from "../types"
+import { useState } from "react";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import type { InspectionFormData, NewInspectionFormProps } from "../types";
 
-const getDefaultDate = () => new Date().toISOString().split('T')[0]
+const getDefaultDate = () => new Date().toISOString().split('T')[0];
 
 export const NewInspectionForm: React.FC<NewInspectionFormProps> = ({ open, onOpenChange, onSubmit }) => {
   const [formData, setFormData] = useState<InspectionFormData>({
     programNumber: "",
     title: "",
+    category: "",
     date: getDefaultDate(),
     remarks: "",
     images: []
-  })
+  });
 
-  const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const generateUploadUrl = useMutation(api.media.generateUploadUrl);
+  const createUploadSession = useMutation(api.media.createUploadSession);
+  const saveMedia = useMutation(api.media.saveMedia);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || [])
+    const files = Array.from(e.target.files || []);
     
-    // Update formData with new File objects
-    setFormData(prev => ({ ...prev, images: [...prev.images, ...files] }))
+    setFormData(prev => ({ ...prev, images: [...prev.images, ...files] }));
     
-    // Create preview URLs
-    const newPreviews = files.map(file => URL.createObjectURL(file))
-    setImagePreviews(prev => [...prev, ...newPreviews])
-  }
+    const newPreviews = files.map(file => URL.createObjectURL(file));
+    setImagePreviews(prev => [...prev, ...newPreviews]);
+  };
 
   const removeImage = (index: number) => {
-    // Revoke the URL and remove preview
-    URL.revokeObjectURL(imagePreviews[index])
-    setImagePreviews(prev => prev.filter((_, i) => i !== index))
-
+    URL.revokeObjectURL(imagePreviews[index]);
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
-    }))
-  }
+    }));
+  };
 
   const resetForm = () => {
-    // Clean up preview URLs
-    imagePreviews.forEach(url => URL.revokeObjectURL(url))
-    setImagePreviews([])
-    
-    // Reset form data
+    imagePreviews.forEach(url => URL.revokeObjectURL(url));
+    setImagePreviews([]);
     setFormData({
       programNumber: "",
       title: "",
+      category: "",
       date: getDefaultDate(),
       remarks: "",
       images: []
-    })
-  }
+    });
+  };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSubmit(formData)
-    resetForm()
-    onOpenChange(false)
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsUploading(true);
+
+    try {
+      let uploadSessionId = undefined;
+
+      // Upload images if any
+      if (formData.images.length > 0) {
+        // Create upload session
+        uploadSessionId = await createUploadSession({
+          imageCount: formData.images.length,
+        });
+
+        // Upload each image
+        for (let i = 0; i < formData.images.length; i++) {
+          const file = formData.images[i];
+          
+          // Get upload URL
+          const uploadUrl = await generateUploadUrl();
+          
+          // Upload file to Convex storage
+          const result = await fetch(uploadUrl, {
+            method: "POST",
+            headers: { "Content-Type": file.type },
+            body: file,
+          });
+
+          const { storageId } = await result.json();
+
+          // Save media metadata
+          await saveMedia({
+            storageId,
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            sessionId: uploadSessionId,
+            orderInSession: i,
+          });
+        }
+      }
+
+      // Call parent onSubmit with form data and session ID
+      onSubmit({ ...formData, uploadSessionId });
+      resetForm();
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      alert("Failed to upload images. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,32 +133,89 @@ export const NewInspectionForm: React.FC<NewInspectionFormProps> = ({ open, onOp
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-6 mt-4">
-          {/* Form Fields: Program Number, Title, Date, Remarks */}
-          {/* ... (The existing form layout and inputs are preserved) ... */}
-
           <div className="space-y-2">
-            <Label htmlFor="programNumber" className="text-sm font-medium">Program Number</Label>
-            <Input id="programNumber" name="programNumber" type="text" placeholder="e.g., 12" value={formData.programNumber} onChange={handleInputChange} required className="w-full" />
+            <Label htmlFor="programNumber" className="text-sm font-medium">
+              Program Number
+            </Label>
+            <Input 
+              id="programNumber" 
+              name="programNumber" 
+              type="text" 
+              placeholder="e.g., 12" 
+              value={formData.programNumber} 
+              onChange={handleInputChange} 
+              required 
+              className="w-full" 
+            />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-sm font-medium">Inspection Title</Label>
-            <Input id="title" name="title" type="text" placeholder="e.g., Community Women Empowerment Workshop" value={formData.title} onChange={handleInputChange} required className="w-full" />
+            <Label htmlFor="title" className="text-sm font-medium">
+              Inspection Title
+            </Label>
+            <Input 
+              id="title" 
+              name="title" 
+              type="text" 
+              placeholder="e.g., Community Women Empowerment Workshop" 
+              value={formData.title} 
+              onChange={handleInputChange} 
+              required 
+              className="w-full" 
+            />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="date" className="text-sm font-medium">Inspection Date</Label>
-            <Input id="date" name="date" type="date" value={formData.date} onChange={handleInputChange} required className="w-full" />
+            <Label htmlFor="category" className="text-sm font-medium">
+              Category
+            </Label>
+            <Input 
+              id="category" 
+              name="category" 
+              type="text" 
+              placeholder="e.g., Skill Development, Healthcare, Infrastructure" 
+              value={formData.category} 
+              onChange={handleInputChange} 
+              required 
+              className="w-full" 
+            />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="remarks" className="text-sm font-medium">Remarks</Label>
-            <Textarea id="remarks" name="remarks" placeholder="Enter detailed remarks about the inspection..." value={formData.remarks} onChange={handleInputChange} required rows={5} className="w-full resize-none" />
+            <Label htmlFor="date" className="text-sm font-medium">
+              Inspection Date
+            </Label>
+            <Input 
+              id="date" 
+              name="date" 
+              type="date" 
+              value={formData.date} 
+              onChange={handleInputChange} 
+              required 
+              className="w-full" 
+            />
           </div>
 
-          {/* Image Upload Area (Preserved original styles and logic) */}
           <div className="space-y-2">
-            <Label htmlFor="images" className="text-sm font-medium">Upload Images</Label>
+            <Label htmlFor="remarks" className="text-sm font-medium">
+              Remarks
+            </Label>
+            <Textarea 
+              id="remarks" 
+              name="remarks" 
+              placeholder="Enter detailed remarks about the inspection..." 
+              value={formData.remarks} 
+              onChange={handleInputChange} 
+              required 
+              rows={5} 
+              className="w-full resize-none" 
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="images" className="text-sm font-medium">
+              Upload Images (Optional)
+            </Label>
             <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center hover:border-[#15803D] transition-colors">
               <input
                 id="images"
@@ -120,6 +224,7 @@ export const NewInspectionForm: React.FC<NewInspectionFormProps> = ({ open, onOp
                 multiple
                 onChange={handleImageUpload}
                 className="hidden"
+                disabled={isUploading}
               />
               <label
                 htmlFor="images"
@@ -137,20 +242,20 @@ export const NewInspectionForm: React.FC<NewInspectionFormProps> = ({ open, onOp
               </label>
             </div>
 
-            {/* Image Previews */}
             {imagePreviews.length > 0 && (
-              <div className="grid grid-cols-3 gap-3 mt-4">
+              <div className="grid grid-cols-4 gap-2 mt-4">
                 {imagePreviews.map((preview, index) => (
-                  <div key={index} className="relative group">
+                  <div key={index} className="relative group aspect-square">
                     <img
                       src={preview}
                       alt={`Preview ${index + 1}`}
-                      className="w-full h-32 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+                      className="w-full h-full object-cover rounded-lg border border-gray-200 dark:border-gray-700"
                     />
                     <button
                       type="button"
                       onClick={() => removeImage(index)}
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                      disabled={isUploading}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -162,27 +267,28 @@ export const NewInspectionForm: React.FC<NewInspectionFormProps> = ({ open, onOp
             )}
           </div>
 
-          {/* Form Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
             <Button
               type="button"
               variant="outline"
               onClick={() => {
-                resetForm()
-                onOpenChange(false)
+                resetForm();
+                onOpenChange(false);
               }}
+              disabled={isUploading}
             >
               Cancel
             </Button>
             <Button
               type="submit"
               className="bg-[#15803D] hover:bg-[#166534] text-white"
+              disabled={isUploading}
             >
-              Create Inspection
+              {isUploading ? "Uploading..." : "Create Inspection"}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
-  )
-}
+  );
+};

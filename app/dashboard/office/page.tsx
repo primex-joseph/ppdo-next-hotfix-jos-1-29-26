@@ -96,18 +96,18 @@ export default function OfficePage() {
     }
   };
 
-  useEffect(() => {
-    const auth = localStorage.getItem("authenticated");
-    if (auth === "true") {
-      setIsAuthenticated(true);
-    } else {
-      router.push("/");
-    }
-  }, [router]);
+  // useEffect(() => {
+  //   const auth = localStorage.getItem("authenticated");
+  //   if (auth === "true") {
+  //     setIsAuthenticated(true);
+  //   } else {
+  //     router.push("/");
+  //   }
+  // }, [router]);
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  // if (!isAuthenticated) {
+  //   return null;
+  // }
 
   return (
     <>

@@ -511,6 +511,113 @@ export default defineSchema({
     .index("userIdAndUploadedAt", ["userId", "uploadedAt"])
     .index("sessionIdAndOrder", ["sessionId", "orderInSession"]),
 
+  /**
+   * Inspections.
+   * Tracks field inspections, site visits, and project monitoring activities.
+   * Each inspection can have multiple images and is linked to a specific project.
+   */
+  inspections: defineTable({
+    /**
+     * The project this inspection is associated with.
+     */
+    projectId: v.id("projects"),
+    
+    /**
+     * Optional: Link to budget item (for inspections at the budget level).
+     */
+    budgetItemId: v.optional(v.id("budgetItems")),
+    
+    /**
+     * Program/reference number for this inspection (e.g., "12", "08", "15").
+     */
+    programNumber: v.string(),
+    
+    /**
+     * Title of the inspection.
+     */
+    title: v.string(),
+    
+    /**
+     * Category/type of inspection (e.g., "Skill Development", "Healthcare", "Infrastructure").
+     */
+    category: v.string(),
+    
+    /**
+     * Date when the inspection was conducted (milliseconds since epoch).
+     */
+    inspectionDate: v.number(),
+    
+    /**
+     * Detailed remarks, findings, or notes from the inspection.
+     * Can include multiple paragraphs and observations.
+     */
+    remarks: v.string(),
+    
+    /**
+     * Current status of the inspection.
+     * - completed: Inspection finished and documented
+     * - in_progress: Inspection ongoing or follow-up needed
+     * - pending: Inspection scheduled but not yet conducted
+     * - cancelled: Inspection was cancelled
+     * @default "pending"
+     */
+    status: v.union(
+      v.literal("completed"),
+      v.literal("in_progress"),
+      v.literal("pending"),
+      v.literal("cancelled")
+    ),
+    
+    /**
+     * View count for engagement tracking.
+     * Incremented each time the inspection details are viewed.
+     */
+    viewCount: v.number(),
+    
+    /**
+     * Upload session containing all images from this inspection.
+     * Links to uploadSessions table where images are grouped together.
+     */
+    uploadSessionId: v.optional(v.id("uploadSessions")),
+    
+    /**
+     * User who created/conducted this inspection.
+     */
+    createdBy: v.id("users"),
+    
+    /**
+     * Timestamp when the inspection record was created (milliseconds since epoch).
+     */
+    createdAt: v.number(),
+    
+    /**
+     * Timestamp when the inspection record was last updated (milliseconds since epoch).
+     */
+    updatedAt: v.number(),
+    
+    /**
+     * Optional: User who last updated this inspection record.
+     */
+    updatedBy: v.optional(v.id("users")),
+    
+    /**
+     * Optional: Additional metadata (JSON string for flexible data).
+     * Can store things like weather conditions, attendees, equipment used, etc.
+     */
+    metadata: v.optional(v.string()),
+  })
+    .index("projectId", ["projectId"])
+    .index("budgetItemId", ["budgetItemId"])
+    .index("status", ["status"])
+    .index("category", ["category"])
+    .index("inspectionDate", ["inspectionDate"])
+    .index("createdBy", ["createdBy"])
+    .index("createdAt", ["createdAt"])
+    .index("programNumber", ["programNumber"])
+    .index("projectAndStatus", ["projectId", "status"])
+    .index("projectAndDate", ["projectId", "inspectionDate"])
+    .index("categoryAndStatus", ["category", "status"]),
+
   numbers: defineTable({
     value: v.number(),
   }),
