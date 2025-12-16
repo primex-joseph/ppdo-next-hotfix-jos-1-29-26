@@ -6,6 +6,9 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { BudgetTrackingTable } from "./components/BudgetTrackingTable";
 import { Id } from "@/convex/_generated/dataModel";
+import { Expand, X } from 'lucide-react';
+import { useState } from 'react';
+import MainSheet from './components/MainSheet';
 
 interface BudgetItemFromDB {
   _id: Id<"budgetItems">;
@@ -41,6 +44,7 @@ export default function BudgetTrackingPage() {
   const createBudgetItem = useMutation(api.budgetItems.create);
   const updateBudgetItem = useMutation(api.budgetItems.update);
   const deleteBudgetItem = useMutation(api.budgetItems.remove);
+  const [isExpandModalOpen, setIsExpandModalOpen] = useState(false);
 
   // Transform database items to UI format
   const budgetData: BudgetItemForUI[] =
@@ -111,6 +115,11 @@ export default function BudgetTrackingPage() {
           : "Failed to delete budget item"
       );
     }
+  };
+
+  const handleExpand = () => {
+    console.log("Expand button clicked");
+    setIsExpandModalOpen(true);
   };
 
   if (budgetItemsFromDB === undefined || statistics === undefined) {
@@ -197,8 +206,38 @@ export default function BudgetTrackingPage() {
           onAdd={handleAdd}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          expandButton={
+            <button
+              onClick={handleExpand}
+              className="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-zinc-700 dark:text-zinc-300 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+            >
+              <Expand className="w-4 h-4" />
+            </button>
+          }
         />
       </div>
+
+      {/* Full Screen Modal with Overlay */}
+      {isExpandModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+          {/* Modal Container with Margin */}
+          <div className="relative w-full h-full max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)] bg-white dark:bg-zinc-900 rounded-xl shadow-2xl overflow-hidden">
+            {/* Close Button */}
+            <button
+              onClick={() => setIsExpandModalOpen(false)}
+              className="absolute top-4 right-4 z-50 p-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors shadow-lg"
+              title="Close"
+            >
+              <X className="w-6 h-6 text-zinc-700 dark:text-zinc-300" />
+            </button>
+
+            {/* MainSheet Component */}
+            <div className="w-full h-full">
+              <MainSheet />
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

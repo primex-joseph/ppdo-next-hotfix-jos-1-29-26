@@ -1,3 +1,5 @@
+// app/dashboard/page.tsx
+
 "use client";
 
 import { useConvexAuth, useMutation, useQuery } from "convex/react";

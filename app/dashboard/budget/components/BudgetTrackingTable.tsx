@@ -15,6 +15,7 @@ interface BudgetTrackingTableProps {
   onAdd?: (item: Omit<BudgetItem, "id" | "utilizationRate">) => void;
   onEdit?: (id: string, item: Omit<BudgetItem, "id" | "utilizationRate">) => void;
   onDelete?: (id: string) => void;
+  expandButton?: React.ReactNode;
 }
 
 export function BudgetTrackingTable({
@@ -22,6 +23,7 @@ export function BudgetTrackingTable({
   onAdd,
   onEdit,
   onDelete,
+  expandButton,
 }: BudgetTrackingTableProps) {
   const { accentColorValue } = useAccentColor();
   const router = useRouter();
@@ -157,6 +159,7 @@ export function BudgetTrackingTable({
             Budget Items
           </h3>
           <div className="flex items-center gap-2">
+            {expandButton}
             <button
               onClick={handlePrint}
               className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-md bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600"
