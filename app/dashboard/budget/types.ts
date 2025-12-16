@@ -9,6 +9,9 @@ export interface BudgetItem {
   projectCompleted: number;
   projectDelayed: number;
   projectsOnTrack: number;
+  year?: number;
+  status?: "done" | "pending" | "ongoing";
+  targetDateCompletion?: number;
 }
 
 export interface Project {

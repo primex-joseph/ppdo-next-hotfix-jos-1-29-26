@@ -18,6 +18,27 @@ export const budgetTables = {
     projectsOnTrack: v.number(),
     
     /**
+     * Year for this budget item (optional)
+     */
+    year: v.optional(v.number()),
+    
+    /**
+     * Status of the budget item (optional)
+     */
+    status: v.optional(
+      v.union(
+        v.literal("done"),
+        v.literal("pending"),
+        v.literal("ongoing")
+      )
+    ),
+    
+    /**
+     * Target date for completion (optional, timestamp)
+     */
+    targetDateCompletion: v.optional(v.number()),
+    
+    /**
      * Department responsible for this budget item
      */
     departmentId: v.optional(v.id("departments")),
@@ -39,7 +60,10 @@ export const budgetTables = {
     .index("particulars", ["particulars"])
     .index("departmentId", ["departmentId"])
     .index("fiscalYear", ["fiscalYear"])
-    .index("departmentAndYear", ["departmentId", "fiscalYear"]),
+    .index("departmentAndYear", ["departmentId", "fiscalYear"])
+    .index("year", ["year"])
+    .index("status", ["status"])
+    .index("yearAndStatus", ["year", "status"]),
 
   /**
    * Obligations.

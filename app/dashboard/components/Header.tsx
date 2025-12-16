@@ -153,7 +153,7 @@ export function Header({ onSearchChange, searchQuery }: HeaderProps) {
             <div className="relative">
               <button
                 onClick={() => setShowEmails(!showEmails)}
-                className="relative p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+                className="hidden relative p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
                 title="Email"
               >
                 <svg
@@ -189,7 +189,7 @@ export function Header({ onSearchChange, searchQuery }: HeaderProps) {
               {showEmails && (
                 <>
                   <div
-                    className="fixed inset-0 z-10"
+                    className="hidden fixed inset-0 z-10"
                     onClick={() => setShowEmails(false)}
                   />
                   <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-2xl z-20 max-h-[600px] overflow-hidden flex flex-col">
@@ -328,7 +328,7 @@ export function Header({ onSearchChange, searchQuery }: HeaderProps) {
             </div>
 
             {/* Notification Bell */}
-            <div className="relative">
+            <div className="relative hidden">
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="relative p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"

@@ -77,6 +77,15 @@ export const create = mutation({
     projectDelayed: v.number(),
     projectsOnTrack: v.number(),
     notes: v.optional(v.string()),
+    year: v.optional(v.number()),
+    status: v.optional(
+      v.union(
+        v.literal("done"),
+        v.literal("pending"),
+        v.literal("ongoing")
+      )
+    ),
+    targetDateCompletion: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -102,7 +111,7 @@ export const create = mutation({
 
     const now = Date.now();
 
-    const budgetItemId = await ctx.db.insert("budgetItems", {
+    const budgetItemData: any = {
       particulars: args.particulars,
       totalBudgetAllocated: args.totalBudgetAllocated,
       totalBudgetUtilized: args.totalBudgetUtilized,
@@ -110,12 +119,19 @@ export const create = mutation({
       projectCompleted: args.projectCompleted,
       projectDelayed: args.projectDelayed,
       projectsOnTrack: args.projectsOnTrack,
-      notes: args.notes,
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
       updatedBy: userId,
-    });
+    };
+
+    // Only add optional fields if they have values
+    if (args.notes !== undefined) budgetItemData.notes = args.notes;
+    if (args.year !== undefined) budgetItemData.year = args.year;
+    if (args.status !== undefined) budgetItemData.status = args.status;
+    if (args.targetDateCompletion !== undefined) budgetItemData.targetDateCompletion = args.targetDateCompletion;
+
+    const budgetItemId = await ctx.db.insert("budgetItems", budgetItemData);
 
     return budgetItemId;
   },
@@ -133,6 +149,15 @@ export const update = mutation({
     projectDelayed: v.number(),
     projectsOnTrack: v.number(),
     notes: v.optional(v.string()),
+    year: v.optional(v.number()),
+    status: v.optional(
+      v.union(
+        v.literal("done"),
+        v.literal("pending"),
+        v.literal("ongoing")
+      )
+    ),
+    targetDateCompletion: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -153,17 +178,24 @@ export const update = mutation({
 
     const now = Date.now();
 
-    await ctx.db.patch(args.id, {
+    const updateData: any = {
       totalBudgetAllocated: args.totalBudgetAllocated,
       totalBudgetUtilized: args.totalBudgetUtilized,
       utilizationRate: utilizationRate,
       projectCompleted: args.projectCompleted,
       projectDelayed: args.projectDelayed,
       projectsOnTrack: args.projectsOnTrack,
-      notes: args.notes,
       updatedBy: userId,
       updatedAt: now,
-    });
+    };
+
+    // Only add optional fields if they have values
+    if (args.notes !== undefined) updateData.notes = args.notes;
+    if (args.year !== undefined) updateData.year = args.year;
+    if (args.status !== undefined) updateData.status = args.status;
+    if (args.targetDateCompletion !== undefined) updateData.targetDateCompletion = args.targetDateCompletion;
+
+    await ctx.db.patch(args.id, updateData);
 
     return args.id;
   },

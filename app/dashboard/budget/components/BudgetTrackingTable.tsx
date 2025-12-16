@@ -76,6 +76,22 @@ export function BudgetTrackingTable({
     return "text-zinc-600 dark:text-zinc-400";
   };
 
+  const getStatusColor = (status?: "done" | "pending" | "ongoing"): string => {
+    if (!status) return "text-zinc-600 dark:text-zinc-400";
+    if (status === "done") return "text-green-600 dark:text-green-400";
+    if (status === "ongoing") return "text-blue-600 dark:text-blue-400";
+    return "text-orange-600 dark:text-orange-400"; // pending
+  };
+
+  const formatDate = (timestamp?: number): string => {
+    if (!timestamp) return "-";
+    return new Date(timestamp).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  };
+
   // Calculate totals
   const totals = budgetItems.reduce(
     (acc, item) => ({
@@ -265,6 +281,21 @@ export function BudgetTrackingTable({
                     PARTICULARS
                   </span>
                 </th>
+                <th className="px-4 sm:px-6 py-4 text-center sticky top-0 bg-zinc-50 dark:bg-zinc-950 z-10">
+                  <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
+                    YEAR
+                  </span>
+                </th>
+                <th className="px-4 sm:px-6 py-4 text-center sticky top-0 bg-zinc-50 dark:bg-zinc-950 z-10">
+                  <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
+                    STATUS
+                  </span>
+                </th>
+                <th className="px-4 sm:px-6 py-4 text-center sticky top-0 bg-zinc-50 dark:bg-zinc-950 z-10">
+                  <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
+                    TARGET DATE
+                  </span>
+                </th>
                 <th className="px-4 sm:px-6 py-4 text-right sticky top-0 bg-zinc-50 dark:bg-zinc-950 z-10">
                   <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
                     TOTAL BUDGET ALLOCATED
@@ -390,6 +421,21 @@ export function BudgetTrackingTable({
                           {item.particular}
                         </span>
                       </td>
+                      <td className="px-4 sm:px-6 py-4 text-center">
+                        <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                          {item.year || "-"}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-center">
+                        <span className={`text-sm font-medium ${getStatusColor(item.status)}`}>
+                          {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : "-"}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4 text-center">
+                        <span className="text-sm text-zinc-700 dark:text-zinc-300">
+                          {formatDate(item.targetDateCompletion)}
+                        </span>
+                      </td>
                       <td className="px-4 sm:px-6 py-4 text-right">
                         <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                           {item.totalBudgetAllocated}
@@ -446,6 +492,7 @@ export function BudgetTrackingTable({
                         TOTAL
                       </span>
                     </td>
+                    <td className="px-4 sm:px-6 py-4" colSpan={3}></td>
                     <td className="px-4 sm:px-6 py-4 text-right">
                       <span
                         className="text-sm"
@@ -507,7 +554,7 @@ export function BudgetTrackingTable({
               ) : (
                 <tr>
                   <td
-                    colSpan={onEdit || onDelete ? 8 : 7}
+                    colSpan={onEdit || onDelete ? 11 : 10}
                     className="px-4 sm:px-6 py-12 text-center"
                   >
                     <p className="text-sm text-zinc-500 dark:text-zinc-400">
