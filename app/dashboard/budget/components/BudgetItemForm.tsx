@@ -2,6 +2,7 @@
 
 "use client";
 
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -51,11 +52,25 @@ const BUDGET_PARTICULARS = [
   "20% DF",
 ] as const;
 
+const FORM_STORAGE_KEY = "budget_item_form_draft";
+
+// Custom validation for no whitespace
+const noWhitespaceString = z
+  .string()
+  .min(1, { message: "This field is required." })
+  .refine((val) => val.trim().length > 0, {
+    message: "Whitespace only is not allowed.",
+  })
+  .refine((val) => val === val.trim(), {
+    message: "Leading or trailing whitespace is not allowed.",
+  })
+  .refine((val) => !/\s/.test(val), {
+    message: "Whitespace is not allowed.",
+  });
+
 // Define the form schema with Zod
 const budgetItemSchema = z.object({
-  particular: z.string().min(1, {
-    message: "Please select a particular.",
-  }),
+  particular: noWhitespaceString,
   totalBudgetAllocated: z.number().min(0, {
     message: "Must be 0 or greater.",
   }),
@@ -103,10 +118,27 @@ export function BudgetItemForm({
 }: BudgetItemFormProps) {
   const { accentColorValue } = useAccentColor();
 
+  // Load saved draft from localStorage (only for new items)
+  const getSavedDraft = () => {
+    if (item) return null; // Don't load draft when editing
+    
+    try {
+      const saved = localStorage.getItem(FORM_STORAGE_KEY);
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (error) {
+      console.error("Error loading form draft:", error);
+    }
+    return null;
+  };
+
+  const savedDraft = getSavedDraft();
+
   // Define the form
   const form = useForm<BudgetItemFormValues>({
     resolver: zodResolver(budgetItemSchema),
-    defaultValues: {
+    defaultValues: savedDraft || {
       particular: item?.particular || "",
       totalBudgetAllocated: item?.totalBudgetAllocated || 0,
       totalBudgetUtilized: item?.totalBudgetUtilized || 0,
@@ -115,6 +147,24 @@ export function BudgetItemForm({
       projectsOnTrack: item?.projectsOnTrack || 0,
     },
   });
+
+  // Watch all form values for auto-save
+  const formValues = form.watch();
+
+  // Auto-save draft to localStorage (only for new items)
+  useEffect(() => {
+    if (!item) { // Only save draft when creating new item
+      const timer = setTimeout(() => {
+        try {
+          localStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formValues));
+        } catch (error) {
+          console.error("Error saving form draft:", error);
+        }
+      }, 500); // Debounce for 500ms
+
+      return () => clearTimeout(timer);
+    }
+  }, [formValues, item]);
 
   // Watch values for utilization rate calculation
   const totalBudgetAllocated = form.watch("totalBudgetAllocated");
@@ -128,8 +178,28 @@ export function BudgetItemForm({
 
   // Define submit handler
   function onSubmit(values: BudgetItemFormValues) {
+    // Clear draft on successful submit
+    if (!item) {
+      try {
+        localStorage.removeItem(FORM_STORAGE_KEY);
+      } catch (error) {
+        console.error("Error clearing form draft:", error);
+      }
+    }
     onSave(values);
   }
+
+  // Handle cancel - clear draft if creating new item
+  const handleCancel = () => {
+    if (!item) {
+      try {
+        localStorage.removeItem(FORM_STORAGE_KEY);
+      } catch (error) {
+        console.error("Error clearing form draft:", error);
+      }
+    }
+    onCancel();
+  };
 
   return (
     <Form {...form}>
@@ -182,13 +252,19 @@ export function BudgetItemForm({
                 </FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
                     placeholder="0"
                     min="0"
                     step="0.01"
                     className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      field.onChange(parseFloat(value) || 0);
+                    }}
+                    onBlur={(e) => {
+                      e.target.value = e.target.value.trim();
+                      field.onBlur();
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -206,13 +282,19 @@ export function BudgetItemForm({
                 </FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
                     placeholder="0"
                     min="0"
                     step="0.01"
                     className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      field.onChange(parseFloat(value) || 0);
+                    }}
+                    onBlur={(e) => {
+                      e.target.value = e.target.value.trim();
+                      field.onBlur();
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -250,14 +332,20 @@ export function BudgetItemForm({
                 </FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
                     placeholder="0"
                     min="0"
                     max="100"
                     step="0.1"
                     className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      field.onChange(parseFloat(value) || 0);
+                    }}
+                    onBlur={(e) => {
+                      e.target.value = e.target.value.trim();
+                      field.onBlur();
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -275,14 +363,20 @@ export function BudgetItemForm({
                 </FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
                     placeholder="0"
                     min="0"
                     max="100"
                     step="0.1"
                     className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      field.onChange(parseFloat(value) || 0);
+                    }}
+                    onBlur={(e) => {
+                      e.target.value = e.target.value.trim();
+                      field.onBlur();
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -300,14 +394,20 @@ export function BudgetItemForm({
                 </FormLabel>
                 <FormControl>
                   <Input
-                    type="number"
                     placeholder="0"
                     min="0"
                     max="100"
                     step="0.1"
                     className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
                     {...field}
-                    onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => {
+                      const value = e.target.value.trim();
+                      field.onChange(parseFloat(value) || 0);
+                    }}
+                    onBlur={(e) => {
+                      e.target.value = e.target.value.trim();
+                      field.onBlur();
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -320,7 +420,7 @@ export function BudgetItemForm({
         <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
           <Button
             type="button"
-            onClick={onCancel}
+            onClick={handleCancel}
             variant="ghost"
             className="text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
           >

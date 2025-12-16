@@ -33,6 +33,24 @@ export function BudgetTrackingTable({
   const [selectedItem, setSelectedItem] = useState<BudgetItem | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const menuRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const [hasDraft, setHasDraft] = useState(false);
+
+  useEffect(() => {
+    // Check if there's a saved draft
+    const checkDraft = () => {
+      try {
+        const saved = localStorage.getItem("budget_item_form_draft");
+        setHasDraft(!!saved);
+      } catch (error) {
+        setHasDraft(false);
+      }
+    };
+    
+    checkDraft();
+    // Check periodically while modal is open
+    const interval = setInterval(checkDraft, 1000);
+    return () => clearInterval(interval);
+  }, [showAddModal]);
 
   const getUtilizationColor = (rate: number): string => {
     if (rate >= 80) return "text-red-600 dark:text-red-400";
@@ -462,6 +480,7 @@ export function BudgetTrackingTable({
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
           title="Add Budget Item"
+          subtitle={hasDraft ? "Drafts saved" : undefined}
           size="lg"
         >
           <BudgetItemForm

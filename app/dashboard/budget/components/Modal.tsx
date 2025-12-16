@@ -8,6 +8,7 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
+  subtitle?: string;
   children: ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
 }
@@ -16,6 +17,7 @@ export function Modal({
   isOpen,
   onClose,
   title,
+  subtitle,
   children,
   size = "md",
 }: ModalProps) {
@@ -38,12 +40,19 @@ export function Modal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 sm:p-6 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-semibold text-zinc-900 dark:text-zinc-100">
-            {title}
-          </h2>
+          <div className="flex-1">
+            <h2 className="text-lg sm:text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+              {title}
+            </h2>
+            {subtitle && (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+                {subtitle}
+              </p>
+            )}
+          </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors ml-4"
             aria-label="Close modal"
           >
             <svg
