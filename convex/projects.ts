@@ -23,9 +23,23 @@ export const getProjectsByBudgetItem = query({
       .order("desc")
       .collect();
 
+    // Sort: pinned items first (by pinnedAt desc), then unpinned items
+    const sortedProjects = projects.sort((a, b) => {
+      // Both pinned - sort by pinnedAt (most recent first)
+      if (a.isPinned && b.isPinned) {
+        return (b.pinnedAt || 0) - (a.pinnedAt || 0);
+      }
+      // Only a is pinned
+      if (a.isPinned) return -1;
+      // Only b is pinned
+      if (b.isPinned) return 1;
+      // Neither pinned - sort by creation time
+      return b._creationTime - a._creationTime;
+    });
+
     // Enrich with department information
     const projectsWithDepartments = await Promise.all(
-      projects.map(async (project) => {
+      sortedProjects.map(async (project) => {
         const department = await ctx.db.get(project.departmentId);
         return {
           ...project,
@@ -179,6 +193,7 @@ export const create = mutation({
       remarks: args.remarks,
       budgetItemId: args.budgetItemId,
       projectManagerId: args.projectManagerId,
+      isPinned: false,
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
@@ -286,6 +301,66 @@ export const remove = mutation({
 
     await ctx.db.delete(args.id);
     return args.id;
+  },
+});
+
+/**
+ * Pin a project to the top of the list
+ */
+export const pin = mutation({
+  args: {
+    id: v.id("projects"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      throw new Error("Not authenticated");
+    }
+
+    const project = await ctx.db.get(args.id);
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    await ctx.db.patch(args.id, {
+      isPinned: true,
+      pinnedAt: Date.now(),
+      pinnedBy: userId,
+      updatedAt: Date.now(),
+      updatedBy: userId,
+    });
+
+    return { success: true };
+  },
+});
+
+/**
+ * Unpin a project
+ */
+export const unpin = mutation({
+  args: {
+    id: v.id("projects"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      throw new Error("Not authenticated");
+    }
+
+    const project = await ctx.db.get(args.id);
+    if (!project) {
+      throw new Error("Project not found");
+    }
+
+    await ctx.db.patch(args.id, {
+      isPinned: false,
+      pinnedAt: undefined,
+      pinnedBy: undefined,
+      updatedAt: Date.now(),
+      updatedBy: userId,
+    });
+
+    return { success: true };
   },
 });
 

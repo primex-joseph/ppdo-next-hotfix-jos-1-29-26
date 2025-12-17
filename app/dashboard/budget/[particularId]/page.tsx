@@ -10,6 +10,7 @@ import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { ProjectsTable } from "./components/ProjectsTable";
 import { useAccentColor } from "../../contexts/AccentColorContext";
+import { toast } from "sonner";
 
 // Helper function to get full name from particular ID
 const getParticularFullName = (particular: string): string => {
@@ -64,7 +65,7 @@ export default function ParticularProjectsPage() {
       );
       
       if (!department) {
-        alert("Please select a valid department/implementing office.");
+        toast.error("Please select a valid department/implementing office.");
         return;
       }
 
@@ -91,9 +92,15 @@ export default function ParticularProjectsPage() {
         remarks: projectData.remarks || undefined,
         budgetItemId: budgetItem?._id,
       });
+
+      toast.success("Project created successfully!", {
+        description: `"${projectData.projectName}" has been added.`,
+      });
     } catch (error) {
       console.error("Error creating project:", error);
-      alert("Failed to create project. Please try again.");
+      toast.error("Failed to create project", {
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
     }
   };
 
@@ -105,7 +112,7 @@ export default function ParticularProjectsPage() {
       );
       
       if (!department) {
-        alert("Please select a valid department/implementing office.");
+        toast.error("Please select a valid department/implementing office.");
         return;
       }
 
@@ -133,18 +140,27 @@ export default function ParticularProjectsPage() {
         remarks: projectData.remarks || undefined,
         budgetItemId: budgetItem?._id,
       });
+
+      toast.success("Project updated successfully!", {
+        description: `"${projectData.projectName}" has been updated.`,
+      });
     } catch (error) {
       console.error("Error updating project:", error);
-      alert("Failed to update project. Please try again.");
+      toast.error("Failed to update project", {
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
     }
   };
 
   const handleDeleteProject = async (id: string) => {
     try {
       await deleteProject({ id: id as Id<"projects"> });
+      toast.success("Project deleted successfully!");
     } catch (error) {
       console.error("Error deleting project:", error);
-      alert("Failed to delete project. Please try again.");
+      toast.error("Failed to delete project", {
+        description: error instanceof Error ? error.message : "Please try again.",
+      });
     }
   };
 
@@ -168,6 +184,10 @@ export default function ParticularProjectsPage() {
     projectAccomplishment: project.projectAccomplishment,
     status: project.status,
     remarks: project.remarks ?? "",
+    // Add pin fields
+    isPinned: project.isPinned,
+    pinnedAt: project.pinnedAt,
+    pinnedBy: project.pinnedBy,
   })) ?? [];
 
   // Calculate summary statistics

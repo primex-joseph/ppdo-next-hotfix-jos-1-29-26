@@ -59,9 +59,14 @@ export interface Project {
   balance: number;
   dateStarted: string; // ISO date string for frontend
   completionDate: string; // ISO date string for frontend
+  expectedCompletionDate?: string; // ISO date string for frontend
   projectAccomplishment: number;
   status?: "on_track" | "delayed" | "completed" | "cancelled" | "on_hold";
   remarks: string;
+  // Pin fields
+  isPinned?: boolean;
+  pinnedAt?: number;
+  pinnedBy?: string;
 }
 
 export const BUDGET_PARTICULARS = [

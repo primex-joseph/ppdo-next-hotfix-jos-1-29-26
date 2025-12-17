@@ -6,7 +6,7 @@ import { v } from "convex/values";
 export const projectTables = {
   /**
    * Projects.
-   * Enhanced with department relationship.
+   * Enhanced with department relationship and pin functionality.
    */
   projects: defineTable({
     projectName: v.string(),
@@ -42,6 +42,21 @@ export const projectTables = {
      */
     projectManagerId: v.optional(v.id("users")),
     
+    /**
+     * Whether this project is pinned
+     */
+    isPinned: v.optional(v.boolean()),
+    
+    /**
+     * Timestamp when pinned
+     */
+    pinnedAt: v.optional(v.number()),
+    
+    /**
+     * User who pinned this project
+     */
+    pinnedBy: v.optional(v.id("users")),
+    
     createdBy: v.id("users"),
     createdAt: v.number(),
     updatedAt: v.number(),
@@ -57,7 +72,9 @@ export const projectTables = {
     .index("budgetItemId", ["budgetItemId"])
     .index("projectManagerId", ["projectManagerId"])
     .index("statusAndDepartment", ["status", "departmentId"])
-    .index("departmentAndStatus", ["departmentId", "status"]),
+    .index("departmentAndStatus", ["departmentId", "status"])
+    .index("isPinned", ["isPinned"])
+    .index("pinnedAt", ["pinnedAt"]),
 
   /**
    * Remarks.

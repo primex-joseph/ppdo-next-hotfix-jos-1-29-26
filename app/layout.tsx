@@ -45,8 +45,7 @@ export default function RootLayout({
         >
           <ConvexClientProvider>
             <ThemeProvider>
-              
-        <AccentColorProvider>
+             <AccentColorProvider>
                 {children}
                 </AccentColorProvider>
               <Toaster />
