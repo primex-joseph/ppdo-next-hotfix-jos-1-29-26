@@ -1,3 +1,5 @@
+// app/dashboard/budget/[particularId]/[projectbreakdownId]/page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -13,6 +15,7 @@ import { BreakdownForm } from "./components/BreakdownForm";
 import { Modal } from "../../components/Modal";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { toast } from "sonner";
+import { ActivityLogSheet } from "../../../components/ActivityLogSheet"; // Imported the new sheet
 import {
   Accordion,
   AccordionContent,
@@ -81,11 +84,9 @@ export default function ProjectBreakdownPage() {
   const params = useParams();
   const { accentColorValue } = useAccentColor();
   const { setCustomBreadcrumbs } = useBreadcrumb();
-  
   const particularId = decodeURIComponent(params.particularId as string);
   const slugWithId = params.projectbreakdownId as string;
   const projectId = extractProjectId(slugWithId);
-
   // Modal states
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -97,18 +98,15 @@ export default function ProjectBreakdownPage() {
     api.projects.get,
     projectId ? { id: projectId as Id<"projects"> } : "skip"
   );
-
   // Get all breakdowns for this project using the new backend
   const breakdownHistory = useQuery(
     api.govtProjects.getProjectBreakdowns,
     project ? { projectName: project.projectName } : "skip"
   );
-
   // Fetch departments for the form
   const departments = useQuery(api.departments.list, { includeInactive: false });
 
   const particularFullName = getParticularFullName(particularId);
-
   // Set custom breadcrumbs when project data is loaded
   useEffect(() => {
     if (project) {
@@ -124,15 +122,14 @@ export default function ProjectBreakdownPage() {
       setCustomBreadcrumbs(null);
     };
   }, [project, particularFullName, particularId, setCustomBreadcrumbs]);
-
   // Mutations - using new backend functions
   const createBreakdown = useMutation(api.govtProjects.createProjectBreakdown);
   const updateBreakdown = useMutation(api.govtProjects.updateProjectBreakdown);
   const deleteBreakdown = useMutation(api.govtProjects.deleteProjectBreakdown);
-
   // Calculate statistics from breakdown history
   const stats = breakdownHistory
-    ? {
+    ?
+    {
         totalReports: breakdownHistory.length,
         latestReport: breakdownHistory[breakdownHistory.length - 1],
         earliestReport: breakdownHistory[0],
@@ -159,7 +156,6 @@ export default function ProjectBreakdownPage() {
         ).size,
       }
     : null;
-
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
@@ -181,7 +177,6 @@ export default function ProjectBreakdownPage() {
   const handlePrint = () => {
     window.print();
   };
-
   const handleAdd = async (breakdownData: Omit<Breakdown, "_id">) => {
     try {
       if (!project) {
@@ -210,8 +205,8 @@ export default function ProjectBreakdownPage() {
         reportDate: breakdownData.reportDate || Date.now(),
         batchId: breakdownData.batchId,
         fundSource: breakdownData.fundSource,
+        reason: "Created via dashboard form", // Add audit reason
       });
-
       toast.success("Breakdown record created successfully!");
       setShowAddModal(false);
     } catch (error) {
@@ -226,7 +221,6 @@ export default function ProjectBreakdownPage() {
     setSelectedBreakdown(breakdown);
     setShowEditModal(true);
   };
-
   const handleUpdate = async (breakdownData: Omit<Breakdown, "_id">) => {
     try {
       if (!selectedBreakdown) {
@@ -253,8 +247,8 @@ export default function ProjectBreakdownPage() {
         district: breakdownData.district,
         municipality: breakdownData.municipality,
         barangay: breakdownData.barangay,
+        reason: "Updated via dashboard edit form", // Add audit reason
       });
-
       toast.success("Breakdown record updated successfully!");
       setShowEditModal(false);
       setSelectedBreakdown(null);
@@ -273,7 +267,6 @@ export default function ProjectBreakdownPage() {
       setShowDeleteModal(true);
     }
   };
-
   const handleConfirmDelete = async () => {
     try {
       if (!selectedBreakdown) {
@@ -283,8 +276,8 @@ export default function ProjectBreakdownPage() {
 
       await deleteBreakdown({
         breakdownId: selectedBreakdown._id as Id<"govtProjectBreakdowns">,
+        reason: "Deleted via dashboard confirmation", // Add audit reason
       });
-
       toast.success("Breakdown record deleted successfully!");
       setShowDeleteModal(false);
       setSelectedBreakdown(null);
@@ -298,37 +291,50 @@ export default function ProjectBreakdownPage() {
 
   return (
     <>
-      {/* Back Button and Page Header */}
-      <div className="mb-6 no-print">
-        <Link
-          href={`/dashboard/budget/${encodeURIComponent(particularId)}`}
-          className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 mb-4 transition-colors"
-        >
-          <svg
-            className="w-4 h-4"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      {/* Header with Activity Log Trigger */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6 no-print">
+        <div>
+          <Link
+            href={`/dashboard/budget/${encodeURIComponent(particularId)}`}
+            className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 mb-4 transition-colors"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Back to Projects
-        </Link>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+            Back to Projects
+          </Link>
 
-        <h1
-          className="text-3xl sm:text-4xl font-semibold text-zinc-900 dark:text-zinc-100 mb-1"
-          style={{ fontFamily: "var(--font-cinzel), serif" }}
-        >
-          {project?.projectName || "Loading..."}
-        </h1>
-        <p className="text-zinc-600 dark:text-zinc-400">
-          Historical breakdown and progress tracking
-        </p>
+          <h1
+            className="text-3xl sm:text-4xl font-semibold text-zinc-900 dark:text-zinc-100 mb-1"
+            style={{ fontFamily: "var(--font-cinzel), serif" }}
+          >
+            {project?.projectName || "Loading..."}
+          </h1>
+          <p className="text-zinc-600 dark:text-zinc-400">
+            Historical breakdown and progress tracking
+          </p>
+        </div>
+
+        {/* Activity Log Sheet Trigger */}
+        <div className="mt-2 sm:mt-0">
+          {project && (
+            <ActivityLogSheet 
+              projectName={project.projectName}
+              // Optionally pass implementingOffice if this page view is specific to one office
+              // implementingOffice={project.departmentName}
+            />
+          )}
+        </div>
       </div>
 
       {/* Project Overview Cards */}
@@ -518,8 +524,7 @@ export default function ProjectBreakdownPage() {
           <BreakdownForm
             defaultProjectName={project.projectName}
             defaultImplementingOffice={
-              departments.find(d => d._id === project.departmentId)?.name || 
-              project.departmentName
+              departments.find(d => d._id === project.departmentId)?.name || project.departmentName
             }
             onSave={handleAdd}
             onCancel={() => setShowAddModal(false)}
