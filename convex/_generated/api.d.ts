@@ -49,7 +49,9 @@ import type * as schema_passwordReset from "../schema/passwordReset.js";
 import type * as schema_permissions from "../schema/permissions.js";
 import type * as schema_projects from "../schema/projects.js";
 import type * as schema_security from "../schema/security.js";
+import type * as schema_tableSettings from "../schema/tableSettings.js";
 import type * as schema_users from "../schema/users.js";
+import type * as tableSettings from "../tableSettings.js";
 
 import type {
   ApiFromModules,
@@ -99,7 +101,9 @@ declare const fullApi: ApiFromModules<{
   "schema/permissions": typeof schema_permissions;
   "schema/projects": typeof schema_projects;
   "schema/security": typeof schema_security;
+  "schema/tableSettings": typeof schema_tableSettings;
   "schema/users": typeof schema_users;
+  tableSettings: typeof tableSettings;
 }>;
 
 /**

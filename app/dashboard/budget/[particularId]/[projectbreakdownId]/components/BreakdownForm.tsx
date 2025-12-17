@@ -27,6 +27,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { api } from "@/convex/_generated/api";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ChevronDown, MapPin, FileText } from "lucide-react";
 
 // Define the form schema with Zod - matching new backend schema
 const breakdownSchema = z.object({
@@ -151,63 +158,63 @@ export function BreakdownForm({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Section 1: Basic Information */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-            Basic Information
-          </h3>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-1 rounded-full" style={{ backgroundColor: accentColorValue }} />
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Basic Information
+            </h3>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="hidden">
-            {/* Project Name */}
+              <FormField
+                name="projectName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-zinc-700 dark:text-zinc-300">
+                      Project Name <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., Construction of"
+                        className="bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                        {...field}
+                        readOnly
+                        disabled
+                      />
+                    </FormControl>
+                    <FormDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                      Linked to current project
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* Project Title */}
             <FormField
-              name="projectName"
+              name="projectTitle"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                    Project Name <span className="text-red-500">*</span>
+                    Project Name
                   </FormLabel>
                   <FormControl>
                     <Input
-                      placeholder="e.g., Construction of"
-                      className="bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                      placeholder="e.g., Multi-Purpose Building in Barangay San Jose"
+                      className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
                       {...field}
-                      readOnly
-                      disabled
+                      value={field.value || ""}
                     />
                   </FormControl>
                   <FormDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
-                    Linked to current project
+                    Detailed description of the project
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            </div>
-
-            
-
-          {/* Project Title */}
-          <FormField
-            name="projectTitle"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                  Project Name
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="e.g., Multi-Purpose Building in Barangay San Jose"
-                    className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
-                    {...field}
-                    value={field.value || ""}
-                  />
-                </FormControl>
-                <FormDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
-                  Detailed description of the project
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
 
             {/* Implementing Office */}
             <FormField
@@ -253,9 +260,12 @@ export function BreakdownForm({
 
         {/* Section 2: Financial Information */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-            Financial Information
-          </h3>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-1 rounded-full" style={{ backgroundColor: accentColorValue }} />
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Financial Information
+            </h3>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Allocated Budget */}
@@ -342,7 +352,6 @@ export function BreakdownForm({
               )}
             />
 
-
             {/* Utilization Rate */}
             <FormField
               name="utilizationRate"
@@ -376,7 +385,6 @@ export function BreakdownForm({
               )}
             />
 
-            
             {/* Balance */}
             <FormField
               name="balance"
@@ -405,7 +413,6 @@ export function BreakdownForm({
             />
 
             {/* Fund Source */}
-            {/* to remove */}
             <FormField
               name="fundSource"
               render={({ field }) => (
@@ -428,13 +435,14 @@ export function BreakdownForm({
           </div>
         </div>
 
-        
-
-        {/* Section 5: Dates */}
+        {/* Section 3: Important Dates */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-            Important Dates
-          </h3>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-1 rounded-full" style={{ backgroundColor: accentColorValue }} />
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Important Dates
+            </h3>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Date Started */}
@@ -502,13 +510,14 @@ export function BreakdownForm({
           </div>
         </div>
 
-        
-
         {/* Section 4: Project Progress */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-            Project Progress
-          </h3>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-1 rounded-full" style={{ backgroundColor: accentColorValue }} />
+            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              Project Progress
+            </h3>
+          </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Project Accomplishment */}
@@ -598,138 +607,166 @@ export function BreakdownForm({
           />
         </div>
 
-        {/* Section 3: Location Information */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-            Location Information
-          </h3>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* District */}
-            <FormField
-              name="district"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                    District
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., First District"
-                      className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
-                      {...field}
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        {/* Accordion for Additional Information */}
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="additional-info" className="border rounded-lg px-4">
+            <AccordionTrigger className="py-4 hover:no-underline">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <ChevronDown className="h-4 w-4 transition-transform duration-200" />
+                  <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    Additional Information
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+                  <MapPin className="h-3 w-3" />
+                  <span>Location</span>
+                  <FileText className="h-3 w-3 ml-2" />
+                  <span>Metadata</span>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pb-4 space-y-6">
+              {/* Location Information */}
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" style={{ color: accentColorValue }} />
+                  <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    Location Information
+                  </h4>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* District */}
+                  <FormField
+                    name="district"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-zinc-700 dark:text-zinc-300">
+                          District
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., First District"
+                            className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            {/* Municipality */}
-            <FormField
-              name="municipality"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                    Municipality
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., Anao"
-                      className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
-                      {...field}
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+                  {/* Municipality */}
+                  <FormField
+                    name="municipality"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-zinc-700 dark:text-zinc-300">
+                          Municipality
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., Anao"
+                            className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            {/* Barangay */}
-            <FormField
-              name="barangay"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                    Barangay
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., San Jose North"
-                      className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
-                      {...field}
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
-        
+                  {/* Barangay */}
+                  <FormField
+                    name="barangay"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-zinc-700 dark:text-zinc-300">
+                          Barangay
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., San Jose North"
+                            className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
 
-        {/* Section 6: Metadata */}
-        <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 border-b border-zinc-200 dark:border-zinc-800 pb-2">
-            Metadata
-          </h3>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Report Date */}
-            <FormField
-              name="reportDate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                    Report Date
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
-                      value={timestampToDate(field.value)}
-                      onChange={(e) => field.onChange(dateToTimestamp(e.target.value))}
-                    />
-                  </FormControl>
-                  <FormDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
-                    Date of this report/record
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+              {/* Metadata */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" style={{ color: accentColorValue }} />
+                  <h4 className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                    Metadata
+                  </h4>
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Report Date */}
+                  <FormField
+                    name="reportDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-zinc-700 dark:text-zinc-300">
+                          Report Date
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                            value={timestampToDate(field.value)}
+                            onChange={(e) => field.onChange(dateToTimestamp(e.target.value))}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                          Date of this report/record
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-            {/* Batch ID */}
-            <FormField
-              name="batchId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                    Batch ID
-                  </FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="e.g., Import_June_2024"
-                      className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
-                      {...field}
-                      value={field.value || ""}
-                    />
-                  </FormControl>
-                  <FormDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
-                    Used to group related import records
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
+                  {/* Batch ID */}
+                  <FormField
+                    name="batchId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-zinc-700 dark:text-zinc-300">
+                          Batch ID
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="e.g., Import_June_2024"
+                            className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                            {...field}
+                            value={field.value || ""}
+                          />
+                        </FormControl>
+                        <FormDescription className="text-zinc-500 dark:text-zinc-400 text-xs">
+                          Used to group related import records
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
 
         {/* Form Actions */}
-        <div className="flex items-center justify-end gap-3 pt-6 border-t border-zinc-200 dark:border-zinc-800">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
           <Button
             type="button"
             onClick={onCancel}

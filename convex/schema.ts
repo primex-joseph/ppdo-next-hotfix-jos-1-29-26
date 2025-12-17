@@ -18,6 +18,7 @@ import { passwordResetTables } from "./schema/passwordReset";
 import { govtProjectBreakdownTables } from "./schema/govtProjectBreakdowns";
 import { aggregationTables } from "./schema/aggregations";
 import { govtProjectBreakdownActivityTables } from "./schema/govtProjectBreakdownActivities"; // <--- ADD THIS
+import { tableSettingsTables } from "./schema/tableSettings";
 
 export default defineSchema({
   ...authTables,
@@ -37,4 +38,5 @@ export default defineSchema({
   ...govtProjectBreakdownTables,
   ...aggregationTables,
   ...govtProjectBreakdownActivityTables,
+  ...tableSettingsTables,
 });

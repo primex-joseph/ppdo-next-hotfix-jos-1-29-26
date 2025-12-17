@@ -23,6 +23,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+// Define the Breakdown type based on your Convex schema
 interface Breakdown {
   _id: string;
   projectName: string;
@@ -122,14 +123,15 @@ export default function ProjectBreakdownPage() {
       setCustomBreadcrumbs(null);
     };
   }, [project, particularFullName, particularId, setCustomBreadcrumbs]);
+  
   // Mutations - using new backend functions
   const createBreakdown = useMutation(api.govtProjects.createProjectBreakdown);
   const updateBreakdown = useMutation(api.govtProjects.updateProjectBreakdown);
   const deleteBreakdown = useMutation(api.govtProjects.deleteProjectBreakdown);
+  
   // Calculate statistics from breakdown history
   const stats = breakdownHistory
-    ?
-    {
+    ? {
         totalReports: breakdownHistory.length,
         latestReport: breakdownHistory[breakdownHistory.length - 1],
         earliestReport: breakdownHistory[0],
@@ -156,6 +158,7 @@ export default function ProjectBreakdownPage() {
         ).size,
       }
     : null;
+    
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat("en-PH", {
       style: "currency",
@@ -177,6 +180,7 @@ export default function ProjectBreakdownPage() {
   const handlePrint = () => {
     window.print();
   };
+  
   const handleAdd = async (breakdownData: Omit<Breakdown, "_id">) => {
     try {
       if (!project) {
@@ -221,6 +225,7 @@ export default function ProjectBreakdownPage() {
     setSelectedBreakdown(breakdown);
     setShowEditModal(true);
   };
+  
   const handleUpdate = async (breakdownData: Omit<Breakdown, "_id">) => {
     try {
       if (!selectedBreakdown) {
@@ -267,6 +272,7 @@ export default function ProjectBreakdownPage() {
       setShowDeleteModal(true);
     }
   };
+  
   const handleConfirmDelete = async () => {
     try {
       if (!selectedBreakdown) {
@@ -288,6 +294,33 @@ export default function ProjectBreakdownPage() {
       });
     }
   };
+
+  // Cast the breakdownHistory to match the expected type
+  const formattedBreakdownHistory: Breakdown[] = breakdownHistory 
+    ? breakdownHistory.map((item: any) => ({
+        _id: item._id,
+        projectName: item.projectName || "",
+        implementingOffice: item.implementingOffice || "",
+        projectTitle: item.projectTitle,
+        allocatedBudget: item.allocatedBudget,
+        obligatedBudget: item.obligatedBudget,
+        budgetUtilized: item.budgetUtilized,
+        utilizationRate: item.utilizationRate,
+        balance: item.balance,
+        dateStarted: item.dateStarted,
+        targetDate: item.targetDate,
+        completionDate: item.completionDate,
+        projectAccomplishment: item.projectAccomplishment,
+        status: item.status,
+        remarks: item.remarks,
+        district: item.district,
+        municipality: item.municipality,
+        barangay: item.barangay,
+        reportDate: item.reportDate,
+        batchId: item.batchId,
+        fundSource: item.fundSource,
+      }))
+    : [];
 
   return (
     <>
@@ -504,7 +537,7 @@ export default function ProjectBreakdownPage() {
           </div>
         ) : (
           <BreakdownHistoryTable
-            breakdowns={breakdownHistory as any}
+            breakdowns={formattedBreakdownHistory}
             onPrint={handlePrint}
             onAdd={() => setShowAddModal(true)}
             onEdit={handleEdit}
