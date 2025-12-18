@@ -41,11 +41,6 @@ export const budgetTables = {
     ),
     
     /**
-     * Target date for completion (optional, timestamp)
-     */
-    targetDateCompletion: v.optional(v.number()),
-    
-    /**
      * Whether this budget item is pinned
      */
     isPinned: v.optional(v.boolean()),

@@ -154,6 +154,7 @@ export function BudgetTrackingTable({
           item.year?.toString().includes(query) ||
           item.status?.toLowerCase().includes(query) ||
           item.totalBudgetAllocated.toString().includes(query) ||
+          (item.obligatedBudget?.toString() || "").includes(query) ||
           item.totalBudgetUtilized.toString().includes(query) ||
           item.utilizationRate.toFixed(1).includes(query) ||
           item.projectCompleted.toFixed(1).includes(query) ||
@@ -223,15 +224,6 @@ export function BudgetTrackingTable({
     if (status === "done") return "text-green-600 dark:text-green-400";
     if (status === "ongoing") return "text-blue-600 dark:text-blue-400";
     return "text-orange-600 dark:text-orange-400";
-  };
-
-  const formatDate = (timestamp?: number): string => {
-    if (!timestamp) return "-";
-    return new Date(timestamp).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
   };
 
   const handleRowClick = (item: BudgetItem, e: React.MouseEvent) => {
@@ -352,6 +344,7 @@ export function BudgetTrackingTable({
   const totals = filteredAndSortedItems.reduce(
     (acc, item) => ({
       totalBudgetAllocated: acc.totalBudgetAllocated + item.totalBudgetAllocated,
+      obligatedBudget: acc.obligatedBudget + (item.obligatedBudget || 0),
       totalBudgetUtilized: acc.totalBudgetUtilized + item.totalBudgetUtilized,
       projectCompleted: acc.projectCompleted + item.projectCompleted,
       projectDelayed: acc.projectDelayed + item.projectDelayed,
@@ -359,6 +352,7 @@ export function BudgetTrackingTable({
     }),
     {
       totalBudgetAllocated: 0,
+      obligatedBudget: 0,
       totalBudgetUtilized: 0,
       projectCompleted: 0,
       projectDelayed: 0,
@@ -627,26 +621,15 @@ export function BudgetTrackingTable({
                     )}
                   </div>
                 </th>
-                <th className="hidden *:px-4 sm:px-6 py-4 text-center sticky top-0 bg-zinc-50 dark:bg-zinc-950 z-10">
-                  <button
-                    onClick={() => handleSort("targetDateCompletion")}
-                    className="group flex items-center gap-2 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                  >
-                    <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
-                      Target Date
-                    </span>
-                    <SortIcon field="targetDateCompletion" />
-                  </button>
-                </th>
                 <th className="px-4 sm:px-6 py-4 text-right sticky top-0 bg-zinc-50 dark:bg-zinc-950 z-10">
                   <button
-                    onClick={() => handleSort("totalBudgetAllocated")}
+                    onClick={() => handleSort("obligatedBudget")}
                     className="group flex items-center gap-2 ml-auto hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
                   >
                     <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
-                      Budget Allocated
+                      Obligated Budget
                     </span>
-                    <SortIcon field="totalBudgetAllocated" />
+                    <SortIcon field="obligatedBudget" />
                   </button>
                 </th>
                 <th className="px-4 sm:px-6 py-4 text-right sticky top-0 bg-zinc-50 dark:bg-zinc-950 z-10">
@@ -709,7 +692,7 @@ export function BudgetTrackingTable({
             <tbody>
               {filteredAndSortedItems.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center">
+                  <td colSpan={9} className="px-4 py-12 text-center">
                     <div className="flex flex-col items-center justify-center">
                       <Search className="w-12 h-12 text-zinc-300 dark:text-zinc-700 mb-3" />
                       <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-1">
@@ -755,14 +738,14 @@ export function BudgetTrackingTable({
                           {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : "-"}
                         </span>
                       </td>
-                      <td className="px-4 sm:px-6 py-4 text-center">
-                        <span className="text-sm text-zinc-700 dark:text-zinc-300">
-                          {formatDate(item.targetDateCompletion)}
+                      <td className="px-4 sm:px-6 py-4 text-right">
+                        <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
+                          ₱{item.totalBudgetAllocated.toLocaleString()}
                         </span>
                       </td>
                       <td className="px-4 sm:px-6 py-4 text-right">
                         <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                          ₱{item.totalBudgetAllocated.toLocaleString()}
+                          {item.obligatedBudget ? `₱${item.obligatedBudget.toLocaleString()}` : "-"}
                         </span>
                       </td>
                       <td className="px-4 sm:px-6 py-4 text-right">
@@ -799,9 +782,11 @@ export function BudgetTrackingTable({
                     </td>
                     <td className="px-4 sm:px-6 py-4"></td>
                     <td className="px-4 sm:px-6 py-4"></td>
-                    <td className="px-4 sm:px-6 py-4"></td>
                     <td className="px-4 sm:px-6 py-4 text-right text-sm text-zinc-900 dark:text-zinc-100">
                       ₱{totals.totalBudgetAllocated.toLocaleString()}
+                    </td>
+                    <td className="px-4 sm:px-6 py-4 text-right text-sm text-zinc-900 dark:text-zinc-100">
+                      ₱{totals.obligatedBudget.toLocaleString()}
                     </td>
                     <td className="px-4 sm:px-6 py-4 text-right text-sm text-zinc-900 dark:text-zinc-100">
                       ₱{totals.totalBudgetUtilized.toLocaleString()}

@@ -24,7 +24,6 @@ interface BudgetItemFromDB {
   notes?: string;
   year?: number;
   status?: "done" | "pending" | "ongoing";
-  targetDateCompletion?: number;
   isPinned?: boolean;
   pinnedAt?: number;
   pinnedBy?: Id<"users">;
@@ -45,7 +44,6 @@ interface BudgetItemForUI {
   projectsOnTrack: number;
   year?: number;
   status?: "done" | "pending" | "ongoing";
-  targetDateCompletion?: number;
   isPinned?: boolean;
   pinnedAt?: number;
   pinnedBy?: string;
@@ -100,7 +98,6 @@ export default function BudgetTrackingPage() {
       projectsOnTrack: item.projectsOnTrack,
       year: item.year,
       status: item.status,
-      targetDateCompletion: item.targetDateCompletion,
       isPinned: item.isPinned,
       pinnedAt: item.pinnedAt,
       pinnedBy: item.pinnedBy,
@@ -119,7 +116,6 @@ export default function BudgetTrackingPage() {
         projectsOnTrack: item.projectsOnTrack,
         year: item.year,
         status: item.status,
-        targetDateCompletion: item.targetDateCompletion,
       });
     } catch (error) {
       console.error("Error creating budget item:", error);
@@ -145,7 +141,6 @@ export default function BudgetTrackingPage() {
         projectsOnTrack: item.projectsOnTrack,
         year: item.year,
         status: item.status,
-        targetDateCompletion: item.targetDateCompletion,
       });
     } catch (error) {
       console.error("Error updating budget item:", error);

@@ -45,7 +45,6 @@ interface BudgetItem {
   projectsOnTrack: number;
   year?: number;
   status?: "done" | "pending" | "ongoing";
-  targetDateCompletion?: number;
 }
 
 const BUDGET_PARTICULARS = [
@@ -107,7 +106,6 @@ const budgetItemSchema = z
     }),
     year: z.number().int().min(2000).max(2100).optional().or(z.literal(0)),
     status: z.enum(["done", "pending", "ongoing"]).optional(),
-    targetDateCompletion: z.number().optional().or(z.literal(0)),
   })
   .refine(
     (data) => data.totalBudgetUtilized <= data.totalBudgetAllocated,
@@ -168,8 +166,6 @@ export function BudgetItemForm({
       projectDelayed: item?.projectDelayed || 0,
       projectsOnTrack: item?.projectsOnTrack || 0,
       year: item?.year || undefined,
-      status: item?.status || undefined,
-      targetDateCompletion: item?.targetDateCompletion || undefined,
     },
   });
 
@@ -221,7 +217,6 @@ export function BudgetItemForm({
       ...values,
       obligatedBudget: values.obligatedBudget && values.obligatedBudget > 0 ? values.obligatedBudget : undefined,
       year: values.year && values.year > 0 ? values.year : undefined,
-      targetDateCompletion: values.targetDateCompletion && values.targetDateCompletion > 0 ? values.targetDateCompletion : undefined,
     };
 
     // Clear draft on successful submit
@@ -287,7 +282,7 @@ export function BudgetItemForm({
         />
 
         {/* Optional Fields Row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {/* Year (Optional) */}
           <FormField
             name="year"
@@ -338,35 +333,6 @@ export function BudgetItemForm({
                     <SelectItem value="done">Done</SelectItem>
                   </SelectContent>
                 </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* Target Date Completion (Optional) */}
-          <FormField
-            name="targetDateCompletion"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                  Target Date <span className="text-xs text-zinc-500">(Optional)</span>
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="date"
-                    className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
-                    {...field}
-                    value={
-                      field.value
-                        ? new Date(field.value).toISOString().split("T")[0]
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      field.onChange(value ? new Date(value).getTime() : undefined);
-                    }}
-                  />
-                </FormControl>
                 <FormMessage />
               </FormItem>
             )}

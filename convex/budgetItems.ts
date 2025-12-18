@@ -101,7 +101,6 @@ export const create = mutation({
         v.literal("ongoing")
       )
     ),
-    targetDateCompletion: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -147,7 +146,6 @@ export const create = mutation({
     if (args.notes !== undefined) budgetItemData.notes = args.notes;
     if (args.year !== undefined) budgetItemData.year = args.year;
     if (args.status !== undefined) budgetItemData.status = args.status;
-    if (args.targetDateCompletion !== undefined) budgetItemData.targetDateCompletion = args.targetDateCompletion;
 
     const budgetItemId = await ctx.db.insert("budgetItems", budgetItemData);
 
@@ -176,7 +174,6 @@ export const update = mutation({
         v.literal("ongoing")
       )
     ),
-    targetDateCompletion: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -213,7 +210,6 @@ export const update = mutation({
     if (args.notes !== undefined) updateData.notes = args.notes;
     if (args.year !== undefined) updateData.year = args.year;
     if (args.status !== undefined) updateData.status = args.status;
-    if (args.targetDateCompletion !== undefined) updateData.targetDateCompletion = args.targetDateCompletion;
 
     await ctx.db.patch(args.id, updateData);
 

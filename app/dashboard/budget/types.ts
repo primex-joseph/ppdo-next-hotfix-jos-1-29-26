@@ -12,7 +12,6 @@ export interface BudgetItem {
   projectsOnTrack: number;
   year?: number;
   status?: "done" | "pending" | "ongoing";
-  targetDateCompletion?: number;
   isPinned?: boolean;
   pinnedAt?: number;
   pinnedBy?: string;
@@ -40,7 +39,6 @@ export interface BudgetItemFromDB {
   notes?: string;
   year?: number;
   status?: "done" | "pending" | "ongoing";
-  targetDateCompletion?: number;
   isPinned?: boolean;
   pinnedAt?: number;
   pinnedBy?: string;
@@ -65,7 +63,6 @@ export interface Project {
   notes?: string;
   year?: number;
   status?: "done" | "pending" | "ongoing";
-  targetDateCompletion?: number;
   projectManagerId?: string;
   // Pin fields
   isPinned?: boolean;

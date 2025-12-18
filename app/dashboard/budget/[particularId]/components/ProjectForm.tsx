@@ -65,7 +65,6 @@ const projectSchema = z
     notes: z.string().optional(),
     year: z.number().int().min(2000).max(2100).optional(),
     status: z.enum(["done", "pending", "ongoing"]).optional(),
-    targetDateCompletion: z.number().optional(),
   })
   .refine((data) => data.totalBudgetUtilized <= data.totalBudgetAllocated, {
     message: "Budget utilized cannot exceed allocated budget.",
@@ -125,7 +124,6 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
       notes: project?.notes || "",
       year: project?.year || undefined,
       status: project?.status || undefined,
-      targetDateCompletion: project?.targetDateCompletion || undefined,
     },
   });
 
@@ -318,34 +316,6 @@ export function ProjectForm({ project, onSave, onCancel }: ProjectFormProps) {
             )}
           />
 
-          {/* Target Date Completion (Optional) */}
-          <FormField
-            name="targetDateCompletion"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                  Target Date <span className="text-xs text-zinc-500">(Optional)</span>
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="date"
-                    className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
-                    {...field}
-                    value={
-                      field.value
-                        ? new Date(field.value).toISOString().split("T")[0]
-                        : ""
-                    }
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      field.onChange(value ? new Date(value).getTime() : undefined);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
         </div>
 
         {/* Budget Fields Grid */}
