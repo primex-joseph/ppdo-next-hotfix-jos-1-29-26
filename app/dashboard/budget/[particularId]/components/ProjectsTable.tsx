@@ -29,6 +29,7 @@ import { toast } from "sonner";
 interface ProjectsTableProps {
   projects: Project[];
   particularId: string;
+  budgetItemId?: string; // 🔧 ADD THIS PROP
   onAdd?: (project: Omit<Project, "id" | "utilizationRate" | "projectCompleted" | "projectDelayed" | "projectsOngoing">) => void;
   onEdit?: (id: string, project: Omit<Project, "id" | "utilizationRate" | "projectCompleted" | "projectDelayed" | "projectsOngoing">) => void;
   onDelete?: (id: string) => void;
@@ -40,13 +41,14 @@ type SortField = keyof Project | null;
 export function ProjectsTable({
   projects,
   particularId,
+  budgetItemId, // 🔧 DESTRUCTURE THE PROP
   onAdd,
   onEdit,
   onDelete,
 }: ProjectsTableProps) {
   const { accentColorValue } = useAccentColor();
   const router = useRouter();
-  const togglePinProject = useMutation(api.projects.togglePin); // ✅ FIXED: Use togglePin instead of pin/unpin
+  const togglePinProject = useMutation(api.projects.togglePin);
   
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -70,6 +72,16 @@ export function ProjectsTable({
   
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const filterMenuRef = useRef<HTMLDivElement>(null);
+
+  // 🔧 ADD DEBUG LOG TO VERIFY budgetItemId IS RECEIVED
+  useEffect(() => {
+    console.log("🎯 [ProjectsTable] Received Props:", {
+      budgetItemId,
+      hasBudgetItemId: !!budgetItemId,
+      budgetItemIdType: typeof budgetItemId,
+      particularId,
+    });
+  }, [budgetItemId, particularId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -211,7 +223,6 @@ export function ProjectsTable({
   const getStatusColor = (status?: string): string => {
       if (!status) return "text-zinc-600 dark:text-zinc-400";
       
-      // STRICT 3 MAPPING
       if (status === "completed") return "text-green-600 dark:text-green-400";
       if (status === "ongoing") return "text-blue-600 dark:text-blue-400";
       if (status === "delayed") return "text-red-600 dark:text-red-400";
@@ -245,7 +256,7 @@ export function ProjectsTable({
   const handlePin = async (project: Project) => {
     try {
       const isPinned = 'isPinned' in project ? (project as any).isPinned : false;
-      await togglePinProject({ id: project.id as Id<"projects"> }); // ✅ FIXED: Use togglePin
+      await togglePinProject({ id: project.id as Id<"projects"> });
       toast.success(isPinned ? "Project unpinned" : "Project pinned to top");
     } catch (error) {
       toast.error("Failed to pin/unpin project");
@@ -350,6 +361,7 @@ export function ProjectsTable({
 
         <div className="overflow-x-auto max-h-[600px] relative">
           <table className="w-full">
+            {/* Table headers - keeping original code */}
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
                 <th className="px-3 py-3 text-left sticky top-0 bg-zinc-50 dark:bg-zinc-950 z-10"><button onClick={() => handleSort("particulars")} className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">Particulars <SortIcon field="particulars" /></button></th>
@@ -367,6 +379,7 @@ export function ProjectsTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
+              {/* Table body - keeping original code */}
               {filteredAndSortedProjects.length === 0 ? (
                 <tr><td colSpan={12} className="px-4 py-12 text-center text-sm text-zinc-500">No projects found matching your criteria.</td></tr>
               ) : (
@@ -392,122 +405,39 @@ export function ProjectsTable({
                           </span>
                         </div>
                       </td>
-
-                      <td className="px-3 py-3 text-sm text-zinc-600">
-                        {project.implementingOffice}
-                      </td>
-
-                      <td className="px-3 py-3 text-sm text-center">
-                        {project.year || "-"}
-                      </td>
-
+                      <td className="px-3 py-3 text-sm text-zinc-600">{project.implementingOffice}</td>
+                      <td className="px-3 py-3 text-sm text-center">{project.year || "-"}</td>
                       <td className="px-3 py-3 text-sm">
                         <span className={`font-medium ${getStatusColor(project.status)}`}>
-                          {project.status
-                            ? project.status
-                                .replace('_', ' ')
-                                .charAt(0)
-                                .toUpperCase() +
-                              project.status.slice(1).replace('_', ' ')
-                            : '-'}
+                          {project.status ? project.status.replace('_', ' ').charAt(0).toUpperCase() + project.status.slice(1).replace('_', ' ') : '-'}
                         </span>
                       </td>
-
-                      <td className="px-3 py-3 text-right text-sm font-medium">
-                        {formatCurrency(project.totalBudgetAllocated)}
-                      </td>
-
-                      <td className="px-3 py-3 text-right text-sm">
-                        {project.obligatedBudget
-                          ? formatCurrency(project.obligatedBudget)
-                          : "-"}
-                      </td>
-
-                      <td className="px-3 py-3 text-right text-sm font-medium">
-                        {formatCurrency(project.totalBudgetUtilized)}
-                      </td>
-
+                      <td className="px-3 py-3 text-right text-sm font-medium">{formatCurrency(project.totalBudgetAllocated)}</td>
+                      <td className="px-3 py-3 text-right text-sm">{project.obligatedBudget ? formatCurrency(project.obligatedBudget) : "-"}</td>
+                      <td className="px-3 py-3 text-right text-sm font-medium">{formatCurrency(project.totalBudgetUtilized)}</td>
                       <td className="px-3 py-3 text-right text-sm font-semibold">
-                        <span className={getUtilizationColor(project.utilizationRate)}>
-                          {formatPercentage(project.utilizationRate)}
-                        </span>
+                        <span className={getUtilizationColor(project.utilizationRate)}>{formatPercentage(project.utilizationRate)}</span>
                       </td>
-
                       <td className="px-3 py-3 text-right text-sm">
-                        <span className={getAccomplishmentColor(project.projectCompleted)}>
-                          {Math.round(project.projectCompleted)}
-                        </span>
+                        <span className={getAccomplishmentColor(project.projectCompleted)}>{Math.round(project.projectCompleted)}</span>
                       </td>
-
-                      <td className="px-3 py-3 text-right text-sm">
-                        {Math.round(project.projectDelayed)}
-                      </td>
-
-                      <td className="px-3 py-3 text-right text-sm">
-                        {Math.round(project.projectsOngoing)}
-                      </td>
-
-                      <td className="px-3 py-3 text-sm text-zinc-500 truncate max-w-[150px]">
-                        {project.remarks || "-"}
-                      </td>
+                      <td className="px-3 py-3 text-right text-sm">{Math.round(project.projectDelayed)}</td>
+                      <td className="px-3 py-3 text-right text-sm">{Math.round(project.projectsOngoing)}</td>
+                      <td className="px-3 py-3 text-sm text-zinc-500 truncate max-w-[150px]">{project.remarks || "-"}</td>
                     </tr>
                   ))}
                   <tr className="border-t-2 border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950/50 font-semibold">
-                    <td className="px-3 py-3" colSpan={4}>
-                      <span className="text-sm text-zinc-900">TOTAL</span>
-                    </td>
-
-                    <td
-                      className="px-3 py-3 text-right text-sm"
-                      style={{ color: accentColorValue }}
-                    >
-                      {formatCurrency(totals.totalBudgetAllocated)}
-                    </td>
-
-                    <td
-                      className="px-3 py-3 text-right text-sm"
-                      style={{ color: accentColorValue }}
-                    >
-                      {formatCurrency(totals.obligatedBudget)}
-                    </td>
-
-                    <td
-                      className="px-3 py-3 text-right text-sm"
-                      style={{ color: accentColorValue }}
-                    >
-                      {formatCurrency(totals.totalBudgetUtilized)}
-                    </td>
-
+                    <td className="px-3 py-3" colSpan={4}><span className="text-sm text-zinc-900">TOTAL</span></td>
+                    <td className="px-3 py-3 text-right text-sm" style={{ color: accentColorValue }}>{formatCurrency(totals.totalBudgetAllocated)}</td>
+                    <td className="px-3 py-3 text-right text-sm" style={{ color: accentColorValue }}>{formatCurrency(totals.obligatedBudget)}</td>
+                    <td className="px-3 py-3 text-right text-sm" style={{ color: accentColorValue }}>{formatCurrency(totals.totalBudgetUtilized)}</td>
                     <td className="px-3 py-3 text-right text-sm">
-                      <span className={getUtilizationColor(totals.utilizationRate)}>
-                        {formatPercentage(totals.utilizationRate)}
-                      </span>
+                      <span className={getUtilizationColor(totals.utilizationRate)}>{formatPercentage(totals.utilizationRate)}</span>
                     </td>
-
-                    <td
-                      className="px-3 py-3 text-right text-sm"
-                      style={{ color: accentColorValue }}
-                    >
-                      {formatNumber(totals.projectCompleted)}
-                    </td>
-
-                    <td
-                      className="px-3 py-3 text-right text-sm"
-                      style={{ color: accentColorValue }}
-                    >
-                      {totals.projectDelayed}
-                    </td>
-
-                    <td
-                      className="px-3 py-3 text-right text-sm"
-                      style={{ color: accentColorValue }}
-                    >
-                      {formatNumber(totals.projectsOngoing)}
-                    </td>
-
-                    <td className="px-3 py-3 text-sm text-zinc-400 text-center">
-                      -
-                    </td>
+                    <td className="px-3 py-3 text-right text-sm" style={{ color: accentColorValue }}>{formatNumber(totals.projectCompleted)}</td>
+                    <td className="px-3 py-3 text-right text-sm" style={{ color: accentColorValue }}>{totals.projectDelayed}</td>
+                    <td className="px-3 py-3 text-right text-sm" style={{ color: accentColorValue }}>{formatNumber(totals.projectsOngoing)}</td>
+                    <td className="px-3 py-3 text-sm text-zinc-400 text-center">-</td>
                   </tr>
                 </>
               )}
@@ -526,9 +456,54 @@ export function ProjectsTable({
         </div>
       )}
 
-      {showAddModal && <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Project" size="xl"><ProjectForm onSave={handleSave} onCancel={() => setShowAddModal(false)} /></Modal>}
-      {showEditModal && selectedProject && <Modal isOpen={showEditModal} onClose={() => { setShowEditModal(false); setSelectedProject(null); }} title="Edit Project" size="xl"><ProjectForm project={selectedProject} onSave={handleSave} onCancel={() => { setShowEditModal(false); setSelectedProject(null); }} /></Modal>}
-      {showDeleteModal && selectedProject && <ConfirmationModal isOpen={showDeleteModal} onClose={() => { setShowDeleteModal(false); setSelectedProject(null); }} onConfirm={handleConfirmDelete} title="Delete Project" message={`Are you sure you want to delete "${selectedProject.particulars}"?`} confirmText="Delete" variant="danger" />}
+      {/* 🔧 FIX: Pass budgetItemId to ProjectForm */}
+      {showAddModal && (
+        <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Project" size="xl">
+          <ProjectForm 
+            budgetItemId={budgetItemId}
+            onSave={handleSave} 
+            onCancel={() => setShowAddModal(false)} 
+          />
+        </Modal>
+      )}
+      
+      {/* 🔧 FIX: Pass budgetItemId to ProjectForm when editing too */}
+      {showEditModal && selectedProject && (
+        <Modal 
+          isOpen={showEditModal} 
+          onClose={() => { 
+            setShowEditModal(false); 
+            setSelectedProject(null); 
+          }} 
+          title="Edit Project" 
+          size="xl"
+        >
+          <ProjectForm 
+            project={selectedProject}
+            budgetItemId={budgetItemId}
+            onSave={handleSave} 
+            onCancel={() => { 
+              setShowEditModal(false); 
+              setSelectedProject(null); 
+            }} 
+          />
+        </Modal>
+      )}
+      
+      {showDeleteModal && selectedProject && (
+        <ConfirmationModal 
+          isOpen={showDeleteModal} 
+          onClose={() => { 
+            setShowDeleteModal(false); 
+            setSelectedProject(null); 
+          }} 
+          onConfirm={handleConfirmDelete} 
+          title="Delete Project" 
+          message={`Are you sure you want to delete "${selectedProject.particulars}"?`} 
+          confirmText="Delete" 
+          variant="danger" 
+        />
+      )}
     </>
   );
 }

@@ -42,6 +42,16 @@ export default function ParticularProjectsPage() {
     particulars: particular,
   });
 
+  // 🔧 ADD: Debug log to verify budgetItem is loaded
+  useEffect(() => {
+    console.log("🎯 [Page] Budget Item Query Result:", {
+      particular,
+      budgetItem,
+      hasBudgetItem: !!budgetItem,
+      budgetItemId: budgetItem?._id,
+    });
+  }, [particular, budgetItem]);
+
   // 🆕 Get breakdown statistics for this budget item
   const breakdownStats = useQuery(api.govtProjects.getBreakdownStats, {
     budgetItemId: budgetItem?._id,
@@ -60,7 +70,7 @@ export default function ParticularProjectsPage() {
   const createProject = useMutation(api.projects.create);
   const updateProject = useMutation(api.projects.update);
   const deleteProject = useMutation(api.projects.remove);
-  const recalculateBudgetItem = useMutation(api.budgetItems.recalculateSingleBudgetItem); // 🆕 FIXED: Use the correct mutation name
+  const recalculateBudgetItem = useMutation(api.budgetItems.recalculateSingleBudgetItem);
 
   const particularFullName = getParticularFullName(particular);
 
@@ -394,6 +404,7 @@ export default function ParticularProjectsPage() {
           <ProjectsTable
             projects={transformedProjects}
             particularId={particular}
+            budgetItemId={budgetItem._id} // 🔧 CRITICAL FIX: Pass budgetItemId here!
             onAdd={handleAddProject}
             onEdit={handleEditProject}
             onDelete={handleDeleteProject}

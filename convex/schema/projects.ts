@@ -1,3 +1,4 @@
+// convex/schema/projects.ts
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 
