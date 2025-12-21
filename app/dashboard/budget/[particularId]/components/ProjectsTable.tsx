@@ -356,34 +356,33 @@ export function ProjectsTable({
     <>
       <div className="print-area bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 space-y-4 no-print">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Projects</h3>
-            <div className="flex items-center gap-2">
-              {/* NEW TRASH BUTTON */}
-              <button
-                onClick={onOpenTrash}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-lg hover:scale-105 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800"
-                title="View Recycle Bin"
-              >
-                <div className="flex items-center gap-2">
-                  <Trash2 className="w-4 h-4" />
-                  Recycle Bin
-                </div>
-              </button>
-              <button onClick={() => setIsSearchVisible(!isSearchVisible)} className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${isSearchVisible ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500' : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100'}`}><div className="flex items-center gap-2"><Search className="w-4 h-4" />Search</div></button>
-              <button onClick={() => window.print()} className="px-4 py-2 rounded-lg text-sm font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"><div className="flex items-center gap-2"><FileText className="w-4 h-4" />Print</div></button>
-              {onAdd && <button onClick={() => setShowAddModal(true)} className="px-4 py-2 rounded-lg text-sm font-medium text-white" style={{ backgroundColor: accentColorValue }}>Add New Project</button>}
-            </div>
-          </div>
-          {isSearchVisible && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" /><input type="text" placeholder="Search projects..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900" style={{ '--tw-ring-color': accentColorValue } as any} /></div>
-                {hasActiveFilters && <button onClick={clearAllFilters} className="px-4 py-2 rounded-lg text-sm font-medium bg-zinc-100 dark:bg-zinc-800 flex items-center gap-2"><X className="w-4 h-4" />Clear</button>}
-              </div>
-            </div>
-          )}
+  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Projects</h3>
+    <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+      <button
+        onClick={onOpenTrash}
+        className="cursor-pointer px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-lg hover:scale-105 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800"
+        title="View Recycle Bin"
+      >
+        <div className="flex items-center gap-2">
+          <Trash2 className="w-4 h-4" />
+          <span className="hidden sm:inline">Recycle Bin</span>
         </div>
+      </button>
+      <button onClick={() => setIsSearchVisible(!isSearchVisible)} className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all ${isSearchVisible ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500' : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100'}`}><div className="flex items-center gap-2"><Search className="w-4 h-4" /><span className="hidden sm:inline">Search</span></div></button>
+      <button onClick={() => window.print()} className="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100"><div className="flex items-center gap-2"><FileText className="w-4 h-4" /><span className="hidden sm:inline">Print</span></div></button>
+      {onAdd && <button onClick={() => setShowAddModal(true)} className="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium text-white flex-1 sm:flex-none" style={{ backgroundColor: accentColorValue }}><span className="hidden sm:inline">Add New Project</span><span className="sm:hidden">Add</span></button>}
+    </div>
+  </div>
+  {isSearchVisible && (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        <div className="relative flex-1"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" /><input type="text" placeholder="Search projects..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900" style={{ '--tw-ring-color': accentColorValue } as any} /></div>
+        {hasActiveFilters && <button onClick={clearAllFilters} className="px-4 py-2 rounded-lg text-sm font-medium bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center gap-2"><X className="w-4 h-4" /><span className="hidden sm:inline">Clear</span><span className="sm:hidden">Clear</span></button>}
+      </div>
+    </div>
+  )}
+</div>
 
         <div className="overflow-x-auto max-h-[600px] relative">
           <table className="w-full">

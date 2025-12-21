@@ -363,31 +363,30 @@ export function BudgetTrackingTable({
     <>
       <div className="print-area bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 space-y-4 no-print">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               Budget Items
             </h3>
-            <div className="flex items-center gap-2">
-              {/* NEW TRASH BUTTON */}
+            <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
               <button
                 onClick={onOpenTrash}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-lg hover:scale-105 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800"
+                className="cursor-pointer px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-lg hover:scale-105 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 border border-blue-200 dark:border-blue-800"
                 title="View Recycle Bin"
               >
                 <div className="flex items-center gap-2">
                   <Trash2 className="w-4 h-4" />
-                  Recycle Bin
+                  <span className="hidden sm:inline">Recycle Bin</span>
                 </div>
               </button>
               {isAdmin && (
                 <button
                   onClick={() => setShowShareModal(true)}
-                  className="relative px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-md bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+                  className="relative px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-md bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600"
                   title="Share & Manage Access"
                 >
                   <div className="flex items-center gap-2">
                     <Share2 className="w-4 h-4" />
-                    Share
+                    <span className="hidden sm:inline">Share</span>
                   </div>
                   {pendingRequestsCount !== undefined && pendingRequestsCount > 0 && (
                     <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -399,7 +398,7 @@ export function BudgetTrackingTable({
               {expandButton}
               <button
                 onClick={toggleSearch}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-md ${
+                className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-md ${
                   isSearchVisible 
                     ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500' 
                     : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600'
@@ -408,28 +407,29 @@ export function BudgetTrackingTable({
               >
                 <div className="cursor-pointer flex items-center gap-2">
                   <Search className="w-4 h-4" />
-                  Search
+                  <span className="hidden sm:inline">Search</span>
                 </div>
               </button>
               <button
                 onClick={handlePrint}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-md bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+                className="px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-md bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600"
                 title="Print"
               >
                 <div className="cursor-pointer flex items-center gap-2">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                   </svg>
-                  Print
+                  <span className="hidden sm:inline">Print</span>
                 </div>
               </button>
               {onAdd && (
                 <button
                   onClick={() => setShowAddModal(true)}
-                  className="cursor-pointer px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-md text-white"
+                  className="cursor-pointer px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-md text-white flex-1 sm:flex-none"
                   style={{ backgroundColor: accentColorValue }}
                 >
-                  Add New Item
+                  <span className="hidden sm:inline">Add New Item</span>
+                  <span className="sm:hidden">Add</span>
                 </button>
               )}
             </div>
@@ -437,7 +437,7 @@ export function BudgetTrackingTable({
 
           {isSearchVisible && (
             <div className="space-y-4 animate-in slide-in-from-top duration-200">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
                   <input
@@ -454,10 +454,11 @@ export function BudgetTrackingTable({
                 {hasActiveFilters && (
                   <button
                     onClick={clearAllFilters}
-                    className="px-4 py-2 rounded-lg text-sm font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex items-center gap-2"
+                    className="px-4 py-2 rounded-lg text-sm font-medium bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <X className="w-4 h-4" />
-                    Clear Filters
+                    <span className="hidden sm:inline">Clear Filters</span>
+                    <span className="sm:hidden">Clear</span>
                   </button>
                 )}
               </div>
