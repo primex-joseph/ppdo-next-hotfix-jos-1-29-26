@@ -1,6 +1,8 @@
+// app/dashboard/budget/[particularId]/[projectbreakdownId]/components/BreakdownForm.tsx
+
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -33,11 +35,12 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ChevronDown, MapPin, FileText, PlusCircle, MinusCircle, AlertTriangle } from "lucide-react";
+import { ChevronDown, MapPin, FileText, PlusCircle, MinusCircle, AlertTriangle, Info, TrendingUp, Package, Eye, EyeOff } from "lucide-react";
 import { ImplementingOfficeSelector } from "./ImplementingOfficeSelector";
 import { BudgetViolationModal } from "../../../components/BudgetViolationModal";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// 1. Updated Schema: Flexible inputs (optional/0 allowed) to let the Modal handle the logic
+// Updated Schema
 const breakdownSchema = z.object({
   projectName: z.string().min(1, { message: "Project name is required." }),
   implementingOffice: z.string().min(1, { message: "Implementing office is required." }),
@@ -94,7 +97,7 @@ interface BreakdownFormProps {
   onCancel: () => void;
   defaultProjectName?: string;
   defaultImplementingOffice?: string;
-  projectId?: string; // Passed from parent page
+  projectId?: string;
 }
 
 export function BreakdownForm({
@@ -106,21 +109,44 @@ export function BreakdownForm({
   projectId,
 }: BreakdownFormProps) {
   const { accentColorValue } = useAccentColor();
-  
-  // 2. States for UI interactions
+
+  // States for UI interactions
   const [showUtilizedInput, setShowUtilizedInput] = useState(
     !!breakdown && (breakdown.budgetUtilized || 0) > 0
   );
   const [showViolationModal, setShowViolationModal] = useState(false);
+  const [showBudgetOverview, setShowBudgetOverview] = useState(false);
   const [pendingValues, setPendingValues] = useState<BreakdownFormValues | null>(null);
+  const [budgetWarning, setBudgetWarning] = useState<{
+    show: boolean;
+    message: string;
+    allocatedTotal: number;
+    parentBudget: number;
+    difference: number;
+  } | null>(null);
 
   // Helper: Date conversions
   const dateToTimestamp = (dateString: string) => dateString ? new Date(dateString).getTime() : undefined;
   const timestampToDate = (timestamp?: number) => timestamp ? new Date(timestamp).toISOString().split("T")[0] : "";
 
-  // 3. Fetch Parent Project & Sibling Data to calculate availability
-  const effectiveProjectId = projectId || breakdown?.projectId;
-  
+  // 🔧 FIX 1: Determine effective project ID with proper priority
+  // Priority: 1. Explicit prop, 2. Breakdown's existing projectId, 3. undefined
+  const effectiveProjectId = useMemo(() => {
+    if (projectId) return projectId;
+    if (breakdown?.projectId) return breakdown.projectId;
+    return undefined;
+  }, [projectId, breakdown?.projectId]);
+
+  // 🔧 FIX 2: Add console log to verify project ID resolution
+  useEffect(() => {
+    console.log("🔍 Project ID Resolution:", {
+      propProjectId: projectId,
+      breakdownProjectId: breakdown?.projectId,
+      effectiveProjectId: effectiveProjectId,
+    });
+  }, [projectId, breakdown?.projectId, effectiveProjectId]);
+
+  // 🔧 FIX 3: Ensure queries only run when we have a valid project ID
   const projectData = useQuery(
     api.projects.getForValidation, 
     effectiveProjectId ? { id: effectiveProjectId as Id<"projects"> } : "skip"
@@ -130,6 +156,25 @@ export function BreakdownForm({
     api.govtProjects.getProjectBreakdowns,
     effectiveProjectId ? { projectId: effectiveProjectId as Id<"projects"> } : "skip"
   );
+
+  // 🔧 FIX 4: Add detailed loading state tracking
+  const dataLoadingState = useMemo(() => {
+    const hasProjectId = !!effectiveProjectId;
+    const projectDataLoading = hasProjectId && projectData === undefined;
+    const siblingsLoading = hasProjectId && siblings === undefined;
+    const projectDataLoaded = hasProjectId && projectData !== undefined;
+    const siblingsLoaded = hasProjectId && siblings !== undefined;
+    
+    return {
+      hasProjectId,
+      projectDataLoading,
+      siblingsLoading,
+      projectDataLoaded,
+      siblingsLoaded,
+      isFullyLoaded: projectDataLoaded && siblingsLoaded,
+      isLoading: projectDataLoading || siblingsLoading,
+    };
+  }, [effectiveProjectId, projectData, siblings]);
 
   // Initialize Form
   const form = useForm<BreakdownFormValues>({
@@ -158,49 +203,105 @@ export function BreakdownForm({
     },
   });
 
-  // 4. Watch fields for real-time validation calculations
+  // Watch fields for real-time validation calculations
   const currentAllocated = form.watch("allocatedBudget") || 0;
   const currentUtilized = form.watch("budgetUtilized") || 0;
-  
-  // Logic: Does this breakdown's utilization exceed its own allocation?
-  const isOverSelfUtilized = currentUtilized > currentAllocated;
 
-  // Logic: Does this breakdown's allocation exceed Parent Project's available budget?
-  const parentAvailability = useMemo(() => {
-    // Default safe values while loading
-    if (!projectData || !siblings) {
-      return { available: 0, isExceeded: false, diff: 0, parentTotal: 0 };
+  // 🔧 FIX 5: Enhanced budget allocation calculation with better loading state handling
+  const budgetAllocationStatus = useMemo(() => {
+    // If no project ID, return safe defaults immediately
+    if (!effectiveProjectId) {
+      return { 
+        available: 0, 
+        isExceeded: false, 
+        difference: 0, 
+        parentTotal: 0,
+        siblingTotal: 0,
+        allocatedTotal: 0,
+        siblingCount: 0,
+        siblings: [],
+        isLoading: false,
+        noProjectId: true,
+      };
     }
-    
-    // ✅ FIX: Use parent project's ALLOCATED budget, not totalBudgetAllocated
-    const parentTotal = projectData.totalBudgetAllocated;
+
+    // If still loading data, indicate loading state
+    if (projectData === undefined || siblings === undefined) {
+      return { 
+        available: 0, 
+        isExceeded: false, 
+        difference: 0, 
+        parentTotal: 0,
+        siblingTotal: 0,
+        allocatedTotal: 0,
+        siblingCount: 0,
+        siblings: [],
+        isLoading: true,
+        noProjectId: false,
+      };
+    }
+
+    // Data loaded - perform calculations
+    const parentTotal = projectData?.totalBudgetAllocated || 0;
     
     // Filter out the current breakdown if editing (to avoid double counting its old value)
     const otherSiblings = breakdown 
       ? siblings.filter(s => s._id !== breakdown._id) 
       : siblings;
-      
+    
     // Sum allocated budget of all other siblings
     const siblingUsed = otherSiblings.reduce((sum, s) => sum + (s.allocatedBudget || 0), 0);
     
     // Calculate what's left for THIS breakdown
     const available = parentTotal - siblingUsed;
-    
+
     // Check if user input exceeds availability
     const isExceeded = currentAllocated > available;
+    const difference = currentAllocated - available;
     
+    // Calculate total allocated including current input
+    const allocatedTotal = siblingUsed + currentAllocated;
+
     return { 
       available, 
       isExceeded, 
-      diff: currentAllocated - available,
-      parentTotal 
+      difference,
+      parentTotal,
+      siblingTotal: siblingUsed,
+      allocatedTotal,
+      siblingCount: otherSiblings.length,
+      siblings: otherSiblings,
+      isLoading: false,
+      noProjectId: false,
     };
-  }, [projectData, siblings, breakdown, currentAllocated]);
+  }, [effectiveProjectId, projectData, siblings, breakdown, currentAllocated]);
 
-  // 5. Submit Handler
+  // Update budget warning when allocation changes
+  useEffect(() => {
+    if (!budgetAllocationStatus.isLoading && !budgetAllocationStatus.noProjectId && currentAllocated > 0) {
+      if (budgetAllocationStatus.isExceeded) {
+        setBudgetWarning({
+          show: true,
+          message: `Warning: Total allocated budget (${formatCurrency(budgetAllocationStatus.allocatedTotal)}) exceeds parent project budget of ${formatCurrency(budgetAllocationStatus.parentTotal)} by ${formatCurrency(budgetAllocationStatus.difference)}`,
+          allocatedTotal: budgetAllocationStatus.allocatedTotal,
+          parentBudget: budgetAllocationStatus.parentTotal,
+          difference: budgetAllocationStatus.difference
+        });
+      } else {
+        setBudgetWarning(null);
+      }
+    } else {
+      setBudgetWarning(null);
+    }
+  }, [budgetAllocationStatus, currentAllocated]);
+
+  // Logic: Does this breakdown's utilization exceed its own allocation?
+  const isOverSelfUtilized = currentUtilized > currentAllocated;
+
+  // Submit Handler
   function onSubmit(values: BreakdownFormValues) {
     // Check constraints
-    const isOverParent = parentAvailability.isExceeded;
+    const isOverParent = budgetAllocationStatus.isExceeded;
     const isOverSelf = (values.budgetUtilized || 0) > (values.allocatedBudget || 0);
 
     // If ANY violation exists, interrupt save and show Modal
@@ -221,6 +322,13 @@ export function BreakdownForm({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  // Helper to calculate percentage used
+  const calculatePercentageUsed = () => {
+    if (budgetAllocationStatus.parentTotal === 0) return 0;
+    const used = budgetAllocationStatus.siblingTotal + currentAllocated;
+    return (used / budgetAllocationStatus.parentTotal) * 100;
   };
 
   return (
@@ -280,51 +388,295 @@ export function BreakdownForm({
 
           {/* --- SECTION 2: Financial Information --- */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-1 rounded-full" style={{ backgroundColor: accentColorValue }} />
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                Financial Information
-              </h3>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                    <div className="h-8 w-1 rounded-full" style={{ backgroundColor: accentColorValue }} />
+                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        Financial Information
+                    </h3>
+                </div>
+                {/* Trigger Button to Toggle Budget Overview */}
+                <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-xs h-8 text-zinc-600 dark:text-zinc-400"
+                    onClick={() => {
+                        const newState = !showBudgetOverview;
+                        
+                        // 🔍 ENHANCED DEBUGGING LOGS
+                        console.group("🔍 Budget Context Debug");
+                        console.log("Button Clicked. Toggling to:", newState);
+                        console.log("1. Effective Project ID:", effectiveProjectId);
+                        console.log("2. Data Loading State:", dataLoadingState);
+                        console.log("3. Parent Project Data (Backend):", projectData);
+                        console.log("4. Sibling Breakdowns (Backend):", siblings);
+                        console.log("5. Calculated Status:", budgetAllocationStatus);
+                        console.log("6. Current Input Allocated:", currentAllocated);
+                        
+                        if (!effectiveProjectId) {
+                            console.error("❌ No Project ID available!");
+                        } else if (budgetAllocationStatus.isLoading) {
+                            console.warn("⚠️ Data is currently loading...");
+                        } else if (!projectData) {
+                            console.error("❌ Parent Project Data is missing!");
+                        } else if (!siblings) {
+                            console.error("❌ Sibling Breakdowns data is missing!");
+                        } else {
+                            console.log("✅ Data successfully loaded.");
+                        }
+                        console.groupEnd();
+
+                        setShowBudgetOverview(newState);
+                    }}
+                >
+                    {showBudgetOverview ? (
+                        <><EyeOff className="w-3.5 h-3.5 mr-2" /> Hide Budget Context</>
+                    ) : (
+                        <><Eye className="w-3.5 h-3.5 mr-2" /> View Budget Context</>
+                    )}
+                </Button>
             </div>
+
+            {/* 🆕 PARENT PROJECT BUDGET OVERVIEW - CONDITIONALLY RENDERED */}
+            {showBudgetOverview && !budgetAllocationStatus.isLoading && !budgetAllocationStatus.noProjectId && projectData && (
+              <div className="animate-in slide-in-from-top-2 fade-in duration-300 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Package className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                        Parent Project Budget Overview
+                      </h4>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white/60 dark:bg-zinc-900/60 rounded-lg p-3 border border-blue-100 dark:border-blue-900">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Total Budget</p>
+                        <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100">
+                          {formatCurrency(budgetAllocationStatus.parentTotal)}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white/60 dark:bg-zinc-900/60 rounded-lg p-3 border border-blue-100 dark:border-blue-900">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Remaining Available</p>
+                        <p className={`text-lg font-bold ${
+                          budgetAllocationStatus.available <= 0 
+                            ? "text-red-600 dark:text-red-400" 
+                            : "text-green-600 dark:text-green-400"
+                        }`}>
+                          {formatCurrency(budgetAllocationStatus.available)}
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white/60 dark:bg-zinc-900/60 rounded-lg p-3 border border-blue-100 dark:border-blue-900">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Siblings Allocated</p>
+                        <p className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                          {formatCurrency(budgetAllocationStatus.siblingTotal)}
+                        </p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          {budgetAllocationStatus.siblingCount} breakdown(s)
+                        </p>
+                      </div>
+                      
+                      <div className="bg-white/60 dark:bg-zinc-900/60 rounded-lg p-3 border border-blue-100 dark:border-blue-900">
+                        <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-1">Your Input</p>
+                        <p className="text-base font-semibold text-blue-600 dark:text-blue-400">
+                          {formatCurrency(currentAllocated)}
+                        </p>
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                          Current entry
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 🆕 SIBLING BREAKDOWN LIST */}
+                {budgetAllocationStatus.siblings.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-blue-200 dark:border-blue-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      <p className="text-xs font-medium text-blue-900 dark:text-blue-100">
+                        Sibling Breakdowns ({budgetAllocationStatus.siblings.length})
+                      </p>
+                    </div>
+                    <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                      {budgetAllocationStatus.siblings.map((sibling) => (
+                        <div 
+                          key={sibling._id} 
+                          className="flex items-center justify-between bg-white/40 dark:bg-zinc-900/40 rounded px-2.5 py-1.5 text-xs border border-blue-100/50 dark:border-blue-900/50"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-zinc-900 dark:text-zinc-100 truncate">
+                              {sibling.projectTitle || sibling.implementingOffice}
+                            </p>
+                            <p className="text-zinc-500 dark:text-zinc-400 text-[10px]">
+                              {sibling.implementingOffice}
+                            </p>
+                          </div>
+                          <div className="text-right ml-2 shrink-0">
+                            <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                              {formatCurrency(sibling.allocatedBudget || 0)}
+                            </p>
+                            {sibling.status && (
+                              <p className={`text-[10px] ${
+                                sibling.status === "completed" 
+                                  ? "text-green-600 dark:text-green-400"
+                                  : sibling.status === "delayed"
+                                  ? "text-red-600 dark:text-red-400"
+                                  : "text-yellow-600 dark:text-yellow-400"
+                              }`}>
+                                {sibling.status}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Show message when no project ID */}
+            {showBudgetOverview && budgetAllocationStatus.noProjectId && (
+              <div className="bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Info className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-sm font-medium text-yellow-700 dark:text-yellow-300">
+                      No Parent Project Linked
+                    </p>
+                    <p className="text-sm text-yellow-600 dark:text-yellow-400 mt-1">
+                      This breakdown is not linked to a parent project. Budget validation is disabled.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
             
+            {/* Dynamic Budget Allocation Warning (Always visible if triggered) */}
+            {budgetWarning && (
+              <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg p-4 animate-in slide-in-from-top-2">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-red-700 dark:text-red-300">
+                      Budget Allocation Warning
+                    </p>
+                    <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                      {budgetWarning.message}
+                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-3 text-xs">
+                      <div className="bg-white dark:bg-zinc-900 p-2 rounded border">
+                        <p className="text-zinc-500 dark:text-zinc-400">Parent Budget</p>
+                        <p className="font-semibold">{formatCurrency(budgetWarning.parentBudget)}</p>
+                      </div>
+                      <div className="bg-red-50 dark:bg-red-900/30 p-2 rounded border border-red-100 dark:border-red-800">
+                        <p className="text-red-600 dark:text-red-400">Total Allocated</p>
+                        <p className="font-semibold text-red-700 dark:text-red-300">{formatCurrency(budgetWarning.allocatedTotal)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               
-              {/* Allocated Budget - With Parent Violation Logic */}
+              {/* Allocated Budget - With Parent Budget Context */}
               <FormField
                 name="allocatedBudget"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                      Allocated Budget
-                    </FormLabel>
+                    <div className="flex items-center justify-between">
+                      <FormLabel className="text-zinc-700 dark:text-zinc-300">
+                        Allocated Budget
+                      </FormLabel>
+                      {!budgetAllocationStatus.isLoading && !budgetAllocationStatus.noProjectId && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-zinc-400 hover:text-zinc-600 cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p className="text-xs">
+                                Parent project budget: {formatCurrency(budgetAllocationStatus.parentTotal)}<br />
+                                Sibling allocations: {formatCurrency(budgetAllocationStatus.siblingTotal)}<br />
+                                Available: {formatCurrency(budgetAllocationStatus.available)}<br />
+                                {budgetAllocationStatus.siblingCount} sibling breakdown(s)
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
+                    </div>
                     <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        min="0"
-                        step="0.01"
-                        className={`bg-white dark:bg-zinc-900 ${
-                          parentAvailability.isExceeded 
-                            ? "border-red-500 focus-visible:ring-red-500" 
-                            : "border-zinc-300 dark:border-zinc-700"
-                        }`}
-                        {...field}
-                        onChange={(e) => {
-                          const value = e.target.value.trim();
-                          field.onChange(value ? parseFloat(value) : undefined);
-                        }}
-                        value={field.value ?? ""}
-                      />
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          min="0"
+                          step="0.01"
+                          className={`bg-white dark:bg-zinc-900 ${
+                            budgetAllocationStatus.isExceeded 
+                              ? "border-red-500 focus-visible:ring-red-500 pr-10" 
+                              : "border-zinc-300 dark:border-zinc-700"
+                          }`}
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value.trim();
+                            field.onChange(value ? parseFloat(value) : undefined);
+                          }}
+                          value={field.value ?? ""}
+                        />
+                        {budgetAllocationStatus.isExceeded && (
+                          <AlertTriangle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-red-500" />
+                        )}
+                      </div>
                     </FormControl>
-                    {/* ✅ FIXED: Inline Error for Parent Violation */}
-                    {parentAvailability.isExceeded && projectData && (
-                      <div className="flex items-start gap-1 mt-1 text-xs text-red-600 font-medium animate-in slide-in-from-top-1">
-                        <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                        <span>
-                          Warning: Amount exceeds parent project availability ({formatCurrency(parentAvailability.available)})
-                        </span>
+                    
+                    {/* Budget Allocation Status Bar */}
+                    {!budgetAllocationStatus.isLoading && budgetAllocationStatus.parentTotal > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-zinc-600 dark:text-zinc-400">
+                            Budget Usage: {formatCurrency(budgetAllocationStatus.siblingTotal + currentAllocated)} of {formatCurrency(budgetAllocationStatus.parentTotal)}
+                          </span>
+                          <span className={`font-medium ${
+                            budgetAllocationStatus.isExceeded 
+                              ? "text-red-600 dark:text-red-400" 
+                              : "text-green-600 dark:text-green-400"
+                          }`}>
+                            {calculatePercentageUsed().toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="h-2 bg-zinc-200 dark:bg-zinc-800 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              budgetAllocationStatus.isExceeded 
+                                ? "bg-red-500" 
+                                : "bg-green-500"
+                            }`}
+                            style={{ 
+                              width: `${Math.min(calculatePercentageUsed(), 100)}%` 
+                            }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span className="text-zinc-500 dark:text-zinc-400">
+                            Available: {formatCurrency(budgetAllocationStatus.available)}
+                          </span>
+                          {budgetAllocationStatus.isExceeded && (
+                            <span className="text-red-600 dark:text-red-400 font-medium">
+                              Over budget by {formatCurrency(budgetAllocationStatus.difference)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     )}
+                    
                     <FormMessage />
                   </FormItem>
                 )}
@@ -392,29 +744,41 @@ export function BreakdownForm({
                           Budget Utilized
                         </FormLabel>
                         <FormControl>
-                        <Input
-                            type="number"
-                            placeholder="0"
-                            min="0"
-                            step="0.01"
-                            className={`bg-white dark:bg-zinc-900 ${
-                              isOverSelfUtilized
-                                ? "border-orange-500 focus-visible:ring-orange-500"
-                                : "border-zinc-300 dark:border-zinc-700"
-                            }`}
-                            {...field}
-                            onChange={(e) => {
-                              const value = e.target.value.trim();
-                              field.onChange(value ? parseFloat(value) : undefined);
-                            }}
-                            value={field.value ?? ""}
-                        />
+                        <div className="relative">
+                          <Input
+                              type="number"
+                              placeholder="0"
+                              min="0"
+                              step="0.01"
+                              className={`bg-white dark:bg-zinc-900 ${
+                                isOverSelfUtilized
+                                  ? "border-orange-500 focus-visible:ring-orange-500 pr-10"
+                                  : "border-zinc-300 dark:border-zinc-700"
+                              }`}
+                              {...field}
+                              onChange={(e) => {
+                                const value = e.target.value.trim();
+                                field.onChange(value ? parseFloat(value) : undefined);
+                              }}
+                              value={field.value ?? ""}
+                          />
+                          {isOverSelfUtilized && (
+                            <AlertTriangle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-orange-500" />
+                          )}
+                        </div>
                         </FormControl>
-                        {/* Inline Warning for Self Utilization Violation */}
+                        
+                        {/* Self Utilization Warning with details */}
                         {isOverSelfUtilized && (
-                            <p className="text-xs text-orange-600 mt-1 font-medium">
-                                ⚠️ Warning: Utilized amount exceeds allocated budget.
-                            </p>
+                            <div className="mt-2 p-3 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                              <p className="text-xs text-orange-700 dark:text-orange-300 font-medium flex items-center gap-2">
+                                <AlertTriangle className="w-3.5 h-3.5" />
+                                Utilization Warning
+                              </p>
+                              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+                                Utilized ({formatCurrency(currentUtilized)}) exceeds allocated budget ({formatCurrency(currentAllocated)}) by {formatCurrency(currentUtilized - currentAllocated)}
+                              </p>
+                            </div>
                         )}
                         <FormMessage />
                     </FormItem>
@@ -625,7 +989,7 @@ export function BreakdownForm({
         </div>
       </Form>
 
-      {/* 6. UNIFIED VIOLATION MODAL */}
+      {/* UNIFIED VIOLATION MODAL */}
       <BudgetViolationModal 
         isOpen={showViolationModal}
         onClose={() => {
@@ -638,13 +1002,13 @@ export function BreakdownForm({
             setPendingValues(null);
         }}
         allocationViolation={{
-            hasViolation: parentAvailability.isExceeded,
+            hasViolation: budgetAllocationStatus.isExceeded,
             message: "Project Breakdown allocated budget exceeds Parent Project budget availability.",
             details: [{
                 label: "Parent Project Available",
                 amount: pendingValues?.allocatedBudget || 0,
-                limit: parentAvailability.available,
-                diff: parentAvailability.diff
+                limit: budgetAllocationStatus.available,
+                diff: budgetAllocationStatus.difference
             }]
         }}
         utilizationViolation={{

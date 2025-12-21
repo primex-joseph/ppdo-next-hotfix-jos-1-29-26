@@ -778,6 +778,7 @@ export default function ProjectBreakdownPage() {
           <BreakdownForm
             defaultProjectName={project.particulars}
             defaultImplementingOffice={project.implementingOffice}
+            projectId={projectId}  // 🔧 ADD THIS LINE
             onSave={handleAdd}
             onCancel={() => setShowAddModal(false)}
           />
@@ -797,6 +798,7 @@ export default function ProjectBreakdownPage() {
         >
           <BreakdownForm
             breakdown={selectedBreakdown}
+            projectId={projectId}  // 🔧 ADD THIS LINE
             onSave={handleUpdate}
             onCancel={() => {
               setShowEditModal(false);

@@ -31,7 +31,7 @@ import { ActivityLogSheet } from "@/app/dashboard/components/ActivityLogSheet";
 interface ProjectsTableProps {
   projects: Project[];
   particularId: string;
-  budgetItemId?: string; // 🔧 ADD THIS PROP
+  budgetItemId?: string;
   onAdd?: (project: Omit<Project, "id" | "utilizationRate" | "projectCompleted" | "projectDelayed" | "projectsOngoing">) => void;
   onEdit?: (id: string, project: Omit<Project, "id" | "utilizationRate" | "projectCompleted" | "projectDelayed" | "projectsOngoing">) => void;
   onDelete?: (id: string) => void;
@@ -44,7 +44,7 @@ type SortField = keyof Project | null;
 export function ProjectsTable({
   projects,
   particularId,
-  budgetItemId, // 🔧 DESTRUCTURE THE PROP
+  budgetItemId,
   onAdd,
   onEdit,
   onDelete,
@@ -80,7 +80,6 @@ export function ProjectsTable({
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const filterMenuRef = useRef<HTMLDivElement>(null);
 
-  // 🔧 ADD DEBUG LOG TO VERIFY budgetItemId IS RECEIVED
   useEffect(() => {
     console.log("🎯 [ProjectsTable] Received Props:", {
       budgetItemId,
@@ -134,8 +133,9 @@ export function ProjectsTable({
     return text.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   };
 
-  const createProjectSlug = (departmentName: string, projectId: string): string => {
-    return `${createSlug(departmentName)}-${projectId}`;
+  // 🔧 FIX: Use project.particulars instead of departmentName
+  const createProjectSlug = (particulars: string, projectId: string): string => {
+    return `${createSlug(particulars)}-${projectId}`;
   };
 
   const hasActiveFilters = searchQuery.trim() !== "" || statusFilter.length > 0 || officeFilter.length > 0 || yearFilter.length > 0 || sortField !== null;
@@ -162,8 +162,6 @@ export function ProjectsTable({
         );
       });
     }
-
-    
 
     if (statusFilter.length > 0) {
       filtered = filtered.filter(project => project.status && statusFilter.includes(project.status));
@@ -245,9 +243,10 @@ export function ProjectsTable({
       return "text-zinc-600 dark:text-zinc-400";
   };
 
+  // 🔧 FIX: Use project.particulars for the slug
   const handleRowClick = (project: Project, e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button")) return;
-    const projectSlug = createProjectSlug(project.implementingOffice, project.id);
+    const projectSlug = createProjectSlug(project.particulars, project.id);
     router.push(`/dashboard/budget/${encodeURIComponent(particularId)}/${projectSlug}`);
   };
 
@@ -386,7 +385,6 @@ export function ProjectsTable({
 
         <div className="overflow-x-auto max-h-[600px] relative">
           <table className="w-full">
-            {/* Table headers - keeping original code */}
             <thead>
               <tr className="border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950">
                 <th className="px-3 py-3 text-left sticky top-0 bg-zinc-50 dark:bg-zinc-950 z-10"><button onClick={() => handleSort("particulars")} className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide">Particulars <SortIcon field="particulars" /></button></th>
@@ -404,7 +402,6 @@ export function ProjectsTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-              {/* Table body - keeping original code */}
               {filteredAndSortedProjects.length === 0 ? (
                 <tr><td colSpan={12} className="px-4 py-12 text-center text-sm text-zinc-500">No projects found matching your criteria.</td></tr>
               ) : (
@@ -499,7 +496,6 @@ export function ProjectsTable({
         </div>
       )}
 
-      {/* [NEW] Render the Log Sheet when triggered */}
       {selectedLogProject && (
         <ActivityLogSheet
           type="project"
@@ -513,7 +509,6 @@ export function ProjectsTable({
         />
       )}
 
-      {/* 🔧 FIX: Pass budgetItemId to ProjectForm */}
       {showAddModal && (
         <Modal isOpen={showAddModal} onClose={() => setShowAddModal(false)} title="Add Project" size="xl">
           <ProjectForm 
@@ -524,7 +519,6 @@ export function ProjectsTable({
         </Modal>
       )}
       
-      {/* 🔧 FIX: Pass budgetItemId to ProjectForm when editing too */}
       {showEditModal && selectedProject && (
         <Modal 
           isOpen={showEditModal} 
