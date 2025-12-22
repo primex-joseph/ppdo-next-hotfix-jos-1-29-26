@@ -1,7 +1,6 @@
 // app/dashboard/budget/[particularId]/page.tsx
 
 "use client";
-
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
@@ -16,7 +15,6 @@ import { ActivityLogSheet } from "../../components/ActivityLogSheet";
 import { Button } from "@/components/ui/button";
 import { History, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { TrashBinModal } from "../../components/TrashBinModal";
-
 // Helper function to get full name from particular ID
 const getParticularFullName = (particular: string): string => {
   const mapping: { [key: string]: string } = {
@@ -28,6 +26,7 @@ const getParticularFullName = (particular: string): string => {
     POPS: "Provincial Operations",
     CAIDS: "Community Affairs and Information Development Services",
     LNP: "Local Nutrition Program",
+  
     PID: "Provincial Information Department",
     ACDP: "Agricultural Competitiveness Development Program",
     LYDP: "Local Youth Development Program",
@@ -41,7 +40,6 @@ export default function ParticularProjectsPage() {
   const params = useParams();
   const { accentColorValue } = useAccentColor();
   const particular = decodeURIComponent(params.particularId as string);
-
   // State for showing/hiding details - Load from localStorage
   const [showDetails, setShowDetails] = useState(() => {
     if (typeof window !== "undefined") {
@@ -50,19 +48,16 @@ export default function ParticularProjectsPage() {
     }
     return false;
   });
-
   // Save to localStorage whenever showDetails changes
   useEffect(() => {
     if (typeof window !== "undefined") {
       localStorage.setItem("showBudgetDetails", JSON.stringify(showDetails));
     }
   }, [showDetails]);
-
   // Get budget item by particular name to get its ID
   const budgetItem = useQuery(api.budgetItems.getByParticulars, {
     particulars: particular,
   });
-
   // Debug log to verify budgetItem is loaded
   useEffect(() => {
     console.log("🎯 [Page] Budget Item Query Result:", {
@@ -72,28 +67,23 @@ export default function ParticularProjectsPage() {
       budgetItemId: budgetItem?._id,
     });
   }, [particular, budgetItem]);
-
   // Get breakdown statistics for this budget item
   const breakdownStats = useQuery(api.govtProjects.getBreakdownStats, {
     budgetItemId: budgetItem?._id,
   });
-
   // Get all departments for the dropdown (kept for reference if needed by other components)
   const departments = useQuery(api.departments.list, { includeInactive: false });
-
   // Get projects filtered by budgetItemId
   const projects = useQuery(
     api.projects.list,
     budgetItem ? { budgetItemId: budgetItem._id } : "skip"
   );
-
   // Mutations
   const createProject = useMutation(api.projects.create);
   const updateProject = useMutation(api.projects.update);
   const deleteProject = useMutation(api.projects.moveToTrash);
   
   const [showTrashModal, setShowTrashModal] = useState(false);
-
   const recalculateBudgetItem = useMutation(api.budgetItems.recalculateSingleBudgetItem);
 
   const particularFullName = getParticularFullName(particular);
@@ -111,6 +101,7 @@ export default function ParticularProjectsPage() {
       projectCompleted: project.projectCompleted,
       projectDelayed: project.projectDelayed,
       projectsOngoing: project.projectsOnTrack,
+     
       remarks: project.remarks ?? "",
       year: project.year,
       status: project.status,
@@ -119,7 +110,9 @@ export default function ParticularProjectsPage() {
       pinnedAt: project.pinnedAt,
       pinnedBy: project.pinnedBy,
       budgetItemId: project.budgetItemId,
-    })) ?? [];
+      categoryId: project.categoryId, // Ensure this is passed down
+    })) ??
+    [];
 
   const handleAddProject = async (projectData: any) => {
     if (!budgetItem) {
@@ -128,12 +121,11 @@ export default function ParticularProjectsPage() {
     }
 
     try {
-      // NOTE: Removed legacy department validation here.
-      // Validation is now handled by the Combobox (UI) and the Backend (API).
-      
+      // ✅ FIXED: Added categoryId to payload
       await createProject({
         particulars: projectData.particulars,
         budgetItemId: budgetItem._id,
+        categoryId: projectData.categoryId || undefined, // Linked here
         implementingOffice: projectData.implementingOffice,
         totalBudgetAllocated: projectData.totalBudgetAllocated,
         obligatedBudget: projectData.obligatedBudget || undefined,
@@ -141,9 +133,9 @@ export default function ParticularProjectsPage() {
         remarks: projectData.remarks || undefined,
         year: projectData.year || undefined,
         targetDateCompletion: projectData.targetDateCompletion || undefined,
+        
         projectManagerId: projectData.projectManagerId || undefined,
       });
-
       toast.success("Project created successfully!", {
         description: `"${projectData.particulars}" has been added. Status will auto-update when breakdowns are added.`,
       });
@@ -159,22 +151,22 @@ export default function ParticularProjectsPage() {
   const handleEditProject = async (id: string, projectData: any) => {
     if (!budgetItem) return;
     try {
-      // NOTE: Removed legacy department validation here.
-      
+      // ✅ FIXED: Added categoryId to payload
       await updateProject({
         id: id as Id<"projects">,
         particulars: projectData.particulars,
         budgetItemId: budgetItem._id,
+        categoryId: projectData.categoryId || undefined, // Linked here
         implementingOffice: projectData.implementingOffice,
         totalBudgetAllocated: projectData.totalBudgetAllocated,
         obligatedBudget: projectData.obligatedBudget || undefined,
         totalBudgetUtilized: projectData.totalBudgetUtilized || 0,
         remarks: projectData.remarks || undefined,
         year: projectData.year || undefined,
+        
         targetDateCompletion: projectData.targetDateCompletion || undefined,
         projectManagerId: projectData.projectManagerId || undefined,
       });
-
       toast.success("Project updated successfully!", {
         description: `"${projectData.particulars}" has been updated.`,
       });
@@ -215,7 +207,6 @@ export default function ParticularProjectsPage() {
       toast.error("Failed to recalculate budget item");
     }
   };
-
   // Calculate summary statistics
   const totalAllocatedBudget = transformedProjects.reduce(
     (sum, project) => sum + project.totalBudgetAllocated,
@@ -227,12 +218,12 @@ export default function ParticularProjectsPage() {
   );
   const avgUtilizationRate =
     transformedProjects.length > 0
-      ? transformedProjects.reduce(
+      ?
+        transformedProjects.reduce(
           (sum, project) => sum + project.utilizationRate,
           0
         ) / transformedProjects.length
       : 0;
-
   return (
     <>
       {/* Back Button and Page Header */}
@@ -243,6 +234,7 @@ export default function ParticularProjectsPage() {
         >
           <svg
             className="w-4 h-4"
+      
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -251,7 +243,8 @@ export default function ParticularProjectsPage() {
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              d="M15 19l-7-7 7-7"
+   
+            d="M15 19l-7-7 7-7"
             />
           </svg>
           Back to Budget Tracking
@@ -260,6 +253,7 @@ export default function ParticularProjectsPage() {
         <div className="flex items-center justify-between gap-4 mb-1">
           {/* LEFT: PARTICULAR FULL NAME */}
           <h1
+      
             className="text-3xl sm:text-4xl font-semibold text-zinc-900 dark:text-zinc-100"
             style={{ fontFamily: "var(--font-cinzel), serif" }}
           >
@@ -268,19 +262,22 @@ export default function ParticularProjectsPage() {
 
           {/* RIGHT: ACTION BUTTONS */}
           <div className="flex items-center gap-2">
-            {/* Show/Hide Details Button */}
+            {/* Show/Hide Details 
+            Button */}
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowDetails(!showDetails)}
               className="gap-2 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
             >
+         
               {showDetails ? (
                 <>
                   <EyeOff className="w-4 h-4" />
                   <span className="hidden sm:inline">Hide Details</span>
                 </>
               ) : (
+   
                 <>
                   <Eye className="w-4 h-4" />
                   <span className="hidden sm:inline">Show Details</span>
@@ -288,12 +285,14 @@ export default function ParticularProjectsPage() {
               )}
             </Button>
 
+   
             {/* Recalculate Button */}
             {budgetItem && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleRecalculateBudgetItem}
+            
                 className="gap-2 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
               >
                 <RefreshCw className="w-4 h-4" />
@@ -301,6 +300,7 @@ export default function ParticularProjectsPage() {
               </Button>
             )}
 
+           
             {/* Activity Log Button */}
             {budgetItem && (
               <ActivityLogSheet
@@ -308,16 +308,19 @@ export default function ParticularProjectsPage() {
                 budgetItemId={budgetItem._id}
                 title={`Project Activities: ${budgetItem.particulars}`}
                 trigger={
+ 
                   <Button
                     variant="outline"
                     size="sm"
                     className="gap-2 bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+               
                   >
                     <History className="w-4 h-4" />
                     <span className="hidden sm:inline">Project Log</span>
                   </Button>
                 }
               />
+   
             )}
           </div>
         </div>
@@ -327,6 +330,7 @@ export default function ParticularProjectsPage() {
           {budgetItem?.status && (
             <span className={`ml-2 font-medium ${getStatusColorClass(budgetItem.status)}`}>
               • Status: {getStatusDisplayText(budgetItem.status)}
+     
             </span>
           )}
         </p>
@@ -336,6 +340,7 @@ export default function ParticularProjectsPage() {
       {showDetails && budgetItem && (
         <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-800 p-6 no-print">
           <div className="flex items-center justify-between mb-4">
+            
             <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
               Status Information
             </h3>
@@ -344,15 +349,19 @@ export default function ParticularProjectsPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
+   
                 Budget Status
               </div>
-              <div className={`text-2xl font-bold ${getStatusColorClass(budgetItem.status || "ongoing")}`}>
-                {budgetItem.status?.toUpperCase() || "ONGOING"}
+              <div className={`text-2xl font-bold ${getStatusColorClass(budgetItem.status ||
+                "ongoing")}`}>
+                {budgetItem.status?.toUpperCase() ||
+                "ONGOING"}
               </div>
               <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
                 Auto-calculated from projects
               </div>
             </div>
+            
             
             <div className="text-center">
               <div className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
@@ -361,22 +370,26 @@ export default function ParticularProjectsPage() {
               <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
                 {transformedProjects.length}
               </div>
+ 
               <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
                 {budgetItem.projectCompleted}C • {budgetItem.projectDelayed}D • {budgetItem.projectsOnTrack}O
               </div>
             </div>
             
             <div className="text-center">
+            
               <div className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
                 Total Breakdowns
               </div>
               <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
-                {breakdownStats?.totalBreakdowns || 0}
+                {breakdownStats?.totalBreakdowns ||
+                0}
               </div>
               <div className="text-xs text-zinc-500 dark:text-zinc-400 mt-2">
                 Across all projects
               </div>
             </div>
+            
             
             <div className="text-center">
               <div className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
@@ -384,9 +397,11 @@ export default function ParticularProjectsPage() {
               </div>
               <div className="text-sm text-zinc-700 dark:text-zinc-300">
                 {budgetItem.projectsOnTrack > 0 
+             
                   ? "Ongoing (has ongoing projects)"
                   : budgetItem.projectDelayed > 0
-                  ? "Delayed (has delayed projects)"
+                  ?
+                  "Delayed (has delayed projects)"
                   : "Completed (all projects completed)"}
               </div>
             </div>
@@ -396,12 +411,14 @@ export default function ParticularProjectsPage() {
 
       {/* Summary Cards - Conditionally Rendered */}
       {showDetails && (
+     
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 no-print">
           <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
             <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
               Total Allocated Budget
             </p>
             <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+            
               {new Intl.NumberFormat("en-PH", {
                 style: "currency",
                 currency: "PHP",
@@ -409,6 +426,7 @@ export default function ParticularProjectsPage() {
                 maximumFractionDigits: 0,
               }).format(totalAllocatedBudget)}
             </p>
+  
           </div>
 
           <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
@@ -416,6 +434,7 @@ export default function ParticularProjectsPage() {
               Total Utilized Budget
             </p>
             <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+              
               {new Intl.NumberFormat("en-PH", {
                 style: "currency",
                 currency: "PHP",
@@ -423,6 +442,7 @@ export default function ParticularProjectsPage() {
                 maximumFractionDigits: 0,
               }).format(totalUtilizedBudget)}
             </p>
+    
           </div>
 
           <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-6">
@@ -431,6 +451,7 @@ export default function ParticularProjectsPage() {
             </p>
             <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
               {avgUtilizationRate.toFixed(1)}%
+  
             </p>
           </div>
 
@@ -439,6 +460,7 @@ export default function ParticularProjectsPage() {
               Total Projects
             </p>
             <p className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">
+   
               {transformedProjects.length}
             </p>
           </div>
@@ -447,12 +469,14 @@ export default function ParticularProjectsPage() {
 
       {/* Projects Table */}
       <div className="mb-6">
-        {projects === undefined || departments === undefined || budgetItem === undefined ? (
+        {projects === undefined ||
+          departments === undefined || budgetItem === undefined ? (
           <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 p-12 text-center">
             <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-zinc-300 border-t-transparent dark:border-zinc-700 dark:border-t-transparent"></div>
             <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
               Loading projects...
             </p>
+         
           </div>
         ) : (
           <ProjectsTable
@@ -462,6 +486,7 @@ export default function ParticularProjectsPage() {
             onAdd={handleAddProject}
             onEdit={handleEditProject}
             onDelete={handleDeleteProject}
+       
             onOpenTrash={() => setShowTrashModal(true)} 
           />
         )}

@@ -709,3 +709,156 @@ export const togglePin = mutation({
         return args.id;
     },
 });
+
+/**
+ * BULK ACTION: Move multiple projects to trash
+ */
+export const bulkMoveToTrash = mutation({
+  args: {
+    ids: v.array(v.id("projects")),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const user = await ctx.db.get(userId);
+    if (!user || (user.role !== "admin" && user.role !== "super_admin")) {
+      throw new Error("Unauthorized: Only admins can perform bulk actions.");
+    }
+
+    const now = Date.now();
+    let successCount = 0;
+
+    for (const id of args.ids) {
+      const existing = await ctx.db.get(id);
+      if (!existing || existing.isDeleted) continue;
+
+      // 1. Trash Project
+      await ctx.db.patch(id, {
+        isDeleted: true,
+        deletedAt: now,
+        deletedBy: userId,
+        updatedAt: now,
+        updatedBy: userId,
+      });
+
+      // 2. Trash Linked Breakdowns
+      const breakdowns = await ctx.db
+        .query("govtProjectBreakdowns")
+        .withIndex("projectId", (q) => q.eq("projectId", id))
+        .collect();
+
+      for (const breakdown of breakdowns) {
+        await ctx.db.patch(breakdown._id, {
+          isDeleted: true,
+          deletedAt: now,
+          deletedBy: userId,
+        });
+      }
+
+      // Update usage counts
+      await ctx.runMutation(internal.projectParticulars.updateUsageCount, {
+        code: existing.particulars,
+        delta: -1,
+      });
+      await ctx.runMutation(internal.implementingAgencies.updateUsageCount, {
+        code: existing.implementingOffice,
+        usageContext: "project",
+        delta: -1,
+      });
+      if (existing.categoryId) {
+        await ctx.runMutation(internal.projectCategories.updateUsageCount, {
+          categoryId: existing.categoryId,
+          delta: -1,
+        });
+      }
+
+      // Recalculate Parent Budget
+      if (existing.budgetItemId) {
+        await recalculateBudgetItemMetrics(ctx, existing.budgetItemId, userId);
+      }
+
+      // Log Activity
+      await logProjectActivity(ctx, userId, {
+        action: "deleted",
+        projectId: id,
+        previousValues: existing,
+        reason: args.reason || "Bulk move to trash",
+      });
+
+      successCount++;
+    }
+
+    return { success: true, count: successCount };
+  },
+});
+
+/**
+ * BULK ACTION: Move multiple projects to a specific category
+ */
+export const bulkUpdateCategory = mutation({
+  args: {
+    ids: v.array(v.id("projects")),
+    categoryId: v.id("projectCategories"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+
+    const user = await ctx.db.get(userId);
+    if (!user || (user.role !== "admin" && user.role !== "super_admin")) {
+      throw new Error("Unauthorized: Only admins can perform bulk actions.");
+    }
+
+    const category = await ctx.db.get(args.categoryId);
+    if (!category) throw new Error("Category not found");
+
+    const now = Date.now();
+    let successCount = 0;
+
+    for (const id of args.ids) {
+      const existing = await ctx.db.get(id);
+      if (!existing) continue;
+
+      // Skip if already in this category
+      if (existing.categoryId === args.categoryId) continue;
+
+      const previousValues = { ...existing };
+
+      // Decrement old category count
+      if (existing.categoryId) {
+        await ctx.runMutation(internal.projectCategories.updateUsageCount, {
+          categoryId: existing.categoryId,
+          delta: -1,
+        });
+      }
+
+      // Update project
+      await ctx.db.patch(id, {
+        categoryId: args.categoryId,
+        updatedAt: now,
+        updatedBy: userId,
+      });
+
+      // Increment new category count
+      await ctx.runMutation(internal.projectCategories.updateUsageCount, {
+        categoryId: args.categoryId,
+        delta: 1,
+      });
+
+      // Log Activity
+      await logProjectActivity(ctx, userId, {
+        action: "updated",
+        projectId: id,
+        previousValues: previousValues,
+        newValues: { ...existing, categoryId: args.categoryId },
+        reason: "Bulk category update",
+      });
+
+      successCount++;
+    }
+
+    return { success: true, count: successCount };
+  },
+});

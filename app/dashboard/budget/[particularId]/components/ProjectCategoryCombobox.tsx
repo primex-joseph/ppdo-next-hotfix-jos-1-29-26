@@ -31,6 +31,7 @@ interface ProjectCategoryComboboxProps {
   onChange: (value: Id<"projectCategories"> | undefined) => void;
   disabled?: boolean;
   error?: string;
+  hideInfoText?: boolean;
 }
 
 const ITEMS_PER_PAGE = 20;
@@ -40,6 +41,7 @@ export function ProjectCategoryCombobox({
   onChange,
   disabled,
   error,
+  hideInfoText = false,
 }: ProjectCategoryComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -432,7 +434,7 @@ export function ProjectCategoryCombobox({
       )}
       
       {/* No category selected info */}
-      {!value && !selectedCategory && (
+      {!value && !selectedCategory && !hideInfoText && (
         <p className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
           <Tag className="w-3 h-3" />
           No category assigned. Categories are optional and help organize projects.
