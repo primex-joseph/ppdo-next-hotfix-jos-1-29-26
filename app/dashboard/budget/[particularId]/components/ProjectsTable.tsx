@@ -1,3 +1,5 @@
+// app/dashboard/budget/[particularId]/components/ProjectsTable.tsx
+
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";

@@ -1,4 +1,4 @@
-// components/mockData.ts
+// app/dashboard/budget/[particularId]/[projectbreakdownId]/[projectId]/components/mockData.ts
 
 import { type FinancialBreakdownItem, type InspectionItem, type StatItem, type TransactionCardProps, type RemarkItem } from "./types"
 

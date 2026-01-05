@@ -1,4 +1,4 @@
-// components/tabs/AnalyticsContent.tsx
+// app/dashboard/budget/[particularId]/[projectbreakdownId]/[projectId]/components/tabs/AnalyticsContent.tsx
 
 import type React from "react"
 import { type BarChartItemProps } from "../types"

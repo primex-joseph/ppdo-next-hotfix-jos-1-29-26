@@ -60,7 +60,7 @@ const projectSchema = z
   .object({
     particulars: noWhitespaceString,
     implementingOffice: z.string().min(1, { message: "Implementing office is required." }),
-    categoryId: z.string().optional(), // 🆕 Added category
+    categoryId: z.string().optional(),
     totalBudgetAllocated: z.number().min(0, { message: "Must be 0 or greater." }),
     obligatedBudget: z.number().min(0).optional().or(z.literal(0)),
     totalBudgetUtilized: z.number().min(0), 
@@ -84,6 +84,41 @@ interface ProjectFormProps {
   onCancel: () => void;
 }
 
+// ✅ Helper function to format number with commas (real-time)
+const formatNumberWithCommas = (value: string): string => {
+  // Remove all non-digit characters except decimal point
+  const cleaned = value.replace(/[^\d.]/g, '');
+  
+  // Split by decimal point
+  const parts = cleaned.split('.');
+  
+  // Format the integer part with commas
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  
+  // Rejoin with decimal (limit to 2 decimal places)
+  if (parts.length > 1) {
+    return parts[0] + '.' + parts[1].slice(0, 2);
+  }
+  
+  return parts[0];
+};
+
+// ✅ Helper function to parse formatted number
+const parseFormattedNumber = (value: string): number => {
+  const cleaned = value.replace(/,/g, '');
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+// ✅ Helper function to format number for display (after blur)
+const formatNumberForDisplay = (value: number): string => {
+  if (value === 0) return '';
+  return new Intl.NumberFormat('en-PH', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+};
+
 export function ProjectForm({ project, budgetItemId, onSave, onCancel }: ProjectFormProps) {
   const { accentColorValue } = useAccentColor();
   const shouldFetchParent = budgetItemId !== undefined && budgetItemId !== null && budgetItemId !== "";
@@ -104,6 +139,11 @@ export function ProjectForm({ project, budgetItemId, onSave, onCancel }: Project
   // ✅ State to toggle manual input
   const [showManualInput, setShowManualInput] = useState(false);
 
+  // ✅ Display values for formatted inputs
+  const [displayAllocated, setDisplayAllocated] = useState("");
+  const [displayObligated, setDisplayObligated] = useState("");
+  const [displayUtilized, setDisplayUtilized] = useState("");
+
   const getSavedDraft = () => {
     if (project) return null;
     try {
@@ -121,7 +161,7 @@ export function ProjectForm({ project, budgetItemId, onSave, onCancel }: Project
     defaultValues: savedDraft || {
       particulars: project?.particulars || "",
       implementingOffice: project?.implementingOffice || "",
-      categoryId: project?.categoryId || undefined, // 🆕 Added category default
+      categoryId: project?.categoryId || undefined,
       totalBudgetAllocated: project?.totalBudgetAllocated || 0,
       obligatedBudget: project?.obligatedBudget || undefined,
       totalBudgetUtilized: project?.totalBudgetUtilized || 0,
@@ -131,6 +171,17 @@ export function ProjectForm({ project, budgetItemId, onSave, onCancel }: Project
   });
 
   const formValues = form.watch();
+
+  // ✅ Initialize display values on mount
+  useEffect(() => {
+    const allocated = form.getValues("totalBudgetAllocated");
+    const obligated = form.getValues("obligatedBudget");
+    const utilized = form.getValues("totalBudgetUtilized");
+    
+    if (allocated > 0) setDisplayAllocated(formatNumberForDisplay(allocated));
+    if (obligated && obligated > 0) setDisplayObligated(formatNumberForDisplay(obligated));
+    if (utilized && utilized > 0) setDisplayUtilized(formatNumberForDisplay(utilized));
+  }, []);
   
   useEffect(() => {
     if (!project) {
@@ -218,7 +269,7 @@ export function ProjectForm({ project, budgetItemId, onSave, onCancel }: Project
     const projectData = {
       ...values,
       remarks: values.remarks || "",
-      categoryId: values.categoryId || undefined, // 🆕 Include category
+      categoryId: values.categoryId || undefined,
     };
 
     if (!project) {
@@ -271,7 +322,6 @@ export function ProjectForm({ project, budgetItemId, onSave, onCancel }: Project
             )}
           />
 
-          {/* 🆕 PROJECT CATEGORY FIELD */}
           <FormField
             name="categoryId"
             render={({ field }) => (
@@ -364,21 +414,36 @@ export function ProjectForm({ project, budgetItemId, onSave, onCancel }: Project
                     </div>
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      placeholder="0"
-                      min="0"
-                      step="0.01"
-                      className={`bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 ${
-                        budgetAvailability.isOverBudget
-                          ? "border-red-500 focus-visible:ring-red-500"
-                          : "border-zinc-300 dark:border-zinc-700"
-                      }`}
-                      {...field}
-                      onChange={(e) => {
-                        const value = e.target.value.trim();
-                        field.onChange(parseFloat(value) || 0);
-                      }}
-                    />
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 dark:text-zinc-400">
+                        ₱
+                      </span>
+                      <Input
+                        placeholder="0"
+                        className={`bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 pl-8 ${
+                          budgetAvailability.isOverBudget
+                            ? "border-red-500 focus-visible:ring-red-500"
+                            : "border-zinc-300 dark:border-zinc-700"
+                        }`}
+                        value={displayAllocated}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const formatted = formatNumberWithCommas(value);
+                          setDisplayAllocated(formatted);
+                          const numericValue = parseFormattedNumber(formatted);
+                          field.onChange(numericValue);
+                        }}
+                        onBlur={() => {
+                          const numericValue = parseFormattedNumber(displayAllocated);
+                          if (numericValue > 0) {
+                            setDisplayAllocated(formatNumberForDisplay(numericValue));
+                          } else {
+                            setDisplayAllocated("");
+                          }
+                          field.onChange(numericValue);
+                        }}
+                      />
+                    </div>
                   </FormControl>
                   {budgetAvailability.isOverBudget && (
                     <div className="flex items-start gap-1 mt-1 text-xs text-red-600 font-medium animate-in slide-in-from-top-1">
@@ -407,6 +472,8 @@ export function ProjectForm({ project, budgetItemId, onSave, onCancel }: Project
                         if (!nextState) {
                             form.setValue("obligatedBudget", 0);
                             form.setValue("totalBudgetUtilized", 0);
+                            setDisplayObligated("");
+                            setDisplayUtilized("");
                         }
                     }}
                     className="text-xs flex items-center gap-2 border-orange-200 hover:bg-orange-50 dark:hover:bg-orange-950/20 text-orange-700 dark:text-orange-400"
@@ -438,22 +505,36 @@ export function ProjectForm({ project, budgetItemId, onSave, onCancel }: Project
                                     Obligated Budget <span className="text-xs text-zinc-500">(Optional)</span>
                                 </FormLabel>
                                 <FormControl>
-                                    <Input
-                                    placeholder="0"
-                                    min="0"
-                                    step="0.01"
-                                    className={`bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 ${
-                                        isObligatedExceeded
-                                        ? "border-red-500 focus-visible:ring-red-500"
-                                        : "border-zinc-300 dark:border-zinc-700"
-                                    }`}
-                                    {...field}
-                                    value={field.value || ""}
-                                    onChange={(e) => {
-                                        const value = e.target.value.trim();
-                                        field.onChange(value ? parseFloat(value) : undefined);
-                                    }}
-                                    />
+                                    <div className="relative">
+                                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 dark:text-zinc-400">
+                                        ₱
+                                      </span>
+                                      <Input
+                                        placeholder="0"
+                                        className={`bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 pl-8 ${
+                                          isObligatedExceeded
+                                            ? "border-red-500 focus-visible:ring-red-500"
+                                            : "border-zinc-300 dark:border-zinc-700"
+                                        }`}
+                                        value={displayObligated}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          const formatted = formatNumberWithCommas(value);
+                                          setDisplayObligated(formatted);
+                                          const numericValue = parseFormattedNumber(formatted);
+                                          field.onChange(numericValue > 0 ? numericValue : undefined);
+                                        }}
+                                        onBlur={() => {
+                                          const numericValue = parseFormattedNumber(displayObligated);
+                                          if (numericValue > 0) {
+                                            setDisplayObligated(formatNumberForDisplay(numericValue));
+                                          } else {
+                                            setDisplayObligated("");
+                                          }
+                                          field.onChange(numericValue > 0 ? numericValue : undefined);
+                                        }}
+                                      />
+                                    </div>
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
@@ -468,21 +549,36 @@ export function ProjectForm({ project, budgetItemId, onSave, onCancel }: Project
                                     Budget Utilized
                                 </FormLabel>
                                 <FormControl>
-                                    <Input
-                                    placeholder="0"
-                                    min="0"
-                                    step="0.01"
-                                    className={`bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 ${
-                                        isBudgetExceeded
-                                        ? "border-orange-500 focus-visible:ring-orange-500"
-                                        : "border-zinc-300 dark:border-zinc-700"
-                                    }`}
-                                    {...field}
-                                    onChange={(e) => {
-                                        const value = e.target.value.trim();
-                                        field.onChange(parseFloat(value) || 0);
-                                    }}
-                                    />
+                                    <div className="relative">
+                                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 dark:text-zinc-400">
+                                        ₱
+                                      </span>
+                                      <Input
+                                        placeholder="0"
+                                        className={`bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 pl-8 ${
+                                          isBudgetExceeded
+                                            ? "border-orange-500 focus-visible:ring-orange-500"
+                                            : "border-zinc-300 dark:border-zinc-700"
+                                        }`}
+                                        value={displayUtilized}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          const formatted = formatNumberWithCommas(value);
+                                          setDisplayUtilized(formatted);
+                                          const numericValue = parseFormattedNumber(formatted);
+                                          field.onChange(numericValue);
+                                        }}
+                                        onBlur={() => {
+                                          const numericValue = parseFormattedNumber(displayUtilized);
+                                          if (numericValue > 0) {
+                                            setDisplayUtilized(formatNumberForDisplay(numericValue));
+                                          } else {
+                                            setDisplayUtilized("");
+                                          }
+                                          field.onChange(numericValue);
+                                        }}
+                                      />
+                                    </div>
                                 </FormControl>
                                 {isBudgetExceeded && (
                                     <p className="text-xs text-orange-500 mt-1">
@@ -540,7 +636,7 @@ export function ProjectForm({ project, budgetItemId, onSave, onCancel }: Project
                   </AccordionTrigger>
                   <AccordionContent className="px-4 pb-4">
                     <div className="bg-white dark:bg-zinc-900 rounded p-2.5 font-mono text-xs border">
-                      ({totalBudgetUtilized.toFixed(2)} ÷ {totalBudgetAllocated.toFixed(2)}) × 100 = {utilizationRate.toFixed(2)}%
+                      (₱{formatNumberForDisplay(totalBudgetUtilized)} ÷ ₱{formatNumberForDisplay(totalBudgetAllocated)}) × 100 = {utilizationRate.toFixed(2)}%
                     </div>
                   </AccordionContent>
                 </AccordionItem>

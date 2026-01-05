@@ -1,4 +1,4 @@
-// app/dashboard/budget/[particularId]/[projectId]/components/modals/NewInspectionForm.tsx
+// app/dashboard/budget/[particularId]/[projectbreakdownId]/[projectId]/components/modals/NewInspectionForm.tsx
 
 "use client";
 

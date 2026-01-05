@@ -1,4 +1,4 @@
-// app/dashboard/budget/[particularId]/[projectbreakdownId]/components/BreakdownForm.tsx
+// new code unfinished app/dashboard/budget/[particularId]/[projectbreakdownId]/components/BreakdownForm.tsx
 
 "use client";
 
@@ -35,7 +35,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ChevronDown, MapPin, FileText, PlusCircle, MinusCircle, AlertTriangle, Info, TrendingUp, Package, Eye, EyeOff } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import { ChevronDown, MapPin, FileText, AlertTriangle, Info, TrendingUp, Package, Eye, EyeOff } from "lucide-react";
 import { ImplementingOfficeSelector } from "./ImplementingOfficeSelector";
 import { BudgetViolationModal } from "../../../components/BudgetViolationModal";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -100,6 +101,41 @@ interface BreakdownFormProps {
   projectId?: string;
 }
 
+// ✅ Helper function to format number with commas (real-time)
+const formatNumberWithCommas = (value: string): string => {
+  // Remove all non-digit characters except decimal point
+  const cleaned = value.replace(/[^\d.]/g, '');
+  
+  // Split by decimal point
+  const parts = cleaned.split('.');
+  
+  // Format the integer part with commas
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  
+  // Rejoin with decimal (limit to 2 decimal places)
+  if (parts.length > 1) {
+    return parts[0] + '.' + parts[1].slice(0, 2);
+  }
+  
+  return parts[0];
+};
+
+// ✅ Helper function to parse formatted number
+const parseFormattedNumber = (value: string): number => {
+  const cleaned = value.replace(/,/g, '');
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+// ✅ Helper function to format number for display (after blur)
+const formatNumberForDisplay = (value: number): string => {
+  if (value === 0) return '';
+  return new Intl.NumberFormat('en-PH', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(value);
+};
+
 export function BreakdownForm({
   breakdown,
   onSave,
@@ -109,11 +145,6 @@ export function BreakdownForm({
   projectId,
 }: BreakdownFormProps) {
   const { accentColorValue } = useAccentColor();
-  
-  // States for UI interactions
-  const [showUtilizedInput, setShowUtilizedInput] = useState(
-    !!breakdown && (breakdown.budgetUtilized || 0) > 0
-  );
   
   const [showViolationModal, setShowViolationModal] = useState(false);
   const [showBudgetOverview, setShowBudgetOverview] = useState(false);
@@ -125,6 +156,11 @@ export function BreakdownForm({
     parentBudget: number;
     difference: number;
   } | null>(null);
+
+  // ✅ Display values for formatted inputs
+  const [displayAllocated, setDisplayAllocated] = useState("");
+  const [displayObligated, setDisplayObligated] = useState("");
+  const [displayUtilized, setDisplayUtilized] = useState("");
 
   // Helper: Date conversions
   const dateToTimestamp = (dateString: string) => dateString ? new Date(dateString).getTime() : undefined;
@@ -202,6 +238,17 @@ export function BreakdownForm({
       fundSource: breakdown?.fundSource || "",
     },
   });
+
+  // ✅ Initialize display values on mount
+  useEffect(() => {
+    const allocated = form.getValues("allocatedBudget");
+    const obligated = form.getValues("obligatedBudget");
+    const utilized = form.getValues("budgetUtilized");
+    
+    if (allocated && allocated > 0) setDisplayAllocated(formatNumberForDisplay(allocated));
+    if (obligated && obligated > 0) setDisplayObligated(formatNumberForDisplay(obligated));
+    if (utilized && utilized > 0) setDisplayUtilized(formatNumberForDisplay(utilized));
+  }, []);
 
   // Watch fields for real-time validation calculations
   const currentAllocated = form.watch("allocatedBudget") || 0;
@@ -311,19 +358,17 @@ export function BreakdownForm({
     // 2. Check if Utilized Budget exceeds Self Allocation
     const isOverSelf = (values.budgetUtilized || 0) > (values.allocatedBudget || 0);
 
-    // 3. Check if Obligated Budget exceeds Parent Allocated (Specific Requirement)
-    // NOTE: This checks against the absolute parent total, not just available, as per prompt phrasing.
-    // However, robust logic suggests checking against parent total.
+    // 3. Check if Obligated Budget exceeds Parent Allocated
     const isObligatedOverParent = (values.obligatedBudget || 0) > budgetAllocationStatus.parentTotal;
 
-    // 4. Check if Utilized Budget exceeds Parent Allocated (Specific Requirement)
+    // 4. Check if Utilized Budget exceeds Parent Allocated
     const isUtilizedOverParent = (values.budgetUtilized || 0) > budgetAllocationStatus.parentTotal;
 
     // If ANY violation exists, interrupt save and show Modal
     if (isOverParentAllocation || isOverSelf || isObligatedOverParent || isUtilizedOverParent) {
         setPendingValues(values);
         setShowViolationModal(true);
-        return; // STOP here
+        return;
     }
 
     // If clean, proceed to save
@@ -359,25 +404,6 @@ export function BreakdownForm({
               </h3>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                name="implementingOffice"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                      Implementing Office <span className="text-red-500">*</span>
-                    </FormLabel>
-                    <FormControl>
-                      <ImplementingOfficeSelector
-                        value={field.value}
-                        onChange={field.onChange}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
               <FormField
                 name="projectTitle"
                 render={({ field }) => (
@@ -397,7 +423,25 @@ export function BreakdownForm({
                   </FormItem>
                 )}
               />
-            </div>
+            
+              <FormField
+                name="implementingOffice"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-zinc-700 dark:text-zinc-300">
+                      Implementing Office <span className="text-red-500">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <ImplementingOfficeSelector
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
           </div>
 
           {/* --- SECTION 2: Financial Information --- */}
@@ -555,9 +599,7 @@ export function BreakdownForm({
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
-              {/* Allocated Budget - With Parent Budget Context */}
+              {/* Allocated Budget - With Real-time Comma Formatting */}
               <FormField
                 name="allocatedBudget"
                 render={({ field }) => (
@@ -586,22 +628,37 @@ export function BreakdownForm({
                     </div>
                     <FormControl>
                       <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 dark:text-zinc-400">
+                          ₱
+                        </span>
                         <Input
-                          type="number"
                           placeholder="0"
-                          min="0"
-                          step="0.01"
-                          className={`bg-white dark:bg-zinc-900 ${
+                          className={`bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 pl-8 ${
                             budgetAllocationStatus.isExceeded 
                               ? "border-red-500 focus-visible:ring-red-500 pr-10" 
                               : "border-zinc-300 dark:border-zinc-700"
                           }`}
-                          {...field}
+                          value={displayAllocated}
                           onChange={(e) => {
-                            const value = e.target.value.trim();
-                            field.onChange(value ? parseFloat(value) : undefined);
+                            const value = e.target.value;
+                            const formatted = formatNumberWithCommas(value);
+                            setDisplayAllocated(formatted);
+                            const numericValue = parseFormattedNumber(formatted);
+                            field.onChange(numericValue > 0 ? numericValue : undefined);
                           }}
-                          value={field.value ?? ""}
+                          onBlur={() => {
+                            const numericValue = field.value || 0;
+                            if (numericValue > 0) {
+                              setDisplayAllocated(formatNumberForDisplay(numericValue));
+                            } else {
+                              setDisplayAllocated("");
+                            }
+                          }}
+                          onFocus={() => {
+                            if (field.value && field.value > 0) {
+                              setDisplayAllocated(formatNumberForDisplay(field.value));
+                            }
+                          }}
                         />
                         {budgetAllocationStatus.isExceeded && (
                           <AlertTriangle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-red-500" />
@@ -653,8 +710,9 @@ export function BreakdownForm({
                   </FormItem>
                 )}
               />
-
-              {/* Obligated Budget */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              {/* Obligated Budget - With Real-time Comma Formatting */}
               <FormField
                 name="obligatedBudget"
                 render={({ field }) => (
@@ -663,22 +721,39 @@ export function BreakdownForm({
                       Obligated Budget
                     </FormLabel>
                     <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        min="0"
-                        step="0.01"
-                        className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
-                        {...field}
-                        onChange={(e) => {
-                          const value = e.target.value.trim();
-                          field.onChange(value ? parseFloat(value) : undefined);
-                        }}
-                        value={field.value ?? ""}
-                      />
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 dark:text-zinc-400">
+                          ₱
+                        </span>
+                        <Input
+                          placeholder="0"
+                          className="bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 border-zinc-300 dark:border-zinc-700 pl-8"
+                          value={displayObligated}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            const formatted = formatNumberWithCommas(value);
+                            setDisplayObligated(formatted);
+                            const numericValue = parseFormattedNumber(formatted);
+                            field.onChange(numericValue > 0 ? numericValue : undefined);
+                          }}
+                          onBlur={() => {
+                            const numericValue = field.value || 0;
+                            if (numericValue > 0) {
+                              setDisplayObligated(formatNumberForDisplay(numericValue));
+                            } else {
+                              setDisplayObligated("");
+                            }
+                          }}
+                          onFocus={() => {
+                            if (field.value && field.value > 0) {
+                              setDisplayObligated(formatNumberForDisplay(field.value));
+                            }
+                          }}
+                        />
+                      </div>
                     </FormControl>
                     {/* Warning if obligating more than parent total (per prompt) */}
-                    {(field.value || 0) > budgetAllocationStatus.parentTotal && (
+                    {(field.value || 0) > budgetAllocationStatus.parentTotal && budgetAllocationStatus.parentTotal > 0 && (
                         <p className="text-xs text-orange-500 mt-1">
                             Warning: Obligated budget exceeds parent project total allocated budget.
                         </p>
@@ -687,33 +762,9 @@ export function BreakdownForm({
                   </FormItem>
                 )}
               />
-            </div>
 
-            {/* Utilized Budget - Hidden by default */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between">
-                 <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        const nextState = !showUtilizedInput;
-                        setShowUtilizedInput(nextState);
-                        if (!nextState) {
-                            form.setValue("budgetUtilized", 0);
-                        }
-                    }}
-                    className="text-xs flex items-center gap-2 h-8"
-                 >
-                    {showUtilizedInput ? (
-                        <><MinusCircle className="w-3 h-3" /> Hide Utilized Budget</>
-                    ) : (
-                        <><PlusCircle className="w-3 h-3" /> Input Utilized Budget</>
-                    )}
-                 </Button>
-              </div>
-
-              {showUtilizedInput && (
+              
+            {/* Utilized Budget - Hidden by default with Real-time Comma Formatting */}
                 <FormField
                     name="budgetUtilized"
                     render={({ field }) => (
@@ -723,22 +774,37 @@ export function BreakdownForm({
                         </FormLabel>
                         <FormControl>
                         <div className="relative">
+                          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 dark:text-zinc-400">
+                            ₱
+                          </span>
                           <Input
-                              type="number"
                               placeholder="0"
-                              min="0"
-                              step="0.01"
-                              className={`bg-white dark:bg-zinc-900 ${
+                              className={`bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 pl-8 ${
                                 isOverSelfUtilized
                                   ? "border-orange-500 focus-visible:ring-orange-500 pr-10"
                                   : "border-zinc-300 dark:border-zinc-700"
                               }`}
-                              {...field}
+                              value={displayUtilized}
                               onChange={(e) => {
-                                const value = e.target.value.trim();
-                                field.onChange(value ? parseFloat(value) : undefined);
+                                const value = e.target.value;
+                                const formatted = formatNumberWithCommas(value);
+                                setDisplayUtilized(formatted);
+                                const numericValue = parseFormattedNumber(formatted);
+                                field.onChange(numericValue > 0 ? numericValue : undefined);
                               }}
-                              value={field.value ?? ""}
+                              onBlur={() => {
+                                const numericValue = field.value || 0;
+                                if (numericValue > 0) {
+                                  setDisplayUtilized(formatNumberForDisplay(numericValue));
+                                } else {
+                                  setDisplayUtilized("");
+                                }
+                              }}
+                              onFocus={() => {
+                                if (field.value && field.value > 0) {
+                                  setDisplayUtilized(formatNumberForDisplay(field.value));
+                                }
+                              }}
                           />
                           {isOverSelfUtilized && (
                             <AlertTriangle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-orange-500" />
@@ -759,7 +825,7 @@ export function BreakdownForm({
                             </div>
                         )}
                         {/* Parent Utilization Warning (per prompt) */}
-                        {currentUtilized > budgetAllocationStatus.parentTotal && (
+                        {currentUtilized > budgetAllocationStatus.parentTotal && budgetAllocationStatus.parentTotal > 0 && (
                              <p className="text-xs text-red-500 mt-1">
                                 Critical Warning: Utilized budget exceeds parent project total allocated budget.
                              </p>
@@ -768,8 +834,8 @@ export function BreakdownForm({
                     </FormItem>
                     )}
                 />
-              )}
             </div>
+
           </div>
 
           {/* --- SECTION 3: Progress & Status --- */}
@@ -789,22 +855,54 @@ export function BreakdownForm({
                     <FormLabel className="text-zinc-700 dark:text-zinc-300">
                       Accomplishment (%)
                     </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="0"
-                        min="0"
-                        max="100"
-                        step="0.1"
-                        className="bg-white dark:bg-zinc-900"
-                        {...field}
-                        onChange={(e) => {
-                          const value = e.target.value.trim();
-                          field.onChange(value ? parseFloat(value) : undefined);
-                        }}
-                        value={field.value ?? ""}
-                      />
-                    </FormControl>
+                    <div className="flex items-center gap-4">
+                      {/* Slider Section */}
+                      <FormControl>
+                        <div className="flex-1 space-y-2">
+                          <Slider
+                            min={0}
+                            max={100}
+                            step={1}
+                            value={[field.value || 0]}
+                            onValueChange={(value) => {
+                              field.onChange(value[0]);
+                            }}
+                            className="w-full [&_[role=slider]]:bg-white [&_[role=slider]]:border-2 [&_[role=slider]]:border-[#4FBA76] [&_[role=slider]]:shadow-md [&_.relative]:bg-zinc-200 [&_.relative]:dark:bg-zinc-700 [&_[role=slider]~span]:bg-[#4FBA76]"
+                          />
+                          <div className="flex justify-between text-xs text-zinc-500 dark:text-zinc-400 px-0.5">
+                            <span>0</span>
+                            <span>50</span>
+                            <span>100</span>
+                          </div>
+                        </div>
+                      </FormControl>
+                      
+                      {/* Number Input on Right */}
+                      <FormControl>
+                        <div className="relative w-21">
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            min="0"
+                            max="100"
+                            step="1"
+                            className="bg-white dark:bg-zinc-900 pr-7 text-center font-semibold"
+                            {...field}
+                            onChange={(e) => {
+                              const value = e.target.value.trim();
+                              const numValue = value ? parseFloat(value) : 0;
+                              // Clamp value between 0 and 100
+                              const clampedValue = Math.min(Math.max(numValue, 0), 100);
+                              field.onChange(clampedValue);
+                            }}
+                            value={field.value ?? ""}
+                          />
+                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-500 dark:text-zinc-400 text-sm pointer-events-none">
+                            %
+                          </span>
+                        </div>
+                      </FormControl>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
