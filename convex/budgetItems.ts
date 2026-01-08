@@ -213,9 +213,8 @@ export const getByParticulars = query({
             .withIndex("particulars", (q) => q.eq("particulars", args.particulars))
             .filter(q => q.neq(q.field("isDeleted"), true))
             .first();
-    // Gracefully return null when not found instead of throwing to avoid client crashes
-    if (!budgetItem) return null;
-    return budgetItem;
+        if (!budgetItem) throw new Error("Budget item not found");
+        return budgetItem;
     },
 });
 

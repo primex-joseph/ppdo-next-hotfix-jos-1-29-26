@@ -3,50 +3,17 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
 export function useParticularData(particular: string) {
-  const looksLikeId = particular.includes(":");
+  const budgetItem = useQuery(api.budgetItems.getByParticulars, {
+    particulars: particular,
+  });
 
-  const budgetItemById = useQuery(
-    api.budgetItems.get,
-    looksLikeId ? ({ id: particular } as { id: Id<"budgetItems"> }) : "skip"
-  );
-
-  const budgetItemByParticular = useQuery(
-    api.budgetItems.getByParticulars,
-    looksLikeId ? "skip" : { particulars: particular }
-  );
-
-  const budgetItem = looksLikeId ? budgetItemById : budgetItemByParticular;
-
-  // Loading state while the budget item query resolves
-  if (budgetItem === undefined) {
-    return {
-      budgetItem: undefined,
-      breakdownStats: undefined,
-      projects: [],
-      isLoading: true,
-    };
-  }
-
-  // When not found, short-circuit with empty data so UI can show a friendly message
-  if (budgetItem === null) {
-    return {
-      budgetItem: null,
-      breakdownStats: null,
-      projects: [],
-      isLoading: false,
-    };
-  }
-
-  const budgetItemId = budgetItem._id;
-
-  const breakdownStats = useQuery(
-    api.govtProjects.getBreakdownStats,
-    budgetItemId ? { budgetItemId } : "skip"
-  );
+  const breakdownStats = useQuery(api.govtProjects.getBreakdownStats, {
+    budgetItemId: budgetItem?._id,
+  });
 
   const projects = useQuery(
     api.projects.list,
-    budgetItemId ? { budgetItemId } : "skip"
+    budgetItem ? { budgetItemId: budgetItem._id } : "skip"
   );
 
   const transformedProjects =
@@ -79,6 +46,6 @@ export function useParticularData(particular: string) {
     budgetItem,
     breakdownStats,
     projects: transformedProjects,
-    isLoading: projects === undefined,
+    isLoading: projects === undefined || budgetItem === undefined,
   };
 }

@@ -5,8 +5,8 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { BudgetItem, SortDirection, SortField } from "../types";
-import { useAccentColor } from "../../contexts/AccentColorContext";
+import { BudgetItem, SortDirection, SortField } from "../../types";
+import { useAccentColor } from "../../../contexts/AccentColorContext";
 import { Modal } from "./Modal";
 import { ConfirmationModal } from "./ConfirmationModal";
 import { BudgetItemForm } from "./BudgetItemForm";
@@ -34,7 +34,6 @@ interface BudgetTrackingTableProps {
   onDelete?: (id: string) => void;
   expandButton?: React.ReactNode;
   onOpenTrash?: () => void;
-  initialYear?: number; // optional initial year filter (e.g., from /budget/year/[year])
 }
 
 export function BudgetTrackingTable({
@@ -44,7 +43,6 @@ export function BudgetTrackingTable({
   onDelete,
   expandButton,
   onOpenTrash,
-  initialYear,
 }: BudgetTrackingTableProps) {
   const { accentColorValue } = useAccentColor();
   const router = useRouter();
@@ -69,7 +67,7 @@ export function BudgetTrackingTable({
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
-  const [yearFilter, setYearFilter] = useState<number[]>(initialYear ? [initialYear] : []);
+  const [yearFilter, setYearFilter] = useState<number[]>([]);
   const [activeFilterColumn, setActiveFilterColumn] = useState<string | null>(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   
@@ -96,6 +94,23 @@ export function BudgetTrackingTable({
   }, [showAddModal]);
 
   useEffect(() => {
+    // Initialize year filter from navigation selection (client-only)
+    try {
+      const storedYear = typeof window !== "undefined" ? localStorage.getItem("budget_selected_year") : null;
+      if (storedYear) {
+        const yy = parseInt(storedYear, 10);
+        if (!isNaN(yy)) {
+          setYearFilter([yy]);
+        }
+        // Clear so future direct visits don't auto-apply old selection
+        localStorage.removeItem("budget_selected_year");
+      }
+    } catch (_) {
+      // no-op if storage is unavailable
+    }
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (contextMenuRef.current && !contextMenuRef.current.contains(event.target as Node)) {
         setContextMenu(null);
@@ -118,15 +133,6 @@ export function BudgetTrackingTable({
     document.addEventListener("scroll", handleScroll, true);
     return () => document.removeEventListener("scroll", handleScroll, true);
   }, []);
-
-  useEffect(() => {
-    // Sync year filter when navigating to /budget/year/[year]
-    if (initialYear) {
-      setYearFilter([initialYear]);
-    } else {
-      setYearFilter([]);
-    }
-  }, [initialYear]);
 
   const uniqueStatuses = useMemo(() => {
     const statuses = new Set<string>();
@@ -234,11 +240,6 @@ export function BudgetTrackingTable({
 
   const handleRowClick = (item: BudgetItem, e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("button")) {
-      return;
-    }
-    // Prefer deep link with year + item id when available for uniqueness
-    if (item.year) {
-      router.push(`/dashboard/budget/year/${item.year}/${encodeURIComponent(item.id)}`);
       return;
     }
     router.push(`/dashboard/budget/${encodeURIComponent(item.particular)}`);
@@ -743,7 +744,7 @@ export function BudgetTrackingTable({
                       <td className="px-4 sm:px-6 py-4">
                         <div className="flex items-center gap-2">
                           {item.isPinned && (
-                            <Pin className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 flex-shrink-0" />
+                            <Pin className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 shrink-0" />
                           )}
                           <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                             {item.particular}
