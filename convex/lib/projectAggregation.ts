@@ -76,8 +76,13 @@ export async function recalculateProjectMetrics(
   });
 
   // Cascade Calculation to Parent Budget Item
+  // Only recalculate if the parent budget item exists and is not deleted
   if (project.budgetItemId) {
-    await recalculateBudgetItemMetrics(ctx, project.budgetItemId, userId);
+    const budgetItem = await ctx.db.get(project.budgetItemId);
+    // Only recalculate if budget item exists and is not deleted
+    if (budgetItem && !budgetItem.isDeleted) {
+      await recalculateBudgetItemMetrics(ctx, project.budgetItemId, userId);
+    }
   }
 
   return {
@@ -106,7 +111,7 @@ export async function recalculateMultipleProjects(
       ...result,
     });
   }
-  
+
   return results;
 }
 
@@ -119,7 +124,7 @@ export async function recalculateAllProjects(
 ) {
   const allProjects = await ctx.db.query("projects").collect();
   const projectIds = allProjects.map((p) => p._id);
-  
+
   return await recalculateMultipleProjects(ctx, projectIds, userId);
 }
 
@@ -136,6 +141,6 @@ export async function recalculateProjectsForBudgetItem(
     .withIndex("budgetItemId", (q) => q.eq("budgetItemId", budgetItemId))
     .collect();
   const projectIds = projects.map((p) => p._id);
-  
+
   return await recalculateMultipleProjects(ctx, projectIds, userId);
 }

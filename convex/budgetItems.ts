@@ -10,6 +10,7 @@ import { logBudgetActivity } from "./lib/budgetActivityLogger";
 
 /**
  * Get all ACTIVE budget items (Hides Trash)
+ * Shows items where isDeleted is false or undefined (unset)
  */
 export const list = query({
   args: {},
@@ -19,7 +20,6 @@ export const list = query({
 
     const budgetItems = await ctx.db
       .query("budgetItems")
-      .withIndex("isDeleted", (q) => q.eq("isDeleted", undefined))
       .filter((q) => q.neq(q.field("isDeleted"), true))
       .order("desc")
       .collect();
@@ -50,7 +50,7 @@ export const getTrash = query({
  * Cascades to children (Projects -> Breakdowns)
  */
 export const moveToTrash = mutation({
-  args: { 
+  args: {
     id: v.id("budgetItems"),
     reason: v.optional(v.string())
   },
@@ -190,64 +190,64 @@ export const restoreFromTrash = mutation({
  * Get a single budget item by ID
  */
 export const get = query({
-    args: { id: v.id("budgetItems") },
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        if (userId === null) throw new Error("Not authenticated");
-        const budgetItem = await ctx.db.get(args.id);
-        if (!budgetItem || budgetItem.isDeleted) throw new Error("Budget item not found");
-        return budgetItem;
-    },
+  args: { id: v.id("budgetItems") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const budgetItem = await ctx.db.get(args.id);
+    if (!budgetItem || budgetItem.isDeleted) throw new Error("Budget item not found");
+    return budgetItem;
+  },
 });
 
 /**
  * Get a single budget item by particulars (name)
  */
 export const getByParticulars = query({
-    args: { particulars: v.string() },
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        if (userId === null) throw new Error("Not authenticated");
-        const budgetItem = await ctx.db
-            .query("budgetItems")
-            .withIndex("particulars", (q) => q.eq("particulars", args.particulars))
-            .filter(q => q.neq(q.field("isDeleted"), true))
-            .first();
-        if (!budgetItem) throw new Error("Budget item not found");
-        return budgetItem;
-    },
+  args: { particulars: v.string() },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const budgetItem = await ctx.db
+      .query("budgetItems")
+      .withIndex("particulars", (q) => q.eq("particulars", args.particulars))
+      .filter(q => q.neq(q.field("isDeleted"), true))
+      .first();
+    if (!budgetItem) throw new Error("Budget item not found");
+    return budgetItem;
+  },
 });
 
 /**
  * Get statistics for all budget items
  */
 export const getStatistics = query({
-    args: {},
-    handler: async (ctx) => {
-        const userId = await getAuthUserId(ctx);
-        if (userId === null) throw new Error("Not authenticated");
-        const budgetItems = await ctx.db
-            .query("budgetItems")
-            .filter(q => q.neq(q.field("isDeleted"), true))
-            .collect();
-        if (budgetItems.length === 0) {
-            return {
-                totalAllocated: 0,
-                totalUtilized: 0,
-                averageUtilizationRate: 0,
-                totalProjects: 0,
-            };
-        }
-        const totalAllocated = budgetItems.reduce((sum, item) => sum + item.totalBudgetAllocated, 0);
-        const totalUtilized = budgetItems.reduce((sum, item) => sum + item.totalBudgetUtilized, 0);
-        const averageUtilizationRate = budgetItems.reduce((sum, item) => sum + item.utilizationRate, 0) / budgetItems.length;
-        return {
-            totalAllocated,
-            totalUtilized,
-            averageUtilizationRate,
-            totalProjects: budgetItems.length,
-        };
-    },
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const budgetItems = await ctx.db
+      .query("budgetItems")
+      .filter(q => q.neq(q.field("isDeleted"), true))
+      .collect();
+    if (budgetItems.length === 0) {
+      return {
+        totalAllocated: 0,
+        totalUtilized: 0,
+        averageUtilizationRate: 0,
+        totalProjects: 0,
+      };
+    }
+    const totalAllocated = budgetItems.reduce((sum, item) => sum + item.totalBudgetAllocated, 0);
+    const totalUtilized = budgetItems.reduce((sum, item) => sum + item.totalBudgetUtilized, 0);
+    const averageUtilizationRate = budgetItems.reduce((sum, item) => sum + item.utilizationRate, 0) / budgetItems.length;
+    return {
+      totalAllocated,
+      totalUtilized,
+      averageUtilizationRate,
+      totalProjects: budgetItems.length,
+    };
+  },
 });
 
 /**
@@ -289,8 +289,8 @@ export const create = mutation({
 
     const now = Date.now();
     const utilizationRate = args.totalBudgetAllocated > 0
-        ? (args.totalBudgetUtilized / args.totalBudgetAllocated) * 100
-        : 0;
+      ? (args.totalBudgetUtilized / args.totalBudgetAllocated) * 100
+      : 0;
 
     const budgetItemId = await ctx.db.insert("budgetItems", {
       particulars: args.particulars,
@@ -306,6 +306,7 @@ export const create = mutation({
       notes: args.notes,
       departmentId: args.departmentId,
       fiscalYear: args.fiscalYear,
+      isDeleted: false,
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
@@ -335,99 +336,99 @@ export const create = mutation({
  * 🆕 UPDATED: Now validates particular exists if changed
  */
 export const update = mutation({
-    args: {
-        id: v.id("budgetItems"),
-        particulars: v.string(),
-        totalBudgetAllocated: v.number(),
-        obligatedBudget: v.optional(v.number()),
-        totalBudgetUtilized: v.number(),
-        year: v.optional(v.number()),
-        notes: v.optional(v.string()),
-        departmentId: v.optional(v.id("departments")),
-        fiscalYear: v.optional(v.number()),
-        reason: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        if (userId === null) throw new Error("Not authenticated");
+  args: {
+    id: v.id("budgetItems"),
+    particulars: v.string(),
+    totalBudgetAllocated: v.number(),
+    obligatedBudget: v.optional(v.number()),
+    totalBudgetUtilized: v.number(),
+    year: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    departmentId: v.optional(v.id("departments")),
+    fiscalYear: v.optional(v.number()),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
 
-        const existing = await ctx.db.get(args.id);
-        if (!existing) throw new Error("Budget item not found");
+    const existing = await ctx.db.get(args.id);
+    if (!existing) throw new Error("Budget item not found");
 
-        // 🆕 If particular is changing, validate new particular
-        if (args.particulars !== existing.particulars) {
-          const particular = await ctx.db
-            .query("budgetParticulars")
-            .withIndex("code", (q) => q.eq("code", args.particulars))
-            .first();
+    // 🆕 If particular is changing, validate new particular
+    if (args.particulars !== existing.particulars) {
+      const particular = await ctx.db
+        .query("budgetParticulars")
+        .withIndex("code", (q) => q.eq("code", args.particulars))
+        .first();
 
-          if (!particular) {
-            throw new Error(
-              `Budget particular "${args.particulars}" does not exist. Please add it in Budget Particulars management first.`
-            );
-          }
+      if (!particular) {
+        throw new Error(
+          `Budget particular "${args.particulars}" does not exist. Please add it in Budget Particulars management first.`
+        );
+      }
 
-          if (!particular.isActive) {
-            throw new Error(
-              `Budget particular "${args.particulars}" is inactive and cannot be used. Please activate it first.`
-            );
-          }
+      if (!particular.isActive) {
+        throw new Error(
+          `Budget particular "${args.particulars}" is inactive and cannot be used. Please activate it first.`
+        );
+      }
 
-          // Update usage counts
-          // Decrease old particular
-          await ctx.runMutation(internal.budgetParticulars.updateUsageCount, {
-            code: existing.particulars,
-            type: "budget" as const,
-            delta: -1,
-          });
+      // Update usage counts
+      // Decrease old particular
+      await ctx.runMutation(internal.budgetParticulars.updateUsageCount, {
+        code: existing.particulars,
+        type: "budget" as const,
+        delta: -1,
+      });
 
-          // Increase new particular
-          await ctx.runMutation(internal.budgetParticulars.updateUsageCount, {
-            code: args.particulars,
-            type: "budget" as const,
-            delta: 1,
-          });
-        }
+      // Increase new particular
+      await ctx.runMutation(internal.budgetParticulars.updateUsageCount, {
+        code: args.particulars,
+        type: "budget" as const,
+        delta: 1,
+      });
+    }
 
-        const now = Date.now();
-        const utilizationRate = args.totalBudgetAllocated > 0
-            ? (args.totalBudgetUtilized / args.totalBudgetAllocated) * 100
-            : 0;
+    const now = Date.now();
+    const utilizationRate = args.totalBudgetAllocated > 0
+      ? (args.totalBudgetUtilized / args.totalBudgetAllocated) * 100
+      : 0;
 
-        const { reason, ...updates } = args;
-        await ctx.db.patch(args.id, {
-            particulars: args.particulars,
-            totalBudgetAllocated: args.totalBudgetAllocated,
-            obligatedBudget: args.obligatedBudget,
-            totalBudgetUtilized: args.totalBudgetUtilized,
-            utilizationRate,
-            year: args.year,
-            notes: args.notes,
-            departmentId: args.departmentId,
-            fiscalYear: args.fiscalYear,
-            updatedAt: now,
-            updatedBy: userId,
-        });
+    const { reason, ...updates } = args;
+    await ctx.db.patch(args.id, {
+      particulars: args.particulars,
+      totalBudgetAllocated: args.totalBudgetAllocated,
+      obligatedBudget: args.obligatedBudget,
+      totalBudgetUtilized: args.totalBudgetUtilized,
+      utilizationRate,
+      year: args.year,
+      notes: args.notes,
+      departmentId: args.departmentId,
+      fiscalYear: args.fiscalYear,
+      updatedAt: now,
+      updatedBy: userId,
+    });
 
-        const updatedBudget = await ctx.db.get(args.id);
-        await logBudgetActivity(ctx, userId, {
-            action: "updated",
-            budgetItemId: args.id,
-            previousValues: existing,
-            newValues: updatedBudget,
-            reason: args.reason
-        });
-        return args.id;
-    },
+    const updatedBudget = await ctx.db.get(args.id);
+    await logBudgetActivity(ctx, userId, {
+      action: "updated",
+      budgetItemId: args.id,
+      previousValues: existing,
+      newValues: updatedBudget,
+      reason: args.reason
+    });
+    return args.id;
+  },
 });
 
 /**
  * HARD DELETE: Permanently remove from database
  */
 export const remove = mutation({
-  args: { 
+  args: {
     id: v.id("budgetItems"),
-    reason: v.optional(v.string()) 
+    reason: v.optional(v.string())
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -443,7 +444,7 @@ export const remove = mutation({
     const isCreator = existing.createdBy === userId;
 
     if (!isCreator && !isSuperAdmin) {
-        throw new Error("Not authorized");
+      throw new Error("Not authorized");
     }
 
     // 1. Get linked Projects
@@ -493,58 +494,58 @@ export const remove = mutation({
  * Toggle pin status for a budget item
  */
 export const togglePin = mutation({
-    args: { id: v.id("budgetItems") },
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        if (userId === null) throw new Error("Not authenticated");
-        const existing = await ctx.db.get(args.id);
-        if (!existing) throw new Error("Budget item not found");
-        const now = Date.now();
-        const newPinnedState = !existing.isPinned;
-        await ctx.db.patch(args.id, {
-            isPinned: newPinnedState,
-            pinnedAt: newPinnedState ? now : undefined,
-            pinnedBy: newPinnedState ? userId : undefined,
-            updatedAt: now,
-            updatedBy: userId,
-        });
-        return args.id;
-    },
+  args: { id: v.id("budgetItems") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const existing = await ctx.db.get(args.id);
+    if (!existing) throw new Error("Budget item not found");
+    const now = Date.now();
+    const newPinnedState = !existing.isPinned;
+    await ctx.db.patch(args.id, {
+      isPinned: newPinnedState,
+      pinnedAt: newPinnedState ? now : undefined,
+      pinnedBy: newPinnedState ? userId : undefined,
+      updatedAt: now,
+      updatedBy: userId,
+    });
+    return args.id;
+  },
 });
 
 /**
  * INTERNAL: Recalculate metrics for a specific budget item
  */
 export const recalculateMetrics = internalMutation({
-    args: { budgetItemId: v.id("budgetItems"), userId: v.id("users") },
-    handler: async (ctx, args) => {
-        return await recalculateBudgetItemMetrics(ctx, args.budgetItemId, args.userId);
-    },
+  args: { budgetItemId: v.id("budgetItems"), userId: v.id("users") },
+  handler: async (ctx, args) => {
+    return await recalculateBudgetItemMetrics(ctx, args.budgetItemId, args.userId);
+  },
 });
 
 /**
  * PUBLIC: Recalculate metrics for a specific budget item
  */
 export const recalculateSingleBudgetItem = mutation({
-    args: { budgetItemId: v.id("budgetItems") },
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        if (userId === null) throw new Error("Not authenticated");
-        return await recalculateBudgetItemMetrics(ctx, args.budgetItemId, userId);
-    },
+  args: { budgetItemId: v.id("budgetItems") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    return await recalculateBudgetItemMetrics(ctx, args.budgetItemId, userId);
+  },
 });
 
 /**
  * MANUAL: Recalculate all budget item metrics
  */
 export const recalculateAllMetrics = mutation({
-    args: {},
-    handler: async (ctx) => {
-        const userId = await getAuthUserId(ctx);
-        if (userId === null) throw new Error("Not authenticated");
-        const results = await recalculateAllBudgetItems(ctx, userId);
-        return { message: `Recalculated ${results.length} budget items`, results };
-    },
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const results = await recalculateAllBudgetItems(ctx, userId);
+    return { message: `Recalculated ${results.length} budget items`, results };
+  },
 });
 
 // 🆕 Import internal functions

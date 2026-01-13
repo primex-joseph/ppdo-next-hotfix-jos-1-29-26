@@ -26,7 +26,7 @@ export const list = query({
     if (args.budgetItemId) {
       projects = await ctx.db
         .query("projects")
-        .withIndex("budgetItemId", (q) => 
+        .withIndex("budgetItemId", (q) =>
           q.eq("budgetItemId", args.budgetItemId)
         )
         .filter((q) => q.neq(q.field("isDeleted"), true))
@@ -35,7 +35,7 @@ export const list = query({
     } else if (args.categoryId) {
       projects = await ctx.db
         .query("projects")
-        .withIndex("categoryId", (q) => 
+        .withIndex("categoryId", (q) =>
           q.eq("categoryId", args.categoryId)
         )
         .filter((q) => q.neq(q.field("isDeleted"), true))
@@ -76,7 +76,7 @@ export const getTrash = query({
  * 🆕 ENHANCED: Updates category usage count
  */
 export const moveToTrash = mutation({
-  args: { 
+  args: {
     id: v.id("projects"),
     reason: v.optional(v.string())
   },
@@ -212,10 +212,15 @@ export const restoreFromTrash = mutation({
     }
 
     // 3. Recalculate Parent Budget to add this project back to totals
+    // Only recalculate if the parent budget item is also restored (not in trash)
     if (existing.budgetItemId) {
-      await recalculateBudgetItemMetrics(ctx, existing.budgetItemId, userId);
+      const budgetItem = await ctx.db.get(existing.budgetItemId);
+      // Only recalculate if budget item exists and is not deleted
+      if (budgetItem && !budgetItem.isDeleted) {
+        await recalculateBudgetItemMetrics(ctx, existing.budgetItemId, userId);
+      }
     }
-    
+
     // Also recalculate the project itself to ensure its totals from restored breakdowns are correct
     await recalculateProjectMetrics(ctx, args.id, userId);
 
@@ -227,14 +232,14 @@ export const restoreFromTrash = mutation({
  * Get a single project by ID (with ownership check)
  */
 export const get = query({
-    args: { id: v.id("projects") },
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        if (userId === null) throw new Error("Not authenticated");
-        const project = await ctx.db.get(args.id);
-        if (!project || project.isDeleted) throw new Error("Project not found");
-        return project;
-    },
+  args: { id: v.id("projects") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+    const project = await ctx.db.get(args.id);
+    if (!project || project.isDeleted) throw new Error("Project not found");
+    return project;
+  },
 });
 
 /**
@@ -246,12 +251,12 @@ export const getForValidation = query({
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
-    
+
     const project = await ctx.db.get(args.id);
     if (!project || project.isDeleted) {
       throw new Error("Project not found");
     }
-    
+
     // Return fields needed for validation
     return {
       _id: project._id,
@@ -272,209 +277,209 @@ export const getForValidation = query({
  * ✅ RETURNS STANDARDIZED ApiResponse
  */
 export const create = mutation({
-    args: {
-        particulars: v.string(),
-        budgetItemId: v.optional(v.id("budgetItems")),
-        categoryId: v.optional(v.id("projectCategories")),
-        implementingOffice: v.string(),
-        totalBudgetAllocated: v.number(),
-        obligatedBudget: v.optional(v.number()),
-        totalBudgetUtilized: v.number(),
-        remarks: v.optional(v.string()),
-        year: v.optional(v.number()),
-        targetDateCompletion: v.optional(v.number()),
-        projectManagerId: v.optional(v.id("users")),
-    },
-    handler: async (ctx, args) => {
-        try {
-            const userId = await getAuthUserId(ctx);
-            if (userId === null) {
-                return {
-                    success: false,
-                    error: {
-                        code: "UNAUTHORIZED",
-                        message: "Not authenticated",
-                    },
-                };
-            }
-            
-            // Validate project particular exists and is active
-            const particular = await ctx.db
-              .query("projectParticulars")
-              .withIndex("code", (q) => q.eq("code", args.particulars))
-              .first();
-            
-            if (!particular) {
-                return {
-                    success: false,
-                    error: {
-                        code: "VALIDATION_ERROR",
-                        message: `Project particular "${args.particulars}" does not exist. Please add it in Project Particulars management first.`,
-                    },
-                };
-            }
+  args: {
+    particulars: v.string(),
+    budgetItemId: v.optional(v.id("budgetItems")),
+    categoryId: v.optional(v.id("projectCategories")),
+    implementingOffice: v.string(),
+    totalBudgetAllocated: v.number(),
+    obligatedBudget: v.optional(v.number()),
+    totalBudgetUtilized: v.number(),
+    remarks: v.optional(v.string()),
+    year: v.optional(v.number()),
+    targetDateCompletion: v.optional(v.number()),
+    projectManagerId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, args) => {
+    try {
+      const userId = await getAuthUserId(ctx);
+      if (userId === null) {
+        return {
+          success: false,
+          error: {
+            code: "UNAUTHORIZED",
+            message: "Not authenticated",
+          },
+        };
+      }
 
-            if (!particular.isActive) {
-                return {
-                    success: false,
-                    error: {
-                        code: "VALIDATION_ERROR",
-                        message: `Project particular "${args.particulars}" is inactive and cannot be used. Please activate it first.`,
-                    },
-                };
-            }
+      // Validate project particular exists and is active
+      const particular = await ctx.db
+        .query("projectParticulars")
+        .withIndex("code", (q) => q.eq("code", args.particulars))
+        .first();
 
-            // Validate implementing agency exists and is active
-            const agency = await ctx.db
-              .query("implementingAgencies")
-              .withIndex("code", (q) => q.eq("code", args.implementingOffice))
-              .first();
-            
-            if (!agency) {
-                return {
-                    success: false,
-                    error: {
-                        code: "VALIDATION_ERROR",
-                        message: `Implementing agency "${args.implementingOffice}" does not exist. Please add it in Implementing Agencies management first.`,
-                    },
-                };
-            }
+      if (!particular) {
+        return {
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: `Project particular "${args.particulars}" does not exist. Please add it in Project Particulars management first.`,
+          },
+        };
+      }
 
-            if (!agency.isActive) {
-                return {
-                    success: false,
-                    error: {
-                        code: "VALIDATION_ERROR",
-                        message: `Implementing agency "${args.implementingOffice}" is inactive and cannot be used. Please activate it first.`,
-                    },
-                };
-            }
+      if (!particular.isActive) {
+        return {
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: `Project particular "${args.particulars}" is inactive and cannot be used. Please activate it first.`,
+          },
+        };
+      }
 
-            // 🆕 Validate category if provided
-            if (args.categoryId) {
-              const category = await ctx.db.get(args.categoryId);
-              if (!category) {
-                return {
-                    success: false,
-                    error: {
-                        code: "VALIDATION_ERROR",
-                        message: "Project category not found",
-                    },
-                };
-              }
-              if (!category.isActive) {
-                return {
-                    success: false,
-                    error: {
-                        code: "VALIDATION_ERROR",
-                        message: "Project category is inactive and cannot be used",
-                    },
-                };
-              }
-            }
+      // Validate implementing agency exists and is active
+      const agency = await ctx.db
+        .query("implementingAgencies")
+        .withIndex("code", (q) => q.eq("code", args.implementingOffice))
+        .first();
 
-            if (args.budgetItemId) {
-                const budgetItem = await ctx.db.get(args.budgetItemId);
-                if (!budgetItem) {
-                    return {
-                        success: false,
-                        error: {
-                            code: "VALIDATION_ERROR",
-                            message: "Budget item not found",
-                        },
-                    };
-                }
-            }
+      if (!agency) {
+        return {
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: `Implementing agency "${args.implementingOffice}" does not exist. Please add it in Implementing Agencies management first.`,
+          },
+        };
+      }
 
-            const now = Date.now();
-            // Initial utilization rate calculation
-            const utilizationRate = args.totalBudgetAllocated > 0
-                ? (args.totalBudgetUtilized / args.totalBudgetAllocated) * 100
-                : 0;
+      if (!agency.isActive) {
+        return {
+          success: false,
+          error: {
+            code: "VALIDATION_ERROR",
+            message: `Implementing agency "${args.implementingOffice}" is inactive and cannot be used. Please activate it first.`,
+          },
+        };
+      }
 
-            // Auto-link department ID if this agency represents a department
-            const departmentId = agency.departmentId;
-
-            const projectId = await ctx.db.insert("projects", {
-                particulars: args.particulars,
-                budgetItemId: args.budgetItemId,
-                categoryId: args.categoryId,
-                implementingOffice: args.implementingOffice,
-                departmentId: departmentId, 
-                totalBudgetAllocated: args.totalBudgetAllocated,
-                obligatedBudget: args.obligatedBudget,
-                totalBudgetUtilized: args.totalBudgetUtilized,
-                utilizationRate,
-                projectCompleted: 0,
-                projectDelayed: 0,
-                projectsOnTrack: 0,
-                status: "ongoing",
-                remarks: args.remarks,
-                year: args.year,
-                targetDateCompletion: args.targetDateCompletion,
-                projectManagerId: args.projectManagerId,
-                createdBy: userId,
-                createdAt: now,
-                updatedAt: now,
-                isDeleted: false,
-            });
-
-            // Update usage count for the project particular
-            await ctx.runMutation(internal.projectParticulars.updateUsageCount, {
-              code: args.particulars,
-              delta: 1,
-            });
-
-            // Update usage count for implementing agency
-            await ctx.runMutation(internal.implementingAgencies.updateUsageCount, {
-              code: args.implementingOffice,
-              usageContext: "project",
-              delta: 1,
-            });
-
-            // 🆕 Update category usage count
-            if (args.categoryId) {
-              await ctx.runMutation(internal.projectCategories.updateUsageCount, {
-                categoryId: args.categoryId,
-                delta: 1,
-              });
-            }
-
-            const newProject = await ctx.db.get(projectId);
-            await logProjectActivity(ctx, userId, {
-                action: "created",
-                projectId: projectId,
-                newValues: newProject,
-                reason: "New project creation"
-            });
-
-            // ✅ RECALCULATE PARENT BUDGET ITEM
-            if (args.budgetItemId) {
-                await recalculateBudgetItemMetrics(ctx, args.budgetItemId, userId);
-            }
-            
-            // ✅ RETURN STANDARDIZED SUCCESS RESPONSE
-            return {
-                success: true,
-                data: { 
-                    projectId: projectId,
-                    project: newProject 
-                },
-                message: "Project created successfully",
-            };
-            
-        } catch (error) {
-            // ✅ CATCH ANY UNEXPECTED ERRORS
-            console.error("Error creating project:", error);
-            return {
-                success: false,
-                error: {
-                    code: "CREATE_ERROR",
-                    message: error instanceof Error ? error.message : "An unexpected error occurred while creating the project",
-                },
-            };
+      // 🆕 Validate category if provided
+      if (args.categoryId) {
+        const category = await ctx.db.get(args.categoryId);
+        if (!category) {
+          return {
+            success: false,
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "Project category not found",
+            },
+          };
         }
-    },
+        if (!category.isActive) {
+          return {
+            success: false,
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "Project category is inactive and cannot be used",
+            },
+          };
+        }
+      }
+
+      if (args.budgetItemId) {
+        const budgetItem = await ctx.db.get(args.budgetItemId);
+        if (!budgetItem) {
+          return {
+            success: false,
+            error: {
+              code: "VALIDATION_ERROR",
+              message: "Budget item not found",
+            },
+          };
+        }
+      }
+
+      const now = Date.now();
+      // Initial utilization rate calculation
+      const utilizationRate = args.totalBudgetAllocated > 0
+        ? (args.totalBudgetUtilized / args.totalBudgetAllocated) * 100
+        : 0;
+
+      // Auto-link department ID if this agency represents a department
+      const departmentId = agency.departmentId;
+
+      const projectId = await ctx.db.insert("projects", {
+        particulars: args.particulars,
+        budgetItemId: args.budgetItemId,
+        categoryId: args.categoryId,
+        implementingOffice: args.implementingOffice,
+        departmentId: departmentId,
+        totalBudgetAllocated: args.totalBudgetAllocated,
+        obligatedBudget: args.obligatedBudget,
+        totalBudgetUtilized: args.totalBudgetUtilized,
+        utilizationRate,
+        projectCompleted: 0,
+        projectDelayed: 0,
+        projectsOnTrack: 0,
+        status: "ongoing",
+        remarks: args.remarks,
+        year: args.year,
+        targetDateCompletion: args.targetDateCompletion,
+        projectManagerId: args.projectManagerId,
+        createdBy: userId,
+        createdAt: now,
+        updatedAt: now,
+        isDeleted: false,
+      });
+
+      // Update usage count for the project particular
+      await ctx.runMutation(internal.projectParticulars.updateUsageCount, {
+        code: args.particulars,
+        delta: 1,
+      });
+
+      // Update usage count for implementing agency
+      await ctx.runMutation(internal.implementingAgencies.updateUsageCount, {
+        code: args.implementingOffice,
+        usageContext: "project",
+        delta: 1,
+      });
+
+      // 🆕 Update category usage count
+      if (args.categoryId) {
+        await ctx.runMutation(internal.projectCategories.updateUsageCount, {
+          categoryId: args.categoryId,
+          delta: 1,
+        });
+      }
+
+      const newProject = await ctx.db.get(projectId);
+      await logProjectActivity(ctx, userId, {
+        action: "created",
+        projectId: projectId,
+        newValues: newProject,
+        reason: "New project creation"
+      });
+
+      // ✅ RECALCULATE PARENT BUDGET ITEM
+      if (args.budgetItemId) {
+        await recalculateBudgetItemMetrics(ctx, args.budgetItemId, userId);
+      }
+
+      // ✅ RETURN STANDARDIZED SUCCESS RESPONSE
+      return {
+        success: true,
+        data: {
+          projectId: projectId,
+          project: newProject
+        },
+        message: "Project created successfully",
+      };
+
+    } catch (error) {
+      // ✅ CATCH ANY UNEXPECTED ERRORS
+      console.error("Error creating project:", error);
+      return {
+        success: false,
+        error: {
+          code: "CREATE_ERROR",
+          message: error instanceof Error ? error.message : "An unexpected error occurred while creating the project",
+        },
+      };
+    }
+  },
 });
 
 /**
@@ -482,183 +487,183 @@ export const create = mutation({
  * 🆕 ENHANCED: Validates category changes, updates category usage counts
  */
 export const update = mutation({
-    args: {
-        id: v.id("projects"),
-        particulars: v.string(),
-        budgetItemId: v.optional(v.id("budgetItems")),
-        categoryId: v.optional(v.id("projectCategories")),
-        implementingOffice: v.string(),
-        totalBudgetAllocated: v.number(),
-        obligatedBudget: v.optional(v.number()),
-        totalBudgetUtilized: v.number(),
-        remarks: v.optional(v.string()),
-        year: v.optional(v.number()),
-        targetDateCompletion: v.optional(v.number()),
-        projectManagerId: v.optional(v.id("users")),
-        reason: v.optional(v.string()),
-    },
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        if (userId === null) throw new Error("Not authenticated");
+  args: {
+    id: v.id("projects"),
+    particulars: v.string(),
+    budgetItemId: v.optional(v.id("budgetItems")),
+    categoryId: v.optional(v.id("projectCategories")),
+    implementingOffice: v.string(),
+    totalBudgetAllocated: v.number(),
+    obligatedBudget: v.optional(v.number()),
+    totalBudgetUtilized: v.number(),
+    remarks: v.optional(v.string()),
+    year: v.optional(v.number()),
+    targetDateCompletion: v.optional(v.number()),
+    projectManagerId: v.optional(v.id("users")),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
 
-        const existing = await ctx.db.get(args.id);
-        if (!existing) throw new Error("Project not found");
+    const existing = await ctx.db.get(args.id);
+    if (!existing) throw new Error("Project not found");
 
-        // If particular is changing, validate new particular
-        if (args.particulars !== existing.particulars) {
-          const particular = await ctx.db
-            .query("projectParticulars")
-            .withIndex("code", (q) => q.eq("code", args.particulars))
-            .first();
-          
-          if (!particular) {
-            throw new Error(
-              `Project particular "${args.particulars}" does not exist. Please add it in Project Particulars management first.`
-            );
-          }
+    // If particular is changing, validate new particular
+    if (args.particulars !== existing.particulars) {
+      const particular = await ctx.db
+        .query("projectParticulars")
+        .withIndex("code", (q) => q.eq("code", args.particulars))
+        .first();
 
-          if (!particular.isActive) {
-            throw new Error(
-              `Project particular "${args.particulars}" is inactive and cannot be used. Please activate it first.`
-            );
-          }
+      if (!particular) {
+        throw new Error(
+          `Project particular "${args.particulars}" does not exist. Please add it in Project Particulars management first.`
+        );
+      }
 
-          // Update usage counts
-          await ctx.runMutation(internal.projectParticulars.updateUsageCount, {
-            code: existing.particulars,
-            delta: -1,
-          });
-          await ctx.runMutation(internal.projectParticulars.updateUsageCount, {
-            code: args.particulars,
-            delta: 1,
-          });
+      if (!particular.isActive) {
+        throw new Error(
+          `Project particular "${args.particulars}" is inactive and cannot be used. Please activate it first.`
+        );
+      }
+
+      // Update usage counts
+      await ctx.runMutation(internal.projectParticulars.updateUsageCount, {
+        code: existing.particulars,
+        delta: -1,
+      });
+      await ctx.runMutation(internal.projectParticulars.updateUsageCount, {
+        code: args.particulars,
+        delta: 1,
+      });
+    }
+
+    // If implementing office is changing, validate and update counts
+    let departmentId = existing.departmentId;
+
+    if (args.implementingOffice !== existing.implementingOffice) {
+      const agency = await ctx.db
+        .query("implementingAgencies")
+        .withIndex("code", (q) => q.eq("code", args.implementingOffice))
+        .first();
+
+      if (!agency) {
+        throw new Error(
+          `Implementing agency "${args.implementingOffice}" does not exist. Please add it in Implementing Agencies management first.`
+        );
+      }
+
+      if (!agency.isActive) {
+        throw new Error(
+          `Implementing agency "${args.implementingOffice}" is inactive and cannot be used. Please activate it first.`
+        );
+      }
+
+      // Update departmentId based on new agency
+      departmentId = agency.departmentId;
+
+      // Update usage counts
+      await ctx.runMutation(internal.implementingAgencies.updateUsageCount, {
+        code: existing.implementingOffice,
+        usageContext: "project",
+        delta: -1,
+      });
+      await ctx.runMutation(internal.implementingAgencies.updateUsageCount, {
+        code: args.implementingOffice,
+        usageContext: "project",
+        delta: 1,
+      });
+    }
+
+    // 🆕 Handle category changes
+    if (args.categoryId !== existing.categoryId) {
+      // Validate new category if provided
+      if (args.categoryId) {
+        const category = await ctx.db.get(args.categoryId);
+        if (!category) {
+          throw new Error("Project category not found");
         }
-
-        // If implementing office is changing, validate and update counts
-        let departmentId = existing.departmentId;
-        
-        if (args.implementingOffice !== existing.implementingOffice) {
-          const agency = await ctx.db
-            .query("implementingAgencies")
-            .withIndex("code", (q) => q.eq("code", args.implementingOffice))
-            .first();
-          
-          if (!agency) {
-            throw new Error(
-              `Implementing agency "${args.implementingOffice}" does not exist. Please add it in Implementing Agencies management first.`
-            );
-          }
-
-          if (!agency.isActive) {
-            throw new Error(
-              `Implementing agency "${args.implementingOffice}" is inactive and cannot be used. Please activate it first.`
-            );
-          }
-          
-          // Update departmentId based on new agency
-          departmentId = agency.departmentId;
-
-          // Update usage counts
-          await ctx.runMutation(internal.implementingAgencies.updateUsageCount, {
-            code: existing.implementingOffice,
-            usageContext: "project",
-            delta: -1,
-          });
-          await ctx.runMutation(internal.implementingAgencies.updateUsageCount, {
-            code: args.implementingOffice,
-            usageContext: "project",
-            delta: 1,
-          });
+        if (!category.isActive) {
+          throw new Error("Project category is inactive and cannot be used");
         }
+      }
 
-        // 🆕 Handle category changes
-        if (args.categoryId !== existing.categoryId) {
-          // Validate new category if provided
-          if (args.categoryId) {
-            const category = await ctx.db.get(args.categoryId);
-            if (!category) {
-              throw new Error("Project category not found");
-            }
-            if (!category.isActive) {
-              throw new Error("Project category is inactive and cannot be used");
-            }
-          }
-
-          // Update usage counts
-          if (existing.categoryId) {
-            await ctx.runMutation(internal.projectCategories.updateUsageCount, {
-              categoryId: existing.categoryId,
-              delta: -1,
-            });
-          }
-          if (args.categoryId) {
-            await ctx.runMutation(internal.projectCategories.updateUsageCount, {
-              categoryId: args.categoryId,
-              delta: 1,
-            });
-          }
-        }
-
-        if (args.budgetItemId) {
-            const budgetItem = await ctx.db.get(args.budgetItemId);
-            if (!budgetItem) throw new Error("Budget item not found");
-        }
-
-        const now = Date.now();
-        // Note: Project's own utilization rate calculation (based on manual inputs if no breakdowns exist yet)
-        const utilizationRate = args.totalBudgetAllocated > 0
-            ? (args.totalBudgetUtilized / args.totalBudgetAllocated) * 100
-            : 0;
-            
-        const oldBudgetItemId = existing.budgetItemId;
-        
-        await ctx.db.patch(args.id, {
-            particulars: args.particulars,
-            budgetItemId: args.budgetItemId,
-            categoryId: args.categoryId,
-            implementingOffice: args.implementingOffice,
-            departmentId: departmentId,
-            totalBudgetAllocated: args.totalBudgetAllocated,
-            obligatedBudget: args.obligatedBudget,
-            totalBudgetUtilized: args.totalBudgetUtilized,
-            utilizationRate,
-            remarks: args.remarks,
-            year: args.year,
-            targetDateCompletion: args.targetDateCompletion,
-            projectManagerId: args.projectManagerId,
-            updatedAt: now,
-            updatedBy: userId,
+      // Update usage counts
+      if (existing.categoryId) {
+        await ctx.runMutation(internal.projectCategories.updateUsageCount, {
+          categoryId: existing.categoryId,
+          delta: -1,
         });
-
-        const updatedProject = await ctx.db.get(args.id);
-        
-        // Log Activity
-        await logProjectActivity(ctx, userId, {
-            action: "updated",
-            projectId: args.id,
-            previousValues: existing,
-            newValues: updatedProject,
-            reason: args.reason
+      }
+      if (args.categoryId) {
+        await ctx.runMutation(internal.projectCategories.updateUsageCount, {
+          categoryId: args.categoryId,
+          delta: 1,
         });
+      }
+    }
 
-        // ✅ RECALCULATE PARENT BUDGET ITEMS
-        // If moved to a different budget item, recalculate the old one
-        if (oldBudgetItemId && oldBudgetItemId !== args.budgetItemId) {
-            await recalculateBudgetItemMetrics(ctx, oldBudgetItemId, userId);
-        }
-        
-        // Recalculate the new (or current) budget item
-        if (args.budgetItemId) {
-            await recalculateBudgetItemMetrics(ctx, args.budgetItemId, userId);
-        } else if (oldBudgetItemId && args.budgetItemId === undefined) {
-            await recalculateBudgetItemMetrics(ctx, oldBudgetItemId, userId);
-        }
+    if (args.budgetItemId) {
+      const budgetItem = await ctx.db.get(args.budgetItemId);
+      if (!budgetItem) throw new Error("Budget item not found");
+    }
 
-        // Also trigger project internal aggregation to ensure it's consistent with its own breakdowns
-        await recalculateProjectMetrics(ctx, args.id, userId);
+    const now = Date.now();
+    // Note: Project's own utilization rate calculation (based on manual inputs if no breakdowns exist yet)
+    const utilizationRate = args.totalBudgetAllocated > 0
+      ? (args.totalBudgetUtilized / args.totalBudgetAllocated) * 100
+      : 0;
 
-        return args.id;
-    },
+    const oldBudgetItemId = existing.budgetItemId;
+
+    await ctx.db.patch(args.id, {
+      particulars: args.particulars,
+      budgetItemId: args.budgetItemId,
+      categoryId: args.categoryId,
+      implementingOffice: args.implementingOffice,
+      departmentId: departmentId,
+      totalBudgetAllocated: args.totalBudgetAllocated,
+      obligatedBudget: args.obligatedBudget,
+      totalBudgetUtilized: args.totalBudgetUtilized,
+      utilizationRate,
+      remarks: args.remarks,
+      year: args.year,
+      targetDateCompletion: args.targetDateCompletion,
+      projectManagerId: args.projectManagerId,
+      updatedAt: now,
+      updatedBy: userId,
+    });
+
+    const updatedProject = await ctx.db.get(args.id);
+
+    // Log Activity
+    await logProjectActivity(ctx, userId, {
+      action: "updated",
+      projectId: args.id,
+      previousValues: existing,
+      newValues: updatedProject,
+      reason: args.reason
+    });
+
+    // ✅ RECALCULATE PARENT BUDGET ITEMS
+    // If moved to a different budget item, recalculate the old one
+    if (oldBudgetItemId && oldBudgetItemId !== args.budgetItemId) {
+      await recalculateBudgetItemMetrics(ctx, oldBudgetItemId, userId);
+    }
+
+    // Recalculate the new (or current) budget item
+    if (args.budgetItemId) {
+      await recalculateBudgetItemMetrics(ctx, args.budgetItemId, userId);
+    } else if (oldBudgetItemId && args.budgetItemId === undefined) {
+      await recalculateBudgetItemMetrics(ctx, oldBudgetItemId, userId);
+    }
+
+    // Also trigger project internal aggregation to ensure it's consistent with its own breakdowns
+    await recalculateProjectMetrics(ctx, args.id, userId);
+
+    return args.id;
+  },
 });
 
 /**
@@ -667,9 +672,9 @@ export const update = mutation({
  * 🆕 ENHANCED: Updates category usage count
  */
 export const remove = mutation({
-  args: { 
+  args: {
     id: v.id("projects"),
-    reason: v.optional(v.string()) 
+    reason: v.optional(v.string())
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -683,13 +688,13 @@ export const remove = mutation({
 
     const isSuperAdmin = currentUser.role === 'super_admin';
     const isCreator = existing.createdBy === userId;
-    
+
     // Only Creator or Super Admin can hard delete
     if (!isCreator && !isSuperAdmin) throw new Error("Not authorized");
 
     const budgetItemId = existing.budgetItemId;
     const categoryId = existing.categoryId;
-    
+
     // 1. Get Linked Breakdowns
     const breakdowns = await ctx.db
       .query("govtProjectBreakdowns")
@@ -699,7 +704,7 @@ export const remove = mutation({
     // 2. Permanent Delete Children (Breakdowns)
     for (const breakdown of breakdowns) {
       await ctx.db.delete(breakdown._id);
-      
+
       // Update agency usage for breakdown deletion
       await ctx.runMutation(internal.implementingAgencies.updateUsageCount, {
         code: breakdown.implementingOffice,
@@ -711,7 +716,7 @@ export const remove = mutation({
     // 3. Log Activity
     await logProjectActivity(ctx, userId, {
       action: "deleted",
-      projectId: args.id, 
+      projectId: args.id,
       previousValues: existing,
       reason: args.reason || "Permanent Delete"
     });
@@ -753,27 +758,27 @@ export const remove = mutation({
  * Toggle pin status for a project
  */
 export const togglePin = mutation({
-    args: { id: v.id("projects") },
-    handler: async (ctx, args) => {
-        const userId = await getAuthUserId(ctx);
-        if (userId === null) throw new Error("Not authenticated");
-        
-        const existing = await ctx.db.get(args.id);
-        if (!existing) throw new Error("Project not found");
-   
-        const now = Date.now();
-        const newPinnedState = !existing.isPinned;
-        
-        await ctx.db.patch(args.id, {
-            isPinned: newPinnedState,
-            pinnedAt: newPinnedState ? now : undefined,
-            pinnedBy: newPinnedState ? userId : undefined,
-            updatedAt: now,
-            updatedBy: userId,
-        });
-        
-        return args.id;
-    },
+  args: { id: v.id("projects") },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) throw new Error("Not authenticated");
+
+    const existing = await ctx.db.get(args.id);
+    if (!existing) throw new Error("Project not found");
+
+    const now = Date.now();
+    const newPinnedState = !existing.isPinned;
+
+    await ctx.db.patch(args.id, {
+      isPinned: newPinnedState,
+      pinnedAt: newPinnedState ? now : undefined,
+      pinnedBy: newPinnedState ? userId : undefined,
+      updatedAt: now,
+      updatedBy: userId,
+    });
+
+    return args.id;
+  },
 });
 
 /**

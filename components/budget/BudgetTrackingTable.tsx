@@ -10,10 +10,10 @@ import { Modal } from "./Modal";
 import { ConfirmationModal } from "./ConfirmationModal";
 import { BudgetItemForm } from "./BudgetItemForm";
 import BudgetShareModal from "./BudgetShareModal";
-import { 
-  Share2, 
-  Search, 
-  ArrowUpDown, 
+import {
+  Share2,
+  Search,
+  ArrowUpDown,
   ArrowUp,
   ArrowDown,
   Pin,
@@ -59,20 +59,20 @@ export function BudgetTrackingTable({
   const accessCheck = useQuery(api.budgetAccess.canAccess);
   const pendingRequestsCount = useQuery(api.accessRequests.getPendingCount);
   const togglePinBudgetItem = useMutation(api.budgetItems.togglePin);
-  
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<BudgetItem | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
-  
+
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
     item: BudgetItem;
   } | null>(null);
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
@@ -80,7 +80,7 @@ export function BudgetTrackingTable({
   const [yearFilter, setYearFilter] = useState<number[]>([]);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [showHeaderSkeleton, setShowHeaderSkeleton] = useState(true);
-  
+
   const contextMenuRef = useRef<HTMLDivElement>(null);
 
   const isAdmin =
@@ -214,7 +214,7 @@ export function BudgetTrackingTable({
         if (bVal === undefined || bVal === null) return -1;
 
         if (typeof aVal === "string" && typeof bVal === "string") {
-          return sortDirection === "asc" 
+          return sortDirection === "asc"
             ? aVal.localeCompare(bVal)
             : bVal.localeCompare(aVal);
         }
@@ -248,7 +248,7 @@ export function BudgetTrackingTable({
 
   const getStatusColor = (status?: string): string => {
     if (!status) return "text-zinc-600 dark:text-zinc-400";
-    
+
     switch (status) {
       case "completed":
         return "text-green-600 dark:text-green-400";
@@ -407,75 +407,74 @@ export function BudgetTrackingTable({
             title="Budget Items"
             actions={
               <>
-              <Button
-                onClick={onOpenTrash}
-                variant="outline"
-                size="sm"
-                className="gap-2 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 border-blue-200 dark:border-blue-800"
-                title="View Recycle Bin"
-              >
-                <Trash2 className="w-4 h-4" />
-                <span className="hidden sm:inline">Recycle Bin</span>
-              </Button>
-              {isAdmin && (
                 <Button
-                  onClick={() => setShowShareModal(true)}
-                  variant="secondary"
+                  onClick={onOpenTrash}
+                  variant="outline"
                   size="sm"
-                  className="relative gap-2 bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600"
-                  title="Share & Manage Access"
+                  className="gap-2 bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 border-blue-200 dark:border-blue-800"
+                  title="View Recycle Bin"
                 >
-                  <Share2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">Share</span>
-                  {pendingRequestsCount !== undefined && pendingRequestsCount > 0 && (
-                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                      {pendingRequestsCount > 9 ? "9+" : pendingRequestsCount}
-                    </span>
-                  )}
+                  <Trash2 className="w-4 h-4" />
+                  <span className="hidden sm:inline">Recycle Bin</span>
                 </Button>
-              )}
-              {expandButton}
-              <Button
-                onClick={toggleSearch}
-                variant="outline"
-                size="sm"
-                className={`${
-                  isSearchVisible 
-                    ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500' 
-                    : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600'
-                } gap-2`}
-                title={isSearchVisible ? "Hide Search" : "Show Search"}
-              >
-                <Search className="w-4 h-4" />
-                <span className="hidden sm:inline">Search</span>
-              </Button>
-              <Button
-                onClick={handlePrint}
-                variant="outline"
-                size="sm"
-                className="gap-2 bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600"
-                title="Print"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                <span className="hidden sm:inline">Print</span>
-              </Button>
-              {onAdd && (
+                {isAdmin && (
+                  <Button
+                    onClick={() => setShowShareModal(true)}
+                    variant="secondary"
+                    size="sm"
+                    className="relative gap-2 bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+                    title="Share & Manage Access"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span className="hidden sm:inline">Share</span>
+                    {pendingRequestsCount !== undefined && pendingRequestsCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {pendingRequestsCount > 9 ? "9+" : pendingRequestsCount}
+                      </span>
+                    )}
+                  </Button>
+                )}
+                {expandButton}
                 <Button
-                  onClick={() => setShowAddModal(true)}
+                  onClick={toggleSearch}
+                  variant="outline"
                   size="sm"
-                  className="flex-1 sm:flex-none text-white"
-                  style={{ backgroundColor: accentColorValue }}
+                  className={`${isSearchVisible
+                      ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-2 border-blue-500'
+                      : 'bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600'
+                    } gap-2`}
+                  title={isSearchVisible ? "Hide Search" : "Show Search"}
                 >
-                  <span className="hidden sm:inline">Add New Item</span>
-                  <span className="sm:hidden">Add</span>
+                  <Search className="w-4 h-4" />
+                  <span className="hidden sm:inline">Search</span>
                 </Button>
-              )}
+                <Button
+                  onClick={handlePrint}
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 bg-zinc-200 dark:bg-zinc-700 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-300 dark:hover:bg-zinc-600"
+                  title="Print"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  <span className="hidden sm:inline">Print</span>
+                </Button>
+                {onAdd && (
+                  <Button
+                    onClick={() => setShowAddModal(true)}
+                    size="sm"
+                    className="flex-1 sm:flex-none text-white"
+                    style={{ backgroundColor: accentColorValue }}
+                  >
+                    <span className="hidden sm:inline">Add New Item</span>
+                    <span className="sm:hidden">Add</span>
+                  </Button>
+                )}
               </>
             }
           />
-          
+
 
           {isSearchVisible && (
             <div className="space-y-4 animate-in slide-in-from-top duration-200">
@@ -488,7 +487,7 @@ export function BudgetTrackingTable({
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-offset-0"
-                    style={{ 
+                    style={{
                       '--tw-ring-color': accentColorValue,
                     } as React.CSSProperties}
                   />
@@ -757,7 +756,7 @@ export function BudgetTrackingTable({
                           {item.year || "-"}
                         </span>
                       </td>
-                      
+
                       <td className="px-4 sm:px-6 py-4 text-center">
                         <span className={`text-sm font-medium ${getStatusColor(item.status)}`}>
                           {item.status ? item.status.charAt(0).toUpperCase() + item.status.slice(1) : "-"}
