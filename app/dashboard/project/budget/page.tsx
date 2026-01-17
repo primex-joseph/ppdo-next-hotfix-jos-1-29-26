@@ -9,8 +9,6 @@ import { BudgetTrackingTable } from "@/components/budget/BudgetTrackingTable";
 import { BudgetPageHeader, ExpandModal, LoadingState, useBudgetAccess, useBudgetData, useBudgetMutations } from "@/components/budget";
 import { Button } from "@/components/ui/button";
 
-
-
 export default function BudgetTrackingPage() {
   const { accessCheck, isLoading: isLoadingAccess, canAccess } = useBudgetAccess();
   const { budgetItems, statistics, isLoading: isLoadingData } = useBudgetData();
