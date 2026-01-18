@@ -1,11 +1,11 @@
-// app/dashboard/project/budget/components/SheetTabs.tsx
+// app/components/Spreadsheet/SpreadsheetSheetTabs.tsx
 
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Plus, Menu, ChevronDown } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { Plus, Menu, ChevronDown } from "lucide-react";
 
-export function SheetTabs() {
+export function SpreadsheetSheetTabs() {
   return (
     <div className="flex items-center gap-2 border-t border-gray-200 bg-white px-4 py-2">
       <Button variant="ghost" size="icon" className="h-6 w-6">
@@ -22,5 +22,5 @@ export function SheetTabs() {
         <ChevronDown className="h-3 w-3" />
       </Button>
     </div>
-  )
+  );
 }

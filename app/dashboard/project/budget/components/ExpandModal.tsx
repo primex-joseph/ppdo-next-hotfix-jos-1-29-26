@@ -1,7 +1,7 @@
 // app/dashboard/project/budget/components/ExpandModal.tsx
 
-import { X } from "lucide-react";
 import MainSheet from "./MainSheet";
+import { X } from "lucide-react";
 
 interface ExpandModalProps {
   isOpen: boolean;

@@ -1,20 +1,18 @@
-// app/dashboard/project/budget/components/FormulaBar.tsx
+// app/components/Spreadsheet/SpreadsheetFormulaBar.tsx
 
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { CellPosition } from "@/types/spreadsheet"
-import { Type, ChevronDown } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Type, ChevronDown } from "lucide-react";
+import { SpreadsheetFormulaBarProps } from "./types";
 
-interface FormulaBarProps {
-  selectedCell: CellPosition
-  formulaBarValue: string
-  columns: string[]
-  onFormulaBarChange: (value: string) => void
-}
-
-export function FormulaBar({ selectedCell, formulaBarValue, columns, onFormulaBarChange }: FormulaBarProps) {
+export function SpreadsheetFormulaBar({ 
+  selectedCell, 
+  formulaBarValue, 
+  columns, 
+  onFormulaBarChange 
+}: SpreadsheetFormulaBarProps) {
   return (
     <div className="flex items-center gap-2 border-b border-gray-200 bg-white px-4 py-2">
       <div className="flex items-center gap-2">
@@ -34,5 +32,5 @@ export function FormulaBar({ selectedCell, formulaBarValue, columns, onFormulaBa
         placeholder=""
       />
     </div>
-  )
+  );
 }
