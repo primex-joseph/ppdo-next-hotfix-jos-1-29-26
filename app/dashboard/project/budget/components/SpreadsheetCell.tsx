@@ -1,4 +1,5 @@
-// components/SpreadsheetCell.tsx
+// app/dashboard/project/budget/components/SpreadsheetCell.tsx
+
 "use client"
 
 import { useEffect, useRef } from "react"

@@ -1,5 +1,4 @@
 // app/dashboard/project/budget/[particularId]/constants.ts
-// REPLACE ENTIRE FILE WITH THIS
 
 import { TableColumn } from "./types";
 

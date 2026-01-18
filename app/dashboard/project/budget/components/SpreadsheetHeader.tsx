@@ -1,4 +1,5 @@
-// components/SpreadsheetHeader.tsx
+// app/dashboard/project/budget/components/SpreadsheetHeader.tsx
+
 "use client"
 
 import { Button } from "@/components/ui/button"

@@ -1,5 +1,6 @@
-import { ActivityLogSheet } from "../ActivityLogSheet";
+// app/dashboard/project/budget/components/BudgetPageHeader.tsx
 
+import { ActivityLogSheet } from "@/components/ActivityLogSheet";
 
 export function BudgetPageHeader() {
   return (

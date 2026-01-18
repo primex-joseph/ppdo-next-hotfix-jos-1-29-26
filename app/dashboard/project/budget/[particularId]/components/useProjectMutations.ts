@@ -1,5 +1,4 @@
 // app/dashboard/project/budget/[particularId]/components/useProjectMutations.ts
-// UPDATED FILE - Phase 5: Migrate to use service layer
 
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";

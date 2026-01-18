@@ -1,4 +1,5 @@
-// components/SheetTabs.tsx
+// app/dashboard/project/budget/components/SheetTabs.tsx
+
 "use client"
 
 import { Button } from "@/components/ui/button"

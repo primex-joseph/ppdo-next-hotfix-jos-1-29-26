@@ -1,5 +1,4 @@
 // lib/shared/hooks/useTableState.ts
-// NEW FILE - CREATE THIS
 
 import { useState, useCallback, useMemo } from 'react';
 import { SortDirection } from '../types/table.types';

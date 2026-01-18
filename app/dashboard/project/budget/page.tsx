@@ -1,12 +1,14 @@
+// app/dashboard/project/budget/page.tsx
+
 "use client";
 
 import { useState } from "react";
 import { Expand } from "lucide-react";
 import AccessDeniedPage from "@/components/AccessDeniedPage";
 import { TrashBinModal } from "../../../../components/TrashBinModal";
-import BudgetStatistics from "@/components/budget/BudgetStatistics";
-import { BudgetTrackingTable } from "@/components/budget/BudgetTrackingTable";
-import { BudgetPageHeader, ExpandModal, LoadingState, useBudgetAccess, useBudgetData, useBudgetMutations } from "@/components/budget";
+import BudgetStatistics from "@/app/dashboard/project/budget/components/BudgetStatistics";
+import { BudgetTrackingTable } from "@/app/dashboard/project/budget/components/BudgetTrackingTable";
+import { BudgetPageHeader, ExpandModal, LoadingState, useBudgetAccess, useBudgetData, useBudgetMutations } from "@/app/dashboard/project/budget/components";
 import { Button } from "@/components/ui/button";
 
 export default function BudgetTrackingPage() {

@@ -1,3 +1,5 @@
+// app/dashboard/project/budget/[particularId]/components/StatusInfoCard.tsx
+
 import { getStatusColorClass } from "../../../../../../types/types";
 
 interface StatusInfoCardProps {

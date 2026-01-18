@@ -1,5 +1,4 @@
 // lib/shared/hooks/useAutoSave.ts
-// NEW FILE - CREATE THIS
 
 import { useEffect, useRef } from 'react';
 

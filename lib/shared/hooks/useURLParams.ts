@@ -1,5 +1,4 @@
 // lib/shared/hooks/useURLParams.ts
-// NEW FILE - CREATE THIS
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';

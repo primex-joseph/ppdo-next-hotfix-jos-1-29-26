@@ -1,10 +1,12 @@
+// app/dashboard/project/page.tsx
+
 "use client";
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Folder, Calendar } from "lucide-react";
 import AccessDeniedPage from "@/components/AccessDeniedPage";
-import { LoadingState, useBudgetAccess, useBudgetData } from "@/components/budget";
+import { LoadingState, useBudgetAccess, useBudgetData } from "@/app/dashboard/project/budget/components";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useAccentColor } from "@/contexts/AccentColorContext";

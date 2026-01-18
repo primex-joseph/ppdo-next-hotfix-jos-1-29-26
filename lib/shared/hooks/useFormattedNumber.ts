@@ -1,5 +1,4 @@
 // lib/shared/hooks/useFormattedNumber.ts
-// NEW FILE - CREATE THIS
 
 import { useState, useCallback, useEffect } from 'react';
 import {

@@ -1,4 +1,5 @@
-// components/FormulaBar.tsx
+// app/dashboard/project/budget/components/FormulaBar.tsx
+
 "use client"
 
 import { Button } from "@/components/ui/button"

@@ -1,5 +1,4 @@
 // app/dashboard/project/budget/types/index.ts
-// UPDATED FILE - Add table-specific types
 
 import { Id } from "@/convex/_generated/dataModel";
 import { SortState, ContextMenuState } from "@/lib/shared/types/table.types";

@@ -1,3 +1,5 @@
+// app/dashboard/project/budget/[particularId]/components/ProjectSummaryStats.tsx
+
 interface ProjectSummaryStatsProps {
   totalAllocated: number;
   totalUtilized: number;

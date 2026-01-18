@@ -1,5 +1,4 @@
 // app/dashboard/project/budget/components/BudgetTrackingTable.tsx
-// UPDATED FILE - Refactored to use modular components
 
 "use client";
 
@@ -13,12 +12,11 @@ import { ConfirmationModal } from "./ConfirmationModal";
 import { BudgetItemForm } from "./BudgetItemForm";
 import BudgetShareModal from "./BudgetShareModal";
 import { BudgetTableToolbar } from "@/app/dashboard/project/budget/components/BudgetTableToolbar";
-import { BudgetTableHeader } from "./components/table/BudgetTableHeader";
-import { BudgetTableRow } from "./components/table/BudgetTableRow";
-import { BudgetTableTotalsRow } from "./components/table/BudgetTableTotalsRow";
-import { BudgetTableEmptyState } from "./components/table/BudgetTableEmptyState";
-import { BudgetContextMenu } from "./components/table/BudgetContextMenu";
-import { BudgetSearchFilters } from "./components/filters/BudgetSearchFilters";
+import { BudgetTableHeader } from "./table/BudgetTableHeader";
+import { BudgetTableRow } from "./table/BudgetTableRow";
+import { BudgetTableTotalsRow } from "./table/BudgetTableTotalsRow";
+import { BudgetTableEmptyState } from "./table/BudgetTableEmptyState";
+import { BudgetContextMenu } from "./table/BudgetContextMenu";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import {
@@ -43,7 +41,7 @@ import {
   createBudgetPrintConfig,
   withMutationHandling,
 } from "@/services";
-import { STORAGE_KEYS, TIMEOUTS } from "@/app/dashboard/project/budget/constants";
+import { STORAGE_KEYS, TIMEOUTS, BUDGET_TABLE_COLUMNS } from "@/app/dashboard/project/budget/constants";
 
 interface BudgetTrackingTableProps {
   budgetItems: BudgetItem[];
@@ -97,6 +95,7 @@ export function BudgetTrackingTable({
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showHideAllWarning, setShowHideAllWarning] = useState(false);
   const [selectedItem, setSelectedItem] = useState<BudgetItem | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -114,8 +113,12 @@ export function BudgetTrackingTable({
   const [sortDirection, setSortDirection] = useState<SortDirection>(null);
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [yearFilter, setYearFilter] = useState<number[]>([]);
-  const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [showHeaderSkeleton, setShowHeaderSkeleton] = useState(true);
+
+  // ============================================================================
+  // COLUMN VISIBILITY STATE
+  // ============================================================================
+  const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
 
   const contextMenuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null!);
@@ -325,7 +328,7 @@ export function BudgetTrackingTable({
     setContextMenu({
       x: e.clientX,
       y: e.clientY,
-      entity: item,  // Changed from 'item' to 'entity'
+      entity: item,
     });
   };
 
@@ -458,10 +461,54 @@ export function BudgetTrackingTable({
     );
   };
 
-  const toggleSearch = () => {
-    setIsSearchVisible(!isSearchVisible);
-    if (isSearchVisible) {
-      clearAllFilters();
+  // ============================================================================
+  // COLUMN VISIBILITY HANDLERS
+  // ============================================================================
+
+  const handleToggleColumn = (columnId: string, isChecked: boolean) => {
+    const newHidden = new Set(hiddenColumns);
+    if (isChecked) {
+      newHidden.delete(columnId);
+    } else {
+      newHidden.add(columnId);
+    }
+    setHiddenColumns(newHidden);
+  };
+
+  const handleShowAllColumns = () => {
+    setHiddenColumns(new Set());
+  };
+
+  const handleHideAllColumns = () => {
+    setShowHideAllWarning(true);
+  };
+
+  const confirmHideAll = () => {
+    const allColIds = BUDGET_TABLE_COLUMNS.map((c) => c.key);
+    setHiddenColumns(new Set(allColIds));
+    setShowHideAllWarning(false);
+  };
+
+  // ============================================================================
+  // EXPORT/PRINT HANDLERS
+  // ============================================================================
+
+  const handleExportCSV = () => {
+    try {
+      // Convert BUDGET_TABLE_COLUMNS to the format expected by exportToCSV
+      const columns = BUDGET_TABLE_COLUMNS.map(col => ({
+        id: col.key,
+        label: col.label,
+        align: col.align
+      }));
+      
+      exportToCSV(
+        filteredAndSortedItems,
+        createBudgetExportConfig(columns, hiddenColumns)
+      );
+      toast.success("CSV exported successfully");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to export CSV");
     }
   };
 
@@ -476,39 +523,29 @@ export function BudgetTrackingTable({
   return (
     <>
       <div className="print-area bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
-        {/* Toolbar */}
+        {/* Toolbar - Now with column visibility and export */}
         <BudgetTableToolbar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           searchInputRef={searchInputRef}
           selectedCount={selectedIds.size}
           onClearSelection={() => setSelectedIds(new Set())}
+          hiddenColumns={hiddenColumns}
+          onToggleColumn={handleToggleColumn}
+          onShowAllColumns={handleShowAllColumns}
+          onHideAllColumns={handleHideAllColumns}
+          onExportCSV={handleExportCSV}
+          onPrint={handlePrint}
           isAdmin={isAdmin}
           pendingRequestsCount={pendingRequestsCount}
           onOpenShare={() => setShowShareModal(true)}
           onOpenTrash={onOpenTrash || (() => {})}
           onBulkTrash={handleBulkTrash}
           onAddNew={onAdd ? () => setShowAddModal(true) : undefined}
-          onToggleSearch={toggleSearch}
-          onPrint={handlePrint}
-          isSearchVisible={isSearchVisible}
           expandButton={expandButton}
           accentColor={accentColorValue}
         />
-        {/* Search Filters */}
-        {isSearchVisible && (
-          <BudgetSearchFilters
-            searchQuery={searchQuery}
-            statusFilter={statusFilter}
-            yearFilter={yearFilter}
-            accentColorValue={accentColorValue}
-            hasActiveFilters={hasActiveFilters}
-            onSearchChange={setSearchQuery}
-            onClearFilters={clearAllFilters}
-            onToggleStatusFilter={toggleStatusFilter}
-            onToggleYearFilter={toggleYearFilter}
-          />
-        )}
+        
         {/* Print Header */}
         <div className="hidden print-only p-4 border-b border-zinc-900">
           <h2 className="text-xl font-bold text-zinc-900 mb-2">
@@ -525,6 +562,7 @@ export function BudgetTrackingTable({
             })}
           </p>
         </div>
+        
         {/* Table */}
         <div className="overflow-x-auto max-h-[600px] overflow-y-auto relative">
           <table className="w-full">
@@ -539,6 +577,7 @@ export function BudgetTrackingTable({
               uniqueYears={uniqueYears}
               uniqueStatuses={uniqueStatuses}
               showHeaderSkeleton={showHeaderSkeleton}
+              hiddenColumns={hiddenColumns}
               onSelectAll={handleSelectAll}
               onSort={handleSort}
               onToggleYearFilter={toggleYearFilter}
@@ -555,6 +594,7 @@ export function BudgetTrackingTable({
                       item={item}
                       isAdmin={isAdmin}
                       isSelected={selectedIds.has(item.id)}
+                      hiddenColumns={hiddenColumns}
                       onContextMenu={handleContextMenu}
                       onClick={handleRowClick}
                       onSelectRow={handleSelectRow}
@@ -563,6 +603,7 @@ export function BudgetTrackingTable({
                   <BudgetTableTotalsRow
                     totals={totals}
                     totalUtilizationRate={totalUtilizationRate}
+                    hiddenColumns={hiddenColumns}
                   />
                 </>
               )}
@@ -570,6 +611,7 @@ export function BudgetTrackingTable({
           </table>
         </div>
       </div>
+      
       {/* Context Menu */}
       {contextMenu && (
         <BudgetContextMenu
@@ -583,6 +625,7 @@ export function BudgetTrackingTable({
           onDelete={handleDelete}
         />
       )}
+      
       {/* Modals */}
       {showAddModal && (
         <Modal
@@ -644,6 +687,17 @@ export function BudgetTrackingTable({
           onClose={() => setShowShareModal(false)}
         />
       )}
+      
+      {/* Hide All Columns Warning */}
+      <ConfirmationModal
+        isOpen={showHideAllWarning}
+        onClose={() => setShowHideAllWarning(false)}
+        onConfirm={confirmHideAll}
+        title="Hide All Columns?"
+        message="Are you sure you want to hide all columns? The table will display no data."
+        confirmText="Hide All"
+        variant="default"
+      />
     </>
   );
 }

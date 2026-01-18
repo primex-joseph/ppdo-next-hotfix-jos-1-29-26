@@ -11,8 +11,8 @@ import { toast } from "sonner";
 import { useAccentColor } from "@/contexts/AccentColorContext";
 
 // UI Components
-import { Modal } from "@/components/budget/Modal";
-import { ConfirmationModal } from "@/components/budget/ConfirmationModal";
+import { Modal } from "@/app/dashboard/project/budget/components/Modal";
+import { ConfirmationModal } from "@/app/dashboard/project/budget/components/ConfirmationModal";
 import { ActivityLogSheet } from "@/components/ActivityLogSheet";
 
 // Local Components

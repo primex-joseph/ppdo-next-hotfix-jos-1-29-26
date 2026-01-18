@@ -1,3 +1,5 @@
+// app/dashboard/project/budget/components/index.ts
+
 // Budget page hooks
 export { useBudgetData, useBudgetAccess } from "./useBudgetData";
 export { useBudgetMutations } from "./useBudgetMutations";

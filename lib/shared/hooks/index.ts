@@ -1,5 +1,4 @@
 // lib/shared/hooks/index.ts
-// NEW FILE - CREATE THIS
 
 /**
  * Shared hooks for Budget and Project modules

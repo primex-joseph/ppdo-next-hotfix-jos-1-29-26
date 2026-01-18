@@ -1,3 +1,5 @@
+// app/dashboard/project/budget/[particularId]/components/ProjectLoadingState.tsx
+
 interface ProjectLoadingStateProps {
   message?: string;
 }

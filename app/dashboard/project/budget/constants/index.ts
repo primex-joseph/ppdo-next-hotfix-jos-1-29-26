@@ -1,5 +1,4 @@
 // app/dashboard/project/budget/constants/index.ts
-// UPDATED FILE - Keep existing and add table columns
 
 // Re-export shared constants
 export {
@@ -35,13 +34,31 @@ export const ACCESS_LEVELS = [
 ] as const;
 
 // ============================================================================
-// TABLE COLUMNS
+// TABLE COLUMNS - For Column Visibility & Export
 // ============================================================================
 
-export const TABLE_COLUMNS = [
-  { key: "particular", label: "Particulars", sortable: true, filterable: false, align: "left" as const },
-  { key: "year", label: "Year", sortable: false, filterable: true, align: "center" as const },
-  { key: "status", label: "Status", sortable: false, filterable: true, align: "center" as const },
+export const BUDGET_TABLE_COLUMNS = [
+  { 
+    key: "particular", 
+    label: "Particulars", 
+    sortable: true, 
+    filterable: false, 
+    align: "left" as const 
+  },
+  { 
+    key: "year", 
+    label: "Year", 
+    sortable: false, 
+    filterable: true, 
+    align: "center" as const 
+  },
+  { 
+    key: "status", 
+    label: "Status", 
+    sortable: false, 
+    filterable: true, 
+    align: "center" as const 
+  },
   {
     key: "totalBudgetAllocated",
     label: "Budget Allocated",
@@ -96,4 +113,9 @@ export const TABLE_COLUMNS = [
 export const ANIMATION = {
   NEW_ITEM_HIGHLIGHT_DURATION: 2000,
   SCROLL_DELAY: 100,
+} as const;
+
+export const EXPORT = {
+  CSV_FILENAME_PREFIX: "budget_export",
+  DATE_FORMAT: "YYYY-MM-DD",
 } as const;

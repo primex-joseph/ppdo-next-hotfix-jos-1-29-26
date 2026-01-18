@@ -1,4 +1,5 @@
-// components/MenuBar.tsx
+// app/dashboard/project/budget/components/MenuBar.tsx
+
 "use client"
 
 import { Button } from "@/components/ui/button"
