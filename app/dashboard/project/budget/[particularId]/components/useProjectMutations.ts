@@ -1,7 +1,10 @@
+// app/dashboard/project/budget/[particularId]/components/useProjectMutations.ts
+// UPDATED FILE - Phase 5: Migrate to use service layer
+
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
-import { toast } from "sonner";
+import { withMutationHandling } from "@/services";
 
 export function useProjectMutations(budgetItemId?: Id<"budgetItems">) {
   const createProject = useMutation(api.projects.create);
@@ -9,14 +12,14 @@ export function useProjectMutations(budgetItemId?: Id<"budgetItems">) {
   const deleteProject = useMutation(api.projects.moveToTrash);
   const recalculateBudgetItem = useMutation(api.budgetItems.recalculateSingleBudgetItem);
 
-  const handleAddProject = async (projectData: any) => {
+  const handleAddProject = async (projectData: any): Promise<string | null> => {
     if (!budgetItemId) {
-      toast.error("Budget item not found. Cannot create project.");
+      console.error("Budget item not found. Cannot create project.");
       return null;
     }
 
-    try {
-      const response: any = await createProject({
+    const success = await withMutationHandling(
+      () => createProject({
         particulars: projectData.particulars,
         budgetItemId,
         categoryId: projectData.categoryId || undefined,
@@ -28,35 +31,33 @@ export function useProjectMutations(budgetItemId?: Id<"budgetItems">) {
         year: projectData.year || undefined,
         targetDateCompletion: projectData.targetDateCompletion || undefined,
         projectManagerId: projectData.projectManagerId || undefined,
-      });
-
-      if (response.success) {
-        toast.success(response.message || "Project created successfully!", {
-          description: `"${projectData.particulars}" has been added.`,
-        });
-        // Return the project ID for highlighting
-        return response.data?.id || response.id || null;
-      } else {
-        toast.error(response.error?.message || "Failed to create project");
-        if (response.error?.code === "VALIDATION_ERROR") {
-          console.error("Validation details:", response.error.details);
-        }
-        return null;
+      }),
+      {
+        loadingMessage: "Creating project...",
+        successMessage: `Project "${projectData.particulars}" created successfully!`,
+        errorMessage: "Failed to create project",
+        onError: (error) => {
+          if (error?.code === "VALIDATION_ERROR") {
+            console.error("Validation details:", error.details);
+          }
+        },
       }
-    } catch (error) {
-      console.error("Error creating project:", error);
-      toast.error("An unexpected error occurred", {
-        description: error instanceof Error ? error.message : "Please try again.",
-      });
-      return null;
-    }
+    );
+
+    // Extract project ID from response if available
+    // Note: This assumes the mutation returns the created project ID
+    // You may need to adjust based on your actual API response structure
+    return success ? (success as any).id || (success as any).data?.id || null : null;
   };
 
   const handleEditProject = async (id: string, projectData: any) => {
-    if (!budgetItemId) return;
+    if (!budgetItemId) {
+      console.error("Budget item not found. Cannot edit project.");
+      return false;
+    }
     
-    try {
-      const response: any = await updateProject({
+    return await withMutationHandling(
+      () => updateProject({
         id: id as Id<"projects">,
         particulars: projectData.particulars,
         budgetItemId,
@@ -70,58 +71,43 @@ export function useProjectMutations(budgetItemId?: Id<"budgetItems">) {
         targetDateCompletion: projectData.targetDateCompletion || undefined,
         projectManagerId: projectData.projectManagerId || undefined,
         reason: "Updated via dashboard UI",
-      });
-
-      if (response.success) {
-        toast.success(response.message || "Project updated successfully!", {
-          description: `"${projectData.particulars}" has been updated.`,
-        });
-      } else {
-        toast.error(response.error?.message || "Failed to update project");
+      }),
+      {
+        loadingMessage: "Updating project...",
+        successMessage: `Project "${projectData.particulars}" updated successfully!`,
+        errorMessage: "Failed to update project",
       }
-    } catch (error) {
-      console.error("Error updating project:", error);
-      toast.error("An unexpected error occurred", {
-        description: error instanceof Error ? error.message : "Please try again.",
-      });
-    }
+    );
   };
 
   const handleDeleteProject = async (id: string) => {
-    try {
-      const response: any = await deleteProject({
+    return await withMutationHandling(
+      () => deleteProject({
         id: id as Id<"projects">,
         reason: "Moved to trash via project dashboard",
-      });
-
-      if (response.success) {
-        toast.success(response.message || "Project moved to trash successfully!");
-      } else {
-        toast.error(response.error?.message || "Failed to delete project");
+      }),
+      {
+        loadingMessage: "Moving to trash...",
+        successMessage: "Project moved to trash successfully!",
+        errorMessage: "Failed to delete project",
       }
-    } catch (error) {
-      console.error("Error deleting project:", error);
-      toast.error("An unexpected error occurred");
-    }
+    );
   };
 
   const handleRecalculate = async () => {
-    if (!budgetItemId) return;
-    
-    try {
-      const result: any = await recalculateBudgetItem({ budgetItemId });
-
-      if (result.success) {
-        toast.success("Budget item recalculated successfully!");
-      } else if (result.status) {
-        toast.success("Budget item recalculated successfully!", {
-          description: `Status: ${result.status}, Projects: ${result.projectsCount}`,
-        });
-      }
-    } catch (error) {
-      console.error("Recalculation error:", error);
-      toast.error("Failed to recalculate budget item");
+    if (!budgetItemId) {
+      console.error("Budget item not found. Cannot recalculate.");
+      return false;
     }
+    
+    return await withMutationHandling(
+      () => recalculateBudgetItem({ budgetItemId }),
+      {
+        loadingMessage: "Recalculating...",
+        successMessage: "Budget item recalculated successfully!",
+        errorMessage: "Failed to recalculate budget item",
+      }
+    );
   };
 
   return {

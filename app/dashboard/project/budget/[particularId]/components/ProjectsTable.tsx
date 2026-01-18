@@ -34,18 +34,17 @@ import {
 } from "../types";
 import { AVAILABLE_COLUMNS } from "../constants";
 import {
-  filterProjectsBySearch,
-  filterProjectsByStatus,
-  filterProjectsByOffice,
-  filterProjectsByYear,
-  sortProjects,
-  sortWithPinnedFirst,
   groupProjectsByCategory,
   calculateProjectTotals,
-  generateProjectsCSV,
-  downloadCSV,
   createProjectSlug,
 } from "../utils";
+import {
+  applyFilters,
+  createProjectFilterConfig,
+  exportToCSV,
+  createProjectExportConfig,
+  withMutationHandling,
+} from "@/services";
 
 export function ProjectsTable({
   projects,
@@ -108,18 +107,17 @@ export function ProjectsTable({
   }, [currentUser]);
 
   // Filter and sort projects
-  const filteredAndSortedProjects = useMemo(() => {
-    let filtered = [...projects];
-    
-    filtered = filterProjectsBySearch(filtered, searchQuery);
-    filtered = filterProjectsByStatus(filtered, statusFilter);
-    filtered = filterProjectsByOffice(filtered, officeFilter);
-    filtered = filterProjectsByYear(filtered, yearFilter);
-    filtered = sortProjects(filtered, sortField, sortDirection);
-    filtered = sortWithPinnedFirst(filtered);
-    
-    return filtered;
-  }, [projects, searchQuery, statusFilter, officeFilter, yearFilter, sortField, sortDirection]);
+  const filteredAndSortedProjects = useMemo(() => 
+    applyFilters(projects, createProjectFilterConfig(
+      searchQuery,
+      statusFilter,
+      yearFilter,
+      officeFilter,
+      sortField,
+      sortDirection
+    )),
+    [projects, searchQuery, statusFilter, yearFilter, officeFilter, sortField, sortDirection]
+  );
 
   // Group projects by category
   const groupedProjects = useMemo(() => {
@@ -195,6 +193,7 @@ export function ProjectsTable({
       }
     }
   }, [yearFilter]);
+
   // ==================== EVENT HANDLERS ====================
 
   const handleSelectAll = (checked: boolean) => {
@@ -261,25 +260,24 @@ export function ProjectsTable({
   };
 
   const handleBulkTrash = async () => {
-    try {
-      const response: any = await bulkMoveToTrash({ 
+    const success = await withMutationHandling(
+      () => bulkMoveToTrash({ 
         ids: Array.from(selectedIds) as Id<"projects">[] 
-      });
-
-      if (response.success) {
-        const successCount = response.data?.processed || 0;
-        const failedCount = response.data?.failed || 0;
-
-        toast.success(response.message || "Bulk operation completed", {
-          description: `Successfully moved: ${successCount}. Failed: ${failedCount}.`,
-        });
-        setSelectedIds(new Set());
-      } else {
-        toast.error(response.error?.message || "Failed to move projects to trash");
+      }),
+      {
+        loadingMessage: `Moving ${selectedIds.size} project(s) to trash...`,
+        successMessage: `Successfully moved ${selectedIds.size} project(s) to trash`,
+        errorMessage: "Failed to move projects to trash",
+        onSuccess: (data) => {
+          const processed = data?.processed || 0;
+          const failed = data?.failed || 0;
+          if (failed > 0) {
+            toast.info(`Note: ${failed} project(s) failed to move`);
+          }
+          setSelectedIds(new Set());
+        },
       }
-    } catch (error) {
-      toast.error("An unexpected error occurred during bulk delete");
-    }
+    );
   };
 
   const handleBulkCategoryChange = (categoryId: Id<"projectCategories"> | undefined) => {
@@ -291,28 +289,25 @@ export function ProjectsTable({
   const confirmBulkCategoryUpdate = async () => {
     if (!pendingBulkCategoryId) return;
     
-    try {
-      const response: any = await bulkUpdateCategory({
+    const success = await withMutationHandling(
+      () => bulkUpdateCategory({
         ids: Array.from(selectedIds) as Id<"projects">[],
         categoryId: pendingBulkCategoryId
-      });
-
-      if (response.success) {
-        const successCount = response.data?.processed || 0;
-        toast.success(response.message || "Category updated successfully", {
-          description: `Updated ${successCount} projects.`,
-        });
-        setSelectedIds(new Set());
-        setPendingBulkCategoryId(undefined);
-        setShowBulkCategoryConfirmModal(false);
-      } else {
-        toast.error(response.error?.message || "Failed to update categories.");
-        setShowBulkCategoryConfirmModal(false);
+      }),
+      {
+        loadingMessage: `Updating ${selectedIds.size} project(s)...`,
+        successMessage: `Successfully updated ${selectedIds.size} project(s)`,
+        errorMessage: "Failed to update categories",
+        onSuccess: () => {
+          setSelectedIds(new Set());
+          setPendingBulkCategoryId(undefined);
+          setShowBulkCategoryConfirmModal(false);
+        },
+        onError: () => {
+          setShowBulkCategoryConfirmModal(false);
+        },
       }
-    } catch (error) {
-      toast.error("Failed to update categories.");
-      setShowBulkCategoryConfirmModal(false);
-    }
+    );
   };
 
   const handleSearchFocus = (e: React.FocusEvent<HTMLInputElement>) => {
@@ -358,19 +353,12 @@ export function ProjectsTable({
 
   const handleExportCSV = () => {
     try {
-      const csvContent = generateProjectsCSV(
+      exportToCSV(
         filteredAndSortedProjects,
-        AVAILABLE_COLUMNS,
-        hiddenColumns
+        createProjectExportConfig(AVAILABLE_COLUMNS, hiddenColumns)
       );
-      const filename = `projects_export_${new Date().toISOString().split('T')[0]}.csv`;
-      downloadCSV(csvContent, filename);
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(error.message);
-      } else {
-        toast.error("Failed to export CSV");
-      }
+      toast.error(error instanceof Error ? error.message : "Failed to export CSV");
     }
   };
 
@@ -384,8 +372,8 @@ export function ProjectsTable({
   const saveSingleCategoryChange = async () => {
     if (!selectedCategoryProject) return;
     
-    try {
-      const response: any = await updateProject({
+    const success = await withMutationHandling(
+      () => updateProject({
         id: selectedCategoryProject.id as Id<"projects">,
         categoryId: singleCategoryId,
         particulars: selectedCategoryProject.particulars,
@@ -397,18 +385,17 @@ export function ProjectsTable({
         year: selectedCategoryProject.year,
         projectManagerId: selectedCategoryProject.projectManagerId as Id<"users">,
         reason: "Category updated via context menu"
-      });
-
-      if (response.success) {
-        toast.success(response.message || "Category updated");
-        setShowSingleCategoryModal(false);
-        setSelectedCategoryProject(null);
-      } else {
-        toast.error(response.error?.message || "Failed to update category");
+      }),
+      {
+        loadingMessage: "Updating category...",
+        successMessage: "Category updated successfully",
+        errorMessage: "Failed to update category",
+        onSuccess: () => {
+          setShowSingleCategoryModal(false);
+          setSelectedCategoryProject(null);
+        },
       }
-    } catch (error) {
-      toast.error("An unexpected error occurred");
-    }
+    );
   };
 
   const handlePinProject = async () => {

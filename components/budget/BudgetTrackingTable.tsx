@@ -29,16 +29,20 @@ import {
   SortDirection 
 } from "@/app/dashboard/project/budget/types";
 import {
-  filterBySearchQuery,
-  filterByStatus,
-  filterByYear,
-  sortBudgetItems,
-  sortWithPinnedFirst,
   calculateBudgetTotals,
   calculateTotalUtilizationRate,
   extractUniqueStatuses,
   extractUniqueYears,
 } from "@/app/dashboard/project/budget/utils";
+import { 
+  applyFilters,
+  createBudgetFilterConfig,
+  exportToCSV,
+  createBudgetExportConfig,
+  printDocument,
+  createBudgetPrintConfig,
+  withMutationHandling,
+} from "@/services";
 import { STORAGE_KEYS, TIMEOUTS } from "@/app/dashboard/project/budget/constants";
 
 interface BudgetTrackingTableProps {
@@ -224,14 +228,16 @@ export function BudgetTrackingTable({
     [budgetItems]
   );
 
-  const filteredAndSortedItems = useMemo(() => {
-    let filtered = filterBySearchQuery(budgetItems, searchQuery);
-    filtered = filterByStatus(filtered, statusFilter);
-    filtered = filterByYear(filtered, yearFilter);
-    filtered = sortBudgetItems(filtered, sortField, sortDirection);
-    filtered = sortWithPinnedFirst(filtered);
-    return filtered;
-  }, [budgetItems, searchQuery, statusFilter, yearFilter, sortField, sortDirection]);
+  const filteredAndSortedItems = useMemo(() => 
+    applyFilters(budgetItems, createBudgetFilterConfig(
+      searchQuery,
+      statusFilter,
+      yearFilter,
+      sortField,
+      sortDirection
+    )),
+    [budgetItems, searchQuery, statusFilter, yearFilter, sortField, sortDirection]
+  );
 
   const totals = useMemo(
     () => calculateBudgetTotals(filteredAndSortedItems),
@@ -387,25 +393,19 @@ export function BudgetTrackingTable({
       return;
     }
 
-    try {
-      const response: any = await bulkMoveToTrash({
+    const success = await withMutationHandling(
+      () => bulkMoveToTrash({
         ids: Array.from(selectedIds) as Id<"budgetItems">[],
-      });
-
-      if (response.success) {
-        toast.success(
-          response.message || `Moved ${selectedIds.size} item(s) to trash`
-        );
-        setSelectedIds(new Set());
-      } else {
-        toast.error(
-          response.error?.message || "Failed to move items to trash"
-        );
+      }),
+      {
+        loadingMessage: `Moving ${selectedIds.size} item(s) to trash...`,
+        successMessage: `Successfully moved ${selectedIds.size} item(s) to trash`,
+        errorMessage: "Failed to move items to trash",
+        onSuccess: () => {
+          setSelectedIds(new Set());
+        },
       }
-    } catch (error) {
-      console.error("Error in bulk trash:", error);
-      toast.error("An error occurred while moving items to trash");
-    }
+    );
   };
 
   const toggleSearch = () => {
@@ -416,7 +416,7 @@ export function BudgetTrackingTable({
   };
 
   const handlePrint = () => {
-    window.print();
+    printDocument(createBudgetPrintConfig());
   };
 
   // ============================================================================
