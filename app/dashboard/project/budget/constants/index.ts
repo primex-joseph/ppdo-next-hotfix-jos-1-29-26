@@ -1,38 +1,25 @@
 // app/dashboard/project/budget/constants/index.ts
 
-// ============================================================================
-// STORAGE KEYS
-// ============================================================================
+// Re-export shared constants
+export {
+  VALIDATION_MESSAGES,
+  VALIDATION_LIMITS,
+  CODE_PATTERN,
+} from "@/lib/shared/constants/validation";
 
-export const STORAGE_KEYS = {
-  FORM_DRAFT: "budget_item_form_draft",
-  YEAR_PREFERENCE: "budget_year_preference",
-  OPEN_ADD: "budget_open_add",
-} as const;
+export {
+  STORAGE_KEYS,
+} from "@/lib/shared/constants/storage";
 
-// ============================================================================
-// PAGINATION
-// ============================================================================
+export {
+  PAGINATION,
+  TIMEOUTS,
+  LIMITS,
+  AVATAR_COLORS,
+} from "@/lib/shared/constants/display";
 
+// Budget-specific constants
 export const ITEMS_PER_PAGE = 20;
-
-// ============================================================================
-// VALIDATION MESSAGES
-// ============================================================================
-
-export const VALIDATION_MESSAGES = {
-  REQUIRED: "This field is required.",
-  EMPTY_WHITESPACE: "Cannot be empty or only whitespace.",
-  INVALID_FORMAT:
-    "Only letters (including accents), numbers, underscores, percentage signs, spaces, commas, periods, hyphens, and @ are allowed.",
-  MIN_ZERO: "Must be 0 or greater.",
-  MIN_YEAR: 2000,
-  MAX_YEAR: 2100,
-} as const;
-
-// ============================================================================
-// STATUS OPTIONS
-// ============================================================================
 
 export const STATUS_OPTIONS = [
   { value: "completed", label: "Completed" },
@@ -40,19 +27,11 @@ export const STATUS_OPTIONS = [
   { value: "delayed", label: "Delayed" },
 ] as const;
 
-// ============================================================================
-// ACCESS LEVELS
-// ============================================================================
-
 export const ACCESS_LEVELS = [
   { value: "viewer", label: "Viewer" },
   { value: "editor", label: "Editor" },
   { value: "admin", label: "Admin" },
 ] as const;
-
-// ============================================================================
-// TABLE COLUMN CONFIGURATION
-// ============================================================================
 
 export const TABLE_COLUMNS = [
   { key: "particular", label: "Particulars", sortable: true, align: "left" },
@@ -101,37 +80,3 @@ export const TABLE_COLUMNS = [
     align: "right",
   },
 ] as const;
-
-// ============================================================================
-// AVATAR COLORS
-// ============================================================================
-
-export const AVATAR_COLORS = [
-  "bg-blue-500",
-  "bg-green-500",
-  "bg-purple-500",
-  "bg-orange-500",
-  "bg-pink-500",
-  "bg-indigo-500",
-] as const;
-
-// ============================================================================
-// TIMEOUTS
-// ============================================================================
-
-export const TIMEOUTS = {
-  DEBOUNCE_SEARCH: 300,
-  DRAFT_SAVE: 500,
-  HEADER_SKELETON: 600,
-} as const;
-
-// ============================================================================
-// LIMITS
-// ============================================================================
-
-export const LIMITS = {
-  UTILIZATION_WARNING: 60,
-  UTILIZATION_DANGER: 80,
-  PROJECT_STATUS_GOOD: 50,
-  PROJECT_STATUS_WARNING: 30,
-} as const;

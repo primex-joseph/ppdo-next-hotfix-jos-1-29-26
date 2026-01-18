@@ -1,6 +1,7 @@
 // app/dashboard/project/budget/types/index.ts
 
 import { Id } from "@/convex/_generated/dataModel";
+import { SortState, ContextMenuState } from "@/lib/shared/types/table.types";
 
 // ============================================================================
 // BUDGET ITEM TYPES
@@ -62,10 +63,10 @@ export interface BudgetStatistics {
 }
 
 // ============================================================================
-// SORTING & FILTERING TYPES
+// SORTING & FILTERING TYPES (using shared types)
 // ============================================================================
 
-export type SortField =
+export type BudgetSortField =
   | "particular"
   | "year"
   | "status"
@@ -75,45 +76,13 @@ export type SortField =
   | "utilizationRate"
   | "projectCompleted"
   | "projectDelayed"
-  | "projectsOnTrack"
-  | null;
+  | "projectsOnTrack";
 
-export type SortDirection = "asc" | "desc" | null;
+// Use shared SortState
+export type BudgetSortState = SortState<BudgetSortField>;
 
-export interface FilterState {
-  searchQuery: string;
-  statusFilter: string[];
-  yearFilter: number[];
-  sortField: SortField;
-  sortDirection: SortDirection;
-}
-
-// ============================================================================
-// CONTEXT MENU TYPES
-// ============================================================================
-
-export interface ContextMenuState {
-  x: number;
-  y: number;
-  item: BudgetItem;
-}
-
-// ============================================================================
-// VIOLATION TYPES
-// ============================================================================
-
-export interface ViolationDetail {
-  label: string;
-  amount: number;
-  limit: number;
-  diff: number;
-}
-
-export interface ViolationData {
-  hasViolation: boolean;
-  message: string;
-  details?: ViolationDetail[];
-}
+// Use shared ContextMenuState
+export type BudgetContextMenuState = ContextMenuState<BudgetItem>;
 
 // ============================================================================
 // ACCESS & USER TYPES
