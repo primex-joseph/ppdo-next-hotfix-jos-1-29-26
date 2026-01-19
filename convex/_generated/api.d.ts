@@ -81,6 +81,7 @@ import type * as schema_projectParticulars from "../schema/projectParticulars.js
 import type * as schema_projects from "../schema/projects.js";
 import type * as schema_security from "../schema/security.js";
 import type * as schema_tableSettings from "../schema/tableSettings.js";
+import type * as schema_trustFundActivities from "../schema/trustFundActivities.js";
 import type * as schema_trustFunds from "../schema/trustFunds.js";
 import type * as schema_users from "../schema/users.js";
 import type * as tableSettings from "../tableSettings.js";
@@ -169,6 +170,7 @@ declare const fullApi: ApiFromModules<{
   "schema/projects": typeof schema_projects;
   "schema/security": typeof schema_security;
   "schema/tableSettings": typeof schema_tableSettings;
+  "schema/trustFundActivities": typeof schema_trustFundActivities;
   "schema/trustFunds": typeof schema_trustFunds;
   "schema/users": typeof schema_users;
   tableSettings: typeof tableSettings;

@@ -1,4 +1,5 @@
 // convex/schema/trustFunds.ts
+
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
 
@@ -28,7 +29,7 @@ export const trustFundTables = {
     /**
      * Date when the trust fund was received
      */
-    dateReceived: v.number(), // Timestamp
+    dateReceived: v.optional(v.number()), // Timestamp - NOW OPTIONAL
     
     /**
      * Financial tracking fields
@@ -98,37 +99,4 @@ export const trustFundTables = {
     .index("dateReceived", ["dateReceived"])
     .index("yearAndStatus", ["year", "status"])
     .index("departmentAndYear", ["departmentId", "year"]),
-
-  /**
-   * Trust Fund Activity Log
-   * Tracks all changes to trust funds
-   */
-  trustFundActivities: defineTable({
-    action: v.union(
-      v.literal("created"),
-      v.literal("updated"),
-      v.literal("deleted"),
-      v.literal("restored")
-    ),
-    trustFundId: v.optional(v.id("trustFunds")),
-    projectTitle: v.string(),
-    officeInCharge: v.string(),
-    
-    previousValues: v.optional(v.string()), // JSON string
-    newValues: v.optional(v.string()), // JSON string
-    changedFields: v.optional(v.string()), // JSON array of field names
-    changeSummary: v.optional(v.any()), // Smart summary object
-    
-    performedBy: v.id("users"),
-    performedByName: v.string(),
-    performedByEmail: v.string(),
-    performedByRole: v.optional(v.string()),
-    
-    timestamp: v.number(),
-    reason: v.optional(v.string()),
-  })
-    .index("trustFundId", ["trustFundId"])
-    .index("performedBy", ["performedBy"])
-    .index("timestamp", ["timestamp"])
-    .index("action", ["action"]),
 };

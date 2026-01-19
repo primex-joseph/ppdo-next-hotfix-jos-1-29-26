@@ -1,96 +1,85 @@
-// follow this reference for the new dynamic trust-funds, we ned main landing page to display all by years
-// old codes ofapp/dashboard/project/[year]/page.tsx
+// app/dashboard/trust-funds/[year]/page.tsx
 
 "use client";
 
-import { use } from "react";
-import { useState, useMemo } from "react";
-import { Expand } from "lucide-react";
-import AccessDeniedPage from "@/components/AccessDeniedPage";
+import { use, useState, useMemo } from "react";
+import { useTrustFundData } from "./components/hooks/useTrustFundData";
+import { useTrustFundMutations } from "./components/hooks/useTrustFundMutations";
+import { YearTrustFundsPageHeader } from "./components/YearTrustFundsPageHeader";
+import TrustFundStatistics from "./components/TrustFundStatistics";
+import { TrustFundsTable } from "./components/TrustFundsTable";
 import { TrashBinModal } from "@/components/TrashBinModal";
-import BudgetStatistics from "./components/BudgetStatistics";
-import { BudgetTrackingTable } from "./components/BudgetTrackingTable";
-import { 
-  ExpandModal, 
-  LoadingState, 
-  useBudgetAccess, 
-  useBudgetData, 
-  useBudgetMutations 
-} from "./components";
-import { Button } from "@/components/ui/button";
-import { YearBudgetPageHeader } from "./components/YearBudgetPageHeader";
-import { BudgetItem } from "./types";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PageProps {
   params: Promise<{ year: string }>;
 }
 
-export default function YearBudgetPage({ params }: PageProps) {
+export default function YearTrustFundsPage({ params }: PageProps) {
   const { year: yearParam } = use(params);
   const year = parseInt(yearParam);
 
-  const { accessCheck, isLoading: isLoadingAccess, canAccess } = useBudgetAccess();
-  const { budgetItems, statistics, isLoading: isLoadingData } = useBudgetData();
-  const { handleAdd, handleEdit, handleDelete } = useBudgetMutations();
+  const { trustFunds, statistics, isLoading } = useTrustFundData();
+  const { handleAdd, handleEdit, handleDelete } = useTrustFundMutations();
   
-  const [isExpandModalOpen, setIsExpandModalOpen] = useState(false);
   const [showTrashModal, setShowTrashModal] = useState(false);
+  const [showDetails, setShowDetails] = useState(true);
 
-  // Filter budget items by year
-  const yearFilteredItems = useMemo(() => {
-    if (isNaN(year)) return budgetItems;
-    return budgetItems.filter((item: BudgetItem) => item.year === year);
-  }, [budgetItems, year]);
+  // Filter trust funds by year
+  const yearFilteredFunds = useMemo(() => {
+    if (isNaN(year)) return trustFunds;
+    return trustFunds.filter((fund) => fund.year === year);
+  }, [trustFunds, year]);
 
   // Calculate statistics for filtered items
   const yearStatistics = useMemo(() => {
-    if (yearFilteredItems.length === 0) {
+    if (yearFilteredFunds.length === 0) {
       return {
-        totalAllocated: 0,
+        totalReceived: 0,
         totalUtilized: 0,
-        averageUtilizationRate: 0,
+        totalBalance: 0,
         totalProjects: 0,
       };
     }
 
-    const totalAllocated = yearFilteredItems.reduce(
-      (sum, item) => sum + item.totalBudgetAllocated, 
+    const totalReceived = yearFilteredFunds.reduce(
+      (sum, fund) => sum + fund.received,
       0
     );
-    const totalUtilized = yearFilteredItems.reduce(
-      (sum, item) => sum + item.totalBudgetUtilized, 
+    const totalUtilized = yearFilteredFunds.reduce(
+      (sum, fund) => sum + fund.utilized,
       0
     );
-    const averageUtilizationRate = yearFilteredItems.reduce(
-      (sum, item) => sum + item.utilizationRate, 
+    const totalBalance = yearFilteredFunds.reduce(
+      (sum, fund) => sum + fund.balance,
       0
-    ) / yearFilteredItems.length;
+    );
 
     return {
-      totalAllocated,
+      totalReceived,
       totalUtilized,
-      averageUtilizationRate,
-      totalProjects: yearFilteredItems.length,
+      totalBalance,
+      totalProjects: yearFilteredFunds.length,
     };
-  }, [yearFilteredItems]);
+  }, [yearFilteredFunds]);
 
-  if (isLoadingAccess) {
-    return <LoadingState message="Checking access permissions..." />;
-  }
-
-  if (!canAccess) {
+  if (isLoading) {
     return (
-      <AccessDeniedPage
-        userName={accessCheck?.user?.name || ""}
-        userEmail={accessCheck?.user?.email || ""}
-        departmentName={accessCheck?.department?.name || "Not Assigned"}
-        pageRequested={`Budget Tracking ${year}`}
-      />
+      <div className="p-6 space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-4 w-96" />
+        </div>
+        
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
+        </div>
+        
+        <Skeleton className="h-96" />
+      </div>
     );
-  }
-
-  if (isLoadingData) {
-    return <LoadingState message={`Loading budget data for ${year}...`} />;
   }
 
   // Validate year
@@ -110,47 +99,35 @@ export default function YearBudgetPage({ params }: PageProps) {
   }
 
   return (
-    <>
-      <YearBudgetPageHeader year={year} />
-
-      <BudgetStatistics
-        totalAllocated={yearStatistics.totalAllocated}
-        totalUtilized={yearStatistics.totalUtilized}
-        averageUtilizationRate={yearStatistics.averageUtilizationRate}
-        totalProjects={yearStatistics.totalProjects}
+    <div className="p-6">
+      <YearTrustFundsPageHeader 
+        year={year}
+        showDetails={showDetails}
+        onToggleDetails={() => setShowDetails(!showDetails)}
       />
 
-      <div className="mb-6">
-        <BudgetTrackingTable
-          budgetItems={yearFilteredItems}
-          onAdd={handleAdd}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          onOpenTrash={() => setShowTrashModal(true)}
-          expandButton={
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              aria-label="Expand table"
-              onClick={() => setIsExpandModalOpen(true)}
-            >
-              <Expand className="w-4 h-4" />
-            </Button>
-          }
+      {showDetails && (
+        <TrustFundStatistics
+          totalReceived={yearStatistics.totalReceived}
+          totalUtilized={yearStatistics.totalUtilized}
+          totalBalance={yearStatistics.totalBalance}
+          totalProjects={yearStatistics.totalProjects}
         />
-      </div>
+      )}
+
+      <TrustFundsTable
+        data={yearFilteredFunds}
+        onAdd={handleAdd}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onOpenTrash={() => setShowTrashModal(true)}
+      />
 
       <TrashBinModal
         isOpen={showTrashModal}
         onClose={() => setShowTrashModal(false)}
-        type="budget"
+        type="trustFund"
       />
-
-      <ExpandModal
-        isOpen={isExpandModalOpen}
-        onClose={() => setIsExpandModalOpen(false)}
-      />
-    </>
+    </div>
   );
 }

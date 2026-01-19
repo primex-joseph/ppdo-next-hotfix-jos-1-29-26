@@ -1,4 +1,4 @@
-// app/dashboard/trust-funds/TrustFundsPageHeader.tsx
+// app/dashboard/trust-funds/[year]/components/YearTrustFundsPageHeader.tsx
 
 "use client";
 
@@ -6,15 +6,17 @@ import { Eye, EyeOff, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ActivityLogSheet } from "@/components/ActivityLogSheet";
 
-interface TrustFundsPageHeaderProps {
+interface YearTrustFundsPageHeaderProps {
+  year: number;
   showDetails: boolean;
   onToggleDetails: () => void;
 }
 
-export function TrustFundsPageHeader({ 
+export function YearTrustFundsPageHeader({ 
+  year,
   showDetails, 
   onToggleDetails 
-}: TrustFundsPageHeaderProps) {
+}: YearTrustFundsPageHeaderProps) {
   return (
     <div className="mb-6 no-print">
       <div className="flex items-start justify-between gap-4 mb-1">
@@ -23,10 +25,10 @@ export function TrustFundsPageHeader({
             className="text-3xl sm:text-4xl font-semibold text-zinc-900 dark:text-zinc-100"
             style={{ fontFamily: "var(--font-cinzel), serif" }}
           >
-            Trust Funds
+            Trust Funds {year}
           </h1>
           <p className="text-zinc-600 dark:text-zinc-400 mt-1">
-            Monitor Funds allocation, utilization, and project status
+            Monitor fund allocation, utilization, and project status for fiscal year {year}
           </p>
         </div>
 
@@ -55,7 +57,7 @@ export function TrustFundsPageHeader({
           <ActivityLogSheet
             type="trustFund"
             entityId="all"
-            title="Trust Funds Activity Log"
+            title={`Trust Funds Activity Log - ${year}`}
             trigger={
               <Button
                 variant="outline"

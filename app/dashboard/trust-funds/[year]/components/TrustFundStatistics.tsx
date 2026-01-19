@@ -34,37 +34,31 @@ export default function TrustFundStatistics({
   return (
     <section
       aria-label="Trust fund statistics"
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 no-print"
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6 no-print"
     >
       <StatCard
         label="Total Trust Funds Received"
         value={currency.format(totalReceived)}
-        trend={null}
       />
 
       <StatCard
         label="Total Trust Funds Utilized"
         value={currency.format(totalUtilized)}
-        trend={null}
       />
 
       <StatCard
         label="Total Available Balance"
         value={currency.format(totalBalance)}
-        trend={null}
       />
 
       <StatCard
         label="Total Projects"
         value={totalProjects.toLocaleString()}
-        trend={null}
       />
 
       <StatCard
         label="Average Utilization Rate"
         value={`${utilizationRate}%`}
-        trend={null}
-        className="sm:col-span-2 lg:col-span-4"
       />
     </section>
   );
@@ -73,33 +67,22 @@ export default function TrustFundStatistics({
 const StatCard = React.memo(function StatCard({
   label,
   value,
-  trend,
-  className = "",
 }: {
   label: string;
   value: string;
-  trend?: string | null;
-  className?: string;
 }) {
   return (
-    <Card role="group" aria-label={label} className={`h-full ${className}`}>
+    <Card role="group" aria-label={label} className="h-full">
       <CardContent className="p-6">
         <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400 mb-2">
           {label}
         </p>
-        <div className="flex items-baseline gap-2">
-          <p
-            className="text-2xl font-bold text-zinc-900 dark:text-zinc-100"
-            aria-live="polite"
-          >
-            {value}
-          </p>
-          {trend && (
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">
-              {trend}
-            </span>
-          )}
-        </div>
+        <p
+          className="text-2xl font-bold text-zinc-900 dark:text-zinc-100"
+          aria-live="polite"
+        >
+          {value}
+        </p>
       </CardContent>
     </Card>
   );

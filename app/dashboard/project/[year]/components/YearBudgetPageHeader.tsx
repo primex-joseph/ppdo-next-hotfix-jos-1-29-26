@@ -35,7 +35,7 @@ export function YearBudgetPageHeader({ year }: YearBudgetPageHeaderProps) {
           </div>
         </div>
 
-        <ActivityLogSheet type="budget" title={`Budget History ${year}`} />
+        <ActivityLogSheet type="budgetItem" title={`Budget History ${year}`} />
       </div>
     </div>
   );

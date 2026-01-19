@@ -19,12 +19,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { TrustFund } from "@/types/trustFund.types";
-import { ImplementingOfficeSelector } from "../../project/[year]/[particularId]/components/ImplementingOfficeSelector";
+import { ImplementingOfficeSelector } from "@/app/dashboard/project/[year]/[particularId]/components/ImplementingOfficeSelector";
 
 const trustFundSchema = z.object({
   projectTitle: z.string().min(1, { message: "Project title is required" }),
   officeInCharge: z.string().min(1, { message: "Office in charge is required" }),
-  dateReceived: z.string().min(1, { message: "Date received is required" }),
+  dateReceived: z.string().optional(),
   received: z.number().min(0, { message: "Must be 0 or greater" }),
   obligatedPR: z.number().min(0).optional(),
   utilized: z.number().min(0),
@@ -101,7 +101,9 @@ export function TrustFundForm({ trustFund, onSave, onCancel }: TrustFundFormProp
   const utilizationRate = received > 0 ? (utilized / received) * 100 : 0;
 
   function onSubmit(values: TrustFundFormValues) {
-    const dateReceivedTimestamp = new Date(values.dateReceived).getTime();
+    const dateReceivedTimestamp = values.dateReceived 
+      ? new Date(values.dateReceived).getTime() 
+      : undefined;
     
     onSave({
       projectTitle: values.projectTitle,
@@ -163,13 +165,14 @@ export function TrustFundForm({ trustFund, onSave, onCancel }: TrustFundFormProp
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                  Date Received
+                  Date Received <span className="text-xs text-zinc-500">(Optional)</span>
                 </FormLabel>
                 <FormControl>
                   <Input
                     type="date"
                     className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700"
                     {...field}
+                    value={field.value || ""}
                   />
                 </FormControl>
                 <FormMessage />

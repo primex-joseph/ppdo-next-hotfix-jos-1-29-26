@@ -1,4 +1,4 @@
-// components/ActivityLogSheet/ActivityLogCard.tsx - COMPLETE UPDATED FILE
+// components/ActivityLogSheet/ActivityLogCard.tsx
 
 import { formatDistanceToNow } from "date-fns";
 import { ArrowRight, FileSpreadsheet } from "lucide-react";
@@ -13,12 +13,12 @@ type ActivityLogCardProps = {
   accentColorValue: string;
 };
 
-// 🆕 UPDATED: Added trustFund tracked fields
+// ✅ FIXED: Changed 'budget' to 'budgetItem'
 const trackedFieldsByType: Record<ActivityLogType, string[]> = {
   breakdown: ["allocatedBudget", "status", "projectAccomplishment", "remarks"],
   project: ["totalBudgetAllocated", "targetDateCompletion", "remarks", "implementingOffice"],
-  budget: ["totalBudgetAllocated", "particulars", "year", "notes"],
-  trustFund: ["received", "utilized", "balance", "officeInCharge", "remarks"], // 🆕 ADDED
+  budgetItem: ["totalBudgetAllocated", "particulars", "year", "notes"],
+  trustFund: ["received", "utilized", "balance", "officeInCharge", "remarks"],
 };
 
 export function ActivityLogCard({
@@ -76,7 +76,6 @@ export function ActivityLogCard({
           ) : (
             <>
               <p>
-                {/* 🆕 UPDATED: Added trustFund case */}
                 {type === "breakdown" ? (
                   <>Processed breakdown for <strong>{implementingOffice}</strong></>
                 ) : type === "project" ? (
@@ -120,17 +119,27 @@ function getActionBadge(action: string) {
   switch (action) {
     case "created":
       return (
-        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">Created</Badge>
+        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200">
+          Created
+        </Badge>
       );
     case "updated":
       return (
-        <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200">Updated</Badge>
+        <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 border-blue-200">
+          Updated
+        </Badge>
       );
     case "deleted":
-      return <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200">Deleted</Badge>;
+      return (
+        <Badge className="bg-red-100 text-red-700 hover:bg-red-100 border-red-200">
+          Deleted
+        </Badge>
+      );
     case "restored":
       return (
-        <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-orange-200">Restored</Badge>
+        <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 border-orange-200">
+          Restored
+        </Badge>
       );
     case "bulk_created":
       return (
@@ -175,8 +184,18 @@ function buildChangeRows(activity: UnifiedActivityLog, type: ActivityLogType) {
       key,
       label: key.replace(/([A-Z])/g, " $1").trim(),
       value:
-        typeof current[key] === "number" && (key.includes("Budget") || key.includes("Allocated") || key.includes("received") || key.includes("utilized") || key.includes("balance"))
-          ? new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(current[key])
+        typeof current[key] === "number" && 
+        (key.includes("Budget") || 
+         key.includes("Allocated") || 
+         key.includes("received") || 
+         key.includes("utilized") || 
+         key.includes("balance"))
+          ? new Intl.NumberFormat("en-PH", { 
+              style: "currency", 
+              currency: "PHP",
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            }).format(current[key])
           : String(current[key] || "Empty"),
     }));
   } catch (error) {
