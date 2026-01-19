@@ -18,9 +18,12 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Info, PlusCircle, MinusCircle, AlertTriangle } from "lucide-react";
+import { AlertCircle, Info, PlusCircle, MinusCircle, AlertTriangle, Pencil, Check, X, Loader2 } from "lucide-react";
 import { BudgetParticularCombobox } from "@/app/dashboard/project/[year]/components/BudgetParticularCombobox";
 import { useAccentColor } from "@/contexts/AccentColorContext";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { toast } from "sonner";
 
 interface BudgetItem {
   id: string;
@@ -38,27 +41,23 @@ interface BudgetItem {
 
 const FORM_STORAGE_KEY = "budget_item_form_draft";
 
-// ✅ UPDATED: Allow alphanumeric, underscores, spaces, and percentage signs
 const particularCodeString = z
   .string()
   .min(1, { message: "This field is required." })
   .refine((val) => val.trim().length > 0, {
     message: "Cannot be empty or only whitespace.",
   })
-  // Allow accented characters like "ô" while keeping existing allowed symbols
   .refine((val) => /^[\p{L}0-9_%\s,\.\-@]+$/u.test(val), {
     message: "Only letters (including accents), numbers, underscores, percentage signs, spaces, commas, periods, hyphens, and @ are allowed.",
   })
-  .transform((val) => val.trim()); // Trim leading/trailing whitespace but allow internal spaces
+  .transform((val) => val.trim());
 
-// ✅ Updated Schema: removed cross-field refinements here to allow flexible input
 const budgetItemSchema = z.object({
   particular: particularCodeString,
   totalBudgetAllocated: z.number().min(0, {
     message: "Must be 0 or greater.",
   }),
   obligatedBudget: z.number().min(0).optional().or(z.literal(0)),
-  // ✅ Utilized is optional/0 allowed
   totalBudgetUtilized: z.number().min(0).optional().or(z.literal(0)),
   year: z.number().int().min(2000).max(2100).optional().or(z.literal(0)),
 });
@@ -71,33 +70,22 @@ interface BudgetItemFormProps {
   onCancel: () => void;
 }
 
-// ✅ Helper function to format number with commas (real-time)
 const formatNumberWithCommas = (value: string): string => {
-  // Remove all non-digit characters except decimal point
   const cleaned = value.replace(/[^\d.]/g, '');
-
-  // Split by decimal point
   const parts = cleaned.split('.');
-
-  // Format the integer part with commas
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-  // Rejoin with decimal (limit to 2 decimal places)
   if (parts.length > 1) {
     return parts[0] + '.' + parts[1].slice(0, 2);
   }
-
   return parts[0];
 };
 
-// ✅ Helper function to parse formatted number
 const parseFormattedNumber = (value: string): number => {
   const cleaned = value.replace(/,/g, '');
   const parsed = parseFloat(cleaned);
   return isNaN(parsed) ? 0 : parsed;
 };
 
-// ✅ Helper function to format number for display (after blur)
 const formatNumberForDisplay = (value: number): string => {
   if (value === 0) return '';
   return new Intl.NumberFormat('en-PH', {
@@ -114,16 +102,26 @@ export function BudgetItemForm({
   const { accentColorValue } = useAccentColor();
   const searchParams = useSearchParams();
 
-  // 🔧 Get year from URL query params
+  // 🆕 Query to check if particular exists
+  const allParticulars = useQuery(api.budgetParticulars.list, {
+    includeInactive: false,
+  });
+
+  // 🆕 Mutation to create particular if needed
+  const createParticular = useMutation(api.budgetParticulars.create);
+
+  // Inline edit state
+  const [isEditingParticular, setIsEditingParticular] = useState(false);
+  const [editedParticular, setEditedParticular] = useState("");
+  const [isHoveringParticular, setIsHoveringParticular] = useState(false);
+  const [isSavingParticular, setIsSavingParticular] = useState(false);
+
   const urlYear = (() => {
     const yearParam = searchParams.get("year");
     return yearParam ? parseInt(yearParam) : undefined;
   })();
 
-  // ✅ State to toggle manual input for obligated and utilized budget
   const [showManualInput, setShowManualInput] = useState(false);
-
-  // ✅ Display values for formatted inputs
   const [displayAllocated, setDisplayAllocated] = useState("");
   const [displayObligated, setDisplayObligated] = useState("");
   const [displayUtilized, setDisplayUtilized] = useState("");
@@ -156,7 +154,6 @@ export function BudgetItemForm({
 
   const formValues = form.watch();
 
-  // ✅ Initialize display values on mount
   useEffect(() => {
     const allocated = form.getValues("totalBudgetAllocated");
     const obligated = form.getValues("obligatedBudget");
@@ -167,7 +164,6 @@ export function BudgetItemForm({
     if (utilized && utilized > 0) setDisplayUtilized(formatNumberForDisplay(utilized));
   }, []);
 
-  // 🔧 CRITICAL: Set year from URL after form mounts (client-side only)
   useEffect(() => {
     if (urlYear && !item) {
       form.setValue("year", urlYear);
@@ -196,9 +192,90 @@ export function BudgetItemForm({
       ? (totalBudgetUtilized / totalBudgetAllocated) * 100
       : 0;
 
-  // ✅ Inline Checks (Visual Only)
   const isBudgetExceeded = totalBudgetUtilized > totalBudgetAllocated;
   const isObligatedExceeded = obligatedBudget && obligatedBudget > totalBudgetAllocated;
+
+  // 🆕 Check if particular exists
+  const particularExists = (code: string): boolean => {
+    if (!allParticulars) return false;
+    return allParticulars.some(p => p.code.toUpperCase() === code.toUpperCase());
+  };
+
+  // Handle inline edit
+  const handleStartEdit = () => {
+    setEditedParticular(form.getValues("particular"));
+    setIsEditingParticular(true);
+  };
+
+  // 🆕 UPDATED: Handle save with auto-create
+  const handleSaveEdit = async () => {
+    const trimmed = editedParticular.trim().toUpperCase();
+    
+    // Validate format
+    if (trimmed.length === 0 || !/^[\p{L}0-9_%\s,\.\-@]+$/u.test(trimmed)) {
+      toast.error("Invalid format", {
+        description: "Code can only contain letters, numbers, underscores, percentage signs, spaces, commas, periods, hyphens, and @"
+      });
+      return;
+    }
+
+    // Check if particular exists
+    if (!particularExists(trimmed)) {
+      // Ask user if they want to create it
+      const shouldCreate = confirm(
+        `Budget particular "${trimmed}" doesn't exist yet.\n\nDo you want to create it now?`
+      );
+
+      if (!shouldCreate) {
+        return;
+      }
+
+      // Create the particular
+      try {
+        setIsSavingParticular(true);
+        
+        await createParticular({
+          code: trimmed,
+          fullName: trimmed, // User can edit this later in settings
+          description: `Auto-created from budget item edit: ${trimmed}`,
+          category: "Custom",
+        });
+
+        toast.success("Budget particular created!", {
+          description: `"${trimmed}" has been added. You can edit details in Settings.`,
+        });
+
+        // Update form value
+        form.setValue("particular", trimmed, { shouldValidate: true });
+        setIsEditingParticular(false);
+      } catch (error) {
+        console.error("Error creating particular:", error);
+        toast.error("Failed to create particular", {
+          description: error instanceof Error ? error.message : "Please try again.",
+        });
+      } finally {
+        setIsSavingParticular(false);
+      }
+    } else {
+      // Particular exists, just update the form
+      form.setValue("particular", trimmed, { shouldValidate: true });
+      setIsEditingParticular(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditedParticular("");
+    setIsEditingParticular(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      handleSaveEdit();
+    } else if (e.key === "Escape") {
+      handleCancelEdit();
+    }
+  };
 
   function onSubmit(values: BudgetItemFormValues) {
     const cleanedValues = {
@@ -240,16 +317,78 @@ export function BudgetItemForm({
                 Particular
               </FormLabel>
               <FormControl>
-                <BudgetParticularCombobox
-                  value={field.value}
-                  onChange={field.onChange}
-                  disabled={!!item}
-                  error={form.formState.errors.particular?.message}
-                />
+                {!item ? (
+                  <BudgetParticularCombobox
+                    value={field.value}
+                    onChange={field.onChange}
+                    disabled={!!item}
+                    error={form.formState.errors.particular?.message}
+                  />
+                ) : (
+                  <div
+                    className="relative"
+                    onMouseEnter={() => setIsHoveringParticular(true)}
+                    onMouseLeave={() => setIsHoveringParticular(false)}
+                  >
+                    {isEditingParticular ? (
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={editedParticular}
+                          onChange={(e) => setEditedParticular(e.target.value.toUpperCase())}
+                          onKeyDown={handleKeyDown}
+                          className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                          autoFocus
+                          disabled={isSavingParticular}
+                        />
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleSaveEdit}
+                          disabled={isSavingParticular}
+                          className="h-9 w-9 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                        >
+                          {isSavingParticular ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Check className="w-4 h-4" />
+                          )}
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleCancelEdit}
+                          disabled={isSavingParticular}
+                          className="h-9 w-9 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 py-2 bg-zinc-50 dark:bg-zinc-800 rounded-md border border-zinc-200 dark:border-zinc-700">
+                        <span className="flex-1 text-sm text-zinc-900 dark:text-zinc-100">
+                          {field.value}
+                        </span>
+                        {isHoveringParticular && (
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleStartEdit}
+                            className="h-7 w-7 p-0 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
               </FormControl>
-              {item && (
+              {item && !isEditingParticular && (
                 <FormDescription className="text-zinc-500 dark:text-zinc-400">
-                  Particular cannot be changed after creation
+                  Hover and click the pencil icon to edit. If the particular doesn't exist, you'll be prompted to create it.
                 </FormDescription>
               )}
               <FormMessage />
@@ -324,7 +463,6 @@ export function BudgetItemForm({
           )}
         />
 
-        {/* ✅ Section: Manual Input Toggle with Warning */}
         <div className="pt-2 space-y-3">
           <div className="flex items-center justify-between">
             <Button
@@ -353,7 +491,6 @@ export function BudgetItemForm({
 
           {showManualInput && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200 border border-orange-200 dark:border-orange-800/50 rounded-lg p-4 bg-orange-50/50 dark:bg-orange-950/10">
-              {/* ⚠️ Development Warning */}
               <div className="flex items-start gap-2 text-xs text-orange-700 dark:text-orange-300 mb-4">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <p>
@@ -452,7 +589,6 @@ export function BudgetItemForm({
           )}
         </div>
 
-        {/* Warnings for Validation */}
         {isObligatedExceeded && totalBudgetAllocated > 0 && (
           <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 rounded-lg">
             <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -481,7 +617,6 @@ export function BudgetItemForm({
           </div>
         )}
 
-        {/* Info Box */}
         <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/50 rounded-lg">
           <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-700 dark:text-blue-300">
