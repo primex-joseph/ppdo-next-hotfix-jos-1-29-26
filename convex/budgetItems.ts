@@ -11,18 +11,26 @@ import { logBudgetActivity } from "./lib/budgetActivityLogger";
 /**
  * Get all ACTIVE budget items (Hides Trash)
  * Shows items where isDeleted is false or undefined (unset)
+ * ✨ UPDATED: Now accepts optional year parameter for filtering
  */
 export const list = query({
-  args: {},
-  handler: async (ctx) => {
+  args: {
+    year: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (userId === null) throw new Error("Not authenticated");
 
-    const budgetItems = await ctx.db
+    let budgetItems = await ctx.db
       .query("budgetItems")
       .filter((q) => q.neq(q.field("isDeleted"), true))
       .order("desc")
       .collect();
+
+    // Filter by year if provided
+    if (args.year !== undefined) {
+      budgetItems = budgetItems.filter((item) => item.year === args.year);
+    }
 
     return budgetItems;
   },

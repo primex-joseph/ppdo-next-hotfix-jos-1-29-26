@@ -9,12 +9,13 @@ import { internal } from "./_generated/api";
 
 /**
  * Get ACTIVE projects (Hidden Trash)
- * 🆕 ENHANCED: Added category filtering
+ * 🆕 ENHANCED: Added category and year filtering
  */
 export const list = query({
   args: {
     budgetItemId: v.optional(v.id("budgetItems")),
     categoryId: v.optional(v.id("projectCategories")),
+    year: v.optional(v.number()), // ✨ NEW: Year filter
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
@@ -47,6 +48,11 @@ export const list = query({
         .filter((q) => q.neq(q.field("isDeleted"), true))
         .order("desc")
         .collect();
+    }
+
+    // ✨ Filter by year if provided (client-side filter since no year index exists)
+    if (args.year !== undefined) {
+      projects = projects.filter((project) => project.year === args.year);
     }
 
     return projects;

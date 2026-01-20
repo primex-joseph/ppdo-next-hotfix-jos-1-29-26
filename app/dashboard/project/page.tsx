@@ -1,3 +1,5 @@
+// app/dashboard/project/page.tsx
+
 "use client";
 
 import { useMemo, useState } from "react";
@@ -43,8 +45,8 @@ export default function ProjectDashboardLanding() {
   // Fetch fiscal years
   const fiscalYears = useQuery(api.fiscalYears.list, { includeInactive: false });
   
-  // Fetch data
-  const allBudgetItems = useQuery(api.budgetItems.list);
+  // ✅ Fixed: Pass empty object {} to satisfy the required args parameter
+  const allBudgetItems = useQuery(api.budgetItems.list, {});
   const allProjects = useQuery(api.projects.list, {});
   const allBreakdowns = useQuery(api.govtProjects.getProjectBreakdowns, {});
 
