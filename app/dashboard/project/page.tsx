@@ -144,7 +144,7 @@ export default function ProjectDashboardLanding() {
   };
 
   if (isLoadingAccess || isLoadingYears || isLoadingData) {
-    return <LoadingState message="Loading fiscal years..." />;
+    return <LoadingState message="Loading years..." />;
   }
 
   if (!canAccess) {
