@@ -3,7 +3,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -100,14 +100,14 @@ export function BudgetItemForm({
   onCancel,
 }: BudgetItemFormProps) {
   const { accentColorValue } = useAccentColor();
-  const searchParams = useSearchParams();
+  const pathname = usePathname();
 
-  // 🆕 Query to check if particular exists
+  // Query to check if particular exists
   const allParticulars = useQuery(api.budgetParticulars.list, {
     includeInactive: false,
   });
 
-  // 🆕 Mutation to create particular if needed
+  // Mutation to create particular if needed
   const createParticular = useMutation(api.budgetParticulars.create);
 
   // Inline edit state
@@ -116,10 +116,27 @@ export function BudgetItemForm({
   const [isHoveringParticular, setIsHoveringParticular] = useState(false);
   const [isSavingParticular, setIsSavingParticular] = useState(false);
 
+  // ✅ UPDATED: Extract year from URL pathname
   const urlYear = (() => {
-    const yearParam = searchParams.get("year");
-    return yearParam ? parseInt(yearParam) : undefined;
+    // URL pattern: /dashboard/project/[year]
+    const segments = pathname.split('/');
+    const projectIndex = segments.findIndex(seg => seg === 'project');
+    
+    if (projectIndex !== -1 && segments[projectIndex + 1]) {
+      const yearSegment = segments[projectIndex + 1];
+      const parsed = parseInt(yearSegment);
+      
+      // Only return if it's a valid year number
+      if (!isNaN(parsed) && parsed >= 2000 && parsed <= 2100) {
+        return parsed;
+      }
+    }
+    
+    return undefined;
   })();
+
+  // ✅ NEW: Track if year is auto-filled from URL
+  const isYearAutoFilled = !item && urlYear !== undefined;
 
   const [showManualInput, setShowManualInput] = useState(false);
   const [displayAllocated, setDisplayAllocated] = useState("");
@@ -164,6 +181,7 @@ export function BudgetItemForm({
     if (utilized && utilized > 0) setDisplayUtilized(formatNumberForDisplay(utilized));
   }, []);
 
+  // ✅ UPDATED: Set year from URL when form loads (for new items only)
   useEffect(() => {
     if (urlYear && !item) {
       form.setValue("year", urlYear);
@@ -195,7 +213,7 @@ export function BudgetItemForm({
   const isBudgetExceeded = totalBudgetUtilized > totalBudgetAllocated;
   const isObligatedExceeded = obligatedBudget && obligatedBudget > totalBudgetAllocated;
 
-  // 🆕 Check if particular exists
+  // Check if particular exists
   const particularExists = (code: string): boolean => {
     if (!allParticulars) return false;
     return allParticulars.some(p => p.code.toUpperCase() === code.toUpperCase());
@@ -207,7 +225,7 @@ export function BudgetItemForm({
     setIsEditingParticular(true);
   };
 
-  // 🆕 UPDATED: Handle save with auto-create
+  // Handle save with auto-create
   const handleSaveEdit = async () => {
     const trimmed = editedParticular.trim().toUpperCase();
     
@@ -236,7 +254,7 @@ export function BudgetItemForm({
         
         await createParticular({
           code: trimmed,
-          fullName: trimmed, // User can edit this later in settings
+          fullName: trimmed,
           description: `Auto-created from budget item edit: ${trimmed}`,
           category: "Custom",
         });
@@ -245,7 +263,6 @@ export function BudgetItemForm({
           description: `"${trimmed}" has been added. You can edit details in Settings.`,
         });
 
-        // Update form value
         form.setValue("particular", trimmed, { shouldValidate: true });
         setIsEditingParticular(false);
       } catch (error) {
@@ -257,7 +274,6 @@ export function BudgetItemForm({
         setIsSavingParticular(false);
       }
     } else {
-      // Particular exists, just update the form
       form.setValue("particular", trimmed, { shouldValidate: true });
       setIsEditingParticular(false);
     }
@@ -396,12 +412,13 @@ export function BudgetItemForm({
           )}
         />
 
+        {/* ✅ UPDATED: Year field with auto-fill logic */}
         <FormField
           name="year"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="text-zinc-700 dark:text-zinc-300">
-                Year {urlYear && <span className="text-xs text-blue-500">(Auto-filled)</span>}
+                Year {isYearAutoFilled && <span className="text-xs text-blue-500">(Auto-filled from URL)</span>}
               </FormLabel>
               <FormControl>
                 <Input
@@ -410,6 +427,7 @@ export function BudgetItemForm({
                   min="2000"
                   max="2100"
                   className="bg-white dark:bg-zinc-900 border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100"
+                  disabled={isYearAutoFilled}
                   {...field}
                   value={field.value || ""}
                   onChange={(e) => {
@@ -418,6 +436,11 @@ export function BudgetItemForm({
                   }}
                 />
               </FormControl>
+              {isYearAutoFilled && (
+                <FormDescription className="text-zinc-500 dark:text-zinc-400">
+                  Year is automatically set based on the current page URL and cannot be changed.
+                </FormDescription>
+              )}
               <FormMessage />
             </FormItem>
           )}
