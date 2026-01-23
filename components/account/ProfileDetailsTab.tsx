@@ -8,8 +8,6 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { getUserInitials } from "@/lib/utils";
 
-const NAME_REGEX = /^[A-Za-zÀ-ÖØ-öø-ÿ\s.'-]*$/;
-
 interface User {
   _id: string;
   firstName?: string;
@@ -65,32 +63,6 @@ export function ProfileDetailsTab({ user }: ProfileDetailsTabProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-
-  // Field validation errors
-  const [fieldErrors, setFieldErrors] = useState<{
-  firstName?: string;
-  lastName?: string;
-  middleName?: string;
-  nameExtension?: string;
-}>({});
-
-// Field change handlers with validation
-const handleNameChange = (
-  value: string,
-  setter: (v: string) => void,
-  field: keyof typeof fieldErrors
-) => {
-  if (!NAME_REGEX.test(value)) {
-    setFieldErrors((prev) => ({
-      ...prev,
-      [field]: "Only letters and basic punctuation are allowed",
-    }));
-    return;
-  }
-
-  setFieldErrors((prev) => ({ ...prev, [field]: undefined }));
-  setter(value);
-};
 
   // Mutations
   const updateProfile = useMutation(api.userManagement.updateUserProfile);
@@ -150,21 +122,12 @@ const handleNameChange = (
 
     try {
       // Validate required fields
-        if (!NAME_REGEX.test(firstName)) {
-          throw new Error("First name contains invalid characters");
-        }
-
-        if (!NAME_REGEX.test(lastName)) {
-          throw new Error("Last name contains invalid characters");
-        }
-
-        if (middleName && !NAME_REGEX.test(middleName)) {
-          throw new Error("Middle name contains invalid characters");
-        }
-
-        if (nameExtension && !NAME_REGEX.test(nameExtension)) {
-          throw new Error("Extension contains invalid characters");
-        }
+      if (!firstName.trim()) {
+        throw new Error("First name is required");
+      }
+      if (!lastName.trim()) {
+        throw new Error("Last name is required");
+      }
 
       let uploadedImageStorageId: string | undefined = undefined;
 
@@ -336,23 +299,11 @@ const handleNameChange = (
                 <input
                   type="text"
                   value={firstName}
-                  onChange={(e) =>
-                    handleNameChange(e.target.value, setFirstName, "firstName")
-                  }
+                  onChange={(e) => setFirstName(e.target.value)}
                   required
-                  className={`w-full px-4 py-2 rounded-lg border ${
-                    fieldErrors.firstName
-                      ? "border-red-500"
-                      : "border-zinc-300 dark:border-zinc-700"
-                  } bg-white dark:bg-zinc-800`}
+                  className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter first name"
                 />
-
-                {fieldErrors.firstName && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {fieldErrors.firstName}
-                  </p>
-                )}
               </div>
 
               {/* Last Name */}
@@ -363,23 +314,11 @@ const handleNameChange = (
                 <input
                   type="text"
                   value={lastName}
-                  onChange={(e) =>
-                    handleNameChange(e.target.value, setLastName, "lastName")
-                  }
+                  onChange={(e) => setLastName(e.target.value)}
                   required
-                  className={`w-full px-4 py-2 rounded-lg border ${
-                    fieldErrors.lastName
-                      ? "border-red-500"
-                      : "border-zinc-300 dark:border-zinc-700"
-                  } bg-white dark:bg-zinc-800`}
+                  className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter last name"
                 />
-
-                {fieldErrors.lastName && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {fieldErrors.lastName}
-                  </p>
-                )}
               </div>
 
               {/* Middle Name */}
@@ -390,17 +329,10 @@ const handleNameChange = (
                 <input
                   type="text"
                   value={middleName}
-                  onChange={(e) =>
-                    handleNameChange(e.target.value, setMiddleName, "middleName")
-                  }
-                  className="w-full px-4 py-2 rounded-lg border ..."
+                  onChange={(e) => setMiddleName(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter middle name"
                 />
-                {fieldErrors.firstName && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {fieldErrors.middleName}
-                  </p>
-                )}
               </div>
 
               {/* Name Extension */}
@@ -411,22 +343,10 @@ const handleNameChange = (
                 <input
                   type="text"
                   value={nameExtension}
-                  onChange={(e) =>
-                    handleNameChange(e.target.value, setNameExtension, "nameExtension")
-                  }
-                  required
-                  className={`w-full px-4 py-2 rounded-lg border ${
-                    fieldErrors.nameExtension
-                      ? "border-red-500"
-                      : "border-zinc-300 dark:border-zinc-700"
-                  } bg-white dark:bg-zinc-800`}
+                  onChange={(e) => setNameExtension(e.target.value)}
+                  className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Jr., Sr., III, etc."
                 />
-                {fieldErrors.nameExtension && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {fieldErrors.nameExtension}
-                  </p>
-                )}
               </div>
             </div>
           </div>

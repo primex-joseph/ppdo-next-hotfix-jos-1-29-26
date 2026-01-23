@@ -1,3 +1,4 @@
+//components\sidebar\constants.tsx
 import React from "react";
 import { NavItem } from "./types";
 

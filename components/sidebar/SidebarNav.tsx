@@ -14,6 +14,111 @@ interface SidebarNavProps {
 }
 
 export function SidebarNav({ categories, isMinimized, pathname, accentColor, expanded, setExpanded }: SidebarNavProps) {
+  const renderSubmenu = (submenu: any[], level: number = 1) => {
+    const indentClass = level === 1 
+      ? "ml-4 mt-1 space-y-1 border-l-2 border-zinc-200 dark:border-zinc-800 pl-4" 
+      : "ml-4 mt-1 space-y-1 border-l-2 border-zinc-200 dark:border-zinc-800 pl-4";
+    
+    return (
+      <ul className={indentClass}>
+        {submenu.map((subItem) => {
+          const hasNestedSubmenu = subItem.submenu && subItem.submenu.length > 0;
+          const subItemKey = subItem.href || `sub-item-${subItem.name}-${level}`;
+          const isSubExpanded = expanded.has(subItemKey);
+          const isSubActive = pathname === subItem.href;
+
+          if (hasNestedSubmenu) {
+            return (
+              <li key={subItemKey}>
+                <button
+                  onClick={() => {
+                    if (isMinimized) return;
+                    const next = new Set(expanded);
+                    if (next.has(subItemKey)) next.delete(subItemKey); 
+                    else next.add(subItemKey);
+                    setExpanded(next);
+                  }}
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+                    isSubActive 
+                      ? "font-medium" 
+                      : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                  }`}
+                  style={isSubActive ? { backgroundColor: `${accentColor}10`, color: accentColor } : undefined}
+                >
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span 
+                      className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSubActive ? "" : "bg-zinc-400 dark:bg-zinc-600"}`} 
+                      style={isSubActive ? { backgroundColor: accentColor } : undefined} 
+                    />
+                    <span className="truncate">{subItem.name}</span>
+
+                    {/* NEW badge */}
+                    {subItem.isNew && (
+                      <span className="ml-auto inline-flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                        NEW
+                      </span>
+                    )}
+
+                    {/* 🟢 Bug counter badge - FIXED POSITIONING */}
+                    {subItem.badgeCount != null && subItem.badgeCount > 0 && (
+                      <span className="ml-2 min-w-[20px] h-5 px-2 flex items-center justify-center rounded-full bg-green-600 text-white text-xs font-semibold">
+                        {subItem.badgeCount}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <svg 
+                    className={`w-3 h-3 transition-transform duration-200 shrink-0 ${isSubExpanded ? "rotate-180" : ""}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {!isMinimized && isSubExpanded && renderSubmenu(subItem.submenu, level + 1)}
+              </li>
+            );
+          }
+
+          return (
+            <li key={subItem.href}>
+              <Link
+                href={subItem.href}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${
+                  isSubActive 
+                    ? "font-medium" 
+                    : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                }`}
+                style={isSubActive ? { backgroundColor: `${accentColor}10`, color: accentColor } : undefined}
+              >
+                <span 
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSubActive ? "" : "bg-zinc-400 dark:bg-zinc-600"}`} 
+                  style={isSubActive ? { backgroundColor: accentColor } : undefined} 
+                />
+                <span className="truncate flex-1">{subItem.name}</span>
+                
+                {/* NEW badge */}
+                {subItem.isNew && (
+                  <span className="inline-flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                    NEW
+                  </span>
+                )}
+                
+                {/* 🟢 Bug counter badge for leaf items */}
+                {subItem.badgeCount != null && subItem.badgeCount > 0 && (
+                  <span className="min-w-[20px] h-5 px-2 flex items-center justify-center rounded-full bg-green-600 text-white text-xs font-semibold">
+                    {subItem.badgeCount}
+                  </span>
+                )}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    );
+  };
+
   return (
     <nav className="flex-1 overflow-y-auto p-4">
       <div className="space-y-6">
@@ -21,16 +126,20 @@ export function SidebarNav({ categories, isMinimized, pathname, accentColor, exp
           <div key={category.name} className="space-y-2">
             {!isMinimized && (
               <div className="px-3 py-2">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{category.name}</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  {category.name}
+                </h3>
               </div>
             )}
 
             <ul className="space-y-2">
               {category.items.map((item, itemIndex) => {
                 const hasSubmenu = item.submenu && item.submenu.length > 0;
-                const itemKey = item.href || `nav-item-${category.name}-${itemIndex}`;
+                const itemKey = item.href ? item.href : `nav-item-${category.name}-${itemIndex}`;
                 const isExpanded = expanded.has(itemKey);
-                const isActive = item.href ? pathname === item.href : item.submenu?.some((sub) => pathname === sub.href);
+                const isActive = item.href 
+                  ? pathname === item.href 
+                  : item.submenu?.some((sub) => pathname === sub.href);
 
                 if (hasSubmenu) {
                   return (
@@ -39,44 +148,54 @@ export function SidebarNav({ categories, isMinimized, pathname, accentColor, exp
                         onClick={() => {
                           if (isMinimized || item.disabled) return;
                           const next = new Set(expanded);
-                          if (next.has(itemKey)) next.delete(itemKey); else next.add(itemKey);
+                          if (next.has(itemKey)) next.delete(itemKey); 
+                          else next.add(itemKey);
                           setExpanded(next);
                         }}
                         disabled={item.disabled}
-                        className={`w-full flex items-center rounded-xl transition-all duration-200 group ${isMinimized ? "md:justify-center md:px-3 md:py-3" : "gap-3 px-4 py-3 justify-between"} ${item.disabled ? "cursor-not-allowed text-zinc-700 dark:text-zinc-300" : isActive ? "font-medium" : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
+                        className={`w-full flex items-center rounded-xl transition-all duration-200 group ${
+                          isMinimized 
+                            ? "md:justify-center md:px-3 md:py-3" 
+                            : "gap-3 px-4 py-3 justify-between"
+                        } ${
+                          item.disabled 
+                            ? "cursor-not-allowed text-zinc-700 dark:text-zinc-300" 
+                            : isActive 
+                            ? "font-medium" 
+                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                        }`}
                         style={isActive ? { backgroundColor: `${accentColor}10`, color: accentColor } : undefined}
                         title={isMinimized ? item.name : undefined}
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <span className={isMinimized ? "shrink-0" : ""} style={isActive ? { color: accentColor } : undefined}>{item.icon}</span>
-                          <span className={`transition-all duration-300 truncate ${isMinimized ? "md:hidden" : ""}`}>{item.name}</span>
+                          <span 
+                            className={isMinimized ? "shrink-0" : ""} 
+                            style={isActive ? { color: accentColor } : undefined}
+                          >
+                            {item.icon}
+                          </span>
+                          <span className={`transition-all duration-300 truncate ${isMinimized ? "md:hidden" : ""}`}>
+                            {item.name}
+                          </span>
+                          {item.isNew && !isMinimized && (
+                            <span className="ml-auto inline-flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                              NEW
+                            </span>
+                          )}
                         </div>
                         {!isMinimized && (
-                          <svg className={`w-4 h-4 transition-transform duration-200 shrink-0 ${isExpanded ? "rotate-180" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg 
+                            className={`w-4 h-4 transition-transform duration-200 shrink-0 ${isExpanded ? "rotate-180" : ""}`} 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                           </svg>
                         )}
                       </button>
 
-                      {!isMinimized && isExpanded && item.submenu && (
-                        <ul className="ml-4 mt-1 space-y-1 border-l-2 border-zinc-200 dark:border-zinc-800 pl-4">
-                          {item.submenu.map((subItem) => {
-                            const isSubActive = pathname === subItem.href;
-                            return (
-                              <li key={subItem.href}>
-                                <Link
-                                  href={subItem.href}
-                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200 ${isSubActive ? "font-medium" : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
-                                  style={isSubActive ? { backgroundColor: `${accentColor}10`, color: accentColor } : undefined}
-                                >
-                                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSubActive ? "" : "bg-zinc-400 dark:bg-zinc-600"}`} style={isSubActive ? { backgroundColor: accentColor } : undefined} />
-                                  <span className="truncate">{subItem.name}</span>
-                                </Link>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                      )}
+                      {!isMinimized && isExpanded && item.submenu && renderSubmenu(item.submenu)}
                     </li>
                   );
                 }
@@ -84,9 +203,18 @@ export function SidebarNav({ categories, isMinimized, pathname, accentColor, exp
                 if (item.disabled) {
                   return (
                     <li key={itemKey}>
-                      <div className={`flex items-center rounded-xl transition-all duration-200 ${isMinimized ? "md:justify-center md:px-3 md:py-3" : "gap-3 px-4 py-3"} cursor-not-allowed text-zinc-700 dark:text-zinc-300`} title={isMinimized ? item.name : "Coming soon"}>
+                      <div 
+                        className={`flex items-center rounded-xl transition-all duration-200 ${
+                          isMinimized 
+                            ? "md:justify-center md:px-3 md:py-3" 
+                            : "gap-3 px-4 py-3"
+                        } cursor-not-allowed text-zinc-700 dark:text-zinc-300`} 
+                        title={isMinimized ? item.name : "Coming soon"}
+                      >
                         <span className={isMinimized ? "shrink-0" : ""}>{item.icon}</span>
-                        <span className={`transition-all duration-300 truncate ${isMinimized ? "md:hidden" : ""}`}>{item.name}</span>
+                        <span className={`transition-all duration-300 truncate ${isMinimized ? "md:hidden" : ""}`}>
+                          {item.name}
+                        </span>
                       </div>
                     </li>
                   );
@@ -96,12 +224,32 @@ export function SidebarNav({ categories, isMinimized, pathname, accentColor, exp
                   <li key={itemKey}>
                     <Link
                       href={item.href || "#"}
-                      className={`flex items-center rounded-xl transition-all duration-200 group ${isMinimized ? "md:justify-center md:px-3 md:py-3" : "gap-3 px-4 py-3"} ${isActive ? "font-medium" : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"}`}
+                      className={`flex items-center rounded-xl transition-all duration-200 group ${
+                        isMinimized 
+                          ? "md:justify-center md:px-3 md:py-3" 
+                          : "gap-3 px-4 py-3"
+                      } ${
+                        isActive 
+                          ? "font-medium" 
+                          : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      }`}
                       style={isActive ? { backgroundColor: `${accentColor}10`, color: accentColor } : undefined}
                       title={isMinimized ? item.name : undefined}
                     >
-                      <span className={isMinimized ? "shrink-0" : ""} style={isActive ? { color: accentColor } : undefined}>{item.icon}</span>
-                      <span className={`transition-all duration-300 truncate ${isMinimized ? "md:hidden" : ""}`}>{item.name}</span>
+                      <span 
+                        className={isMinimized ? "shrink-0" : ""} 
+                        style={isActive ? { color: accentColor } : undefined}
+                      >
+                        {item.icon}
+                      </span>
+                      <span className={`transition-all duration-300 truncate ${isMinimized ? "md:hidden" : ""}`}>
+                        {item.name}
+                      </span>
+                      {item.isNew && !isMinimized && (
+                        <span className="ml-auto inline-flex items-center rounded-full bg-blue-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                          NEW
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
