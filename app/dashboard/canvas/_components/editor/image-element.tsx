@@ -1,8 +1,10 @@
+// app/dashboard/canvas/_components/editor/image-element.tsx
+
 'use client';
 
 import React, { useState } from 'react';
-import { ImageElement } from '../editor';
 import { X, Check } from 'lucide-react';
+import { ImageElement } from '../editor';
 
 interface ImageElementComponentProps {
   element: ImageElement;

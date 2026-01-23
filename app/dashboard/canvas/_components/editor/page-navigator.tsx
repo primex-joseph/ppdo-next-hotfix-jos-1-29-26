@@ -1,3 +1,5 @@
+// app/dashboard/canvas/_components/editor/page-navigator.tsx
+
 'use client';
 
 import { Button } from '@/components/ui/button';

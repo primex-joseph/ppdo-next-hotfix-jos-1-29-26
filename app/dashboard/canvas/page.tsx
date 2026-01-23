@@ -1,5 +1,7 @@
+// app/dashboard/canvas/page.tsx
+
 import React from 'react'
-import Editor from './editor'
+import Editor from './_components/editor'
 
 const CanvasPage = () => {
   return <Editor />

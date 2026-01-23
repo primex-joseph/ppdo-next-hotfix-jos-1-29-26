@@ -1,6 +1,7 @@
+// app/dashboard/canvas/_components/editor/toolbar.tsx
+
 'use client';
 
-import { CanvasElement, TextElement } from '../editor';
 import { loadGoogleFont } from '@/lib/fonts';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Bold, Italic, Underline, Plus, Printer } from 'lucide-react';
+import { CanvasElement } from './types';
 
 interface ToolbarProps {
   selectedElement?: CanvasElement;
@@ -97,22 +99,22 @@ export default function Toolbar({ selectedElement, onUpdateElement, onAddText, p
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 bg-white border-b border-stone-200 z-50 no-print">
-      <div className="flex items-center gap-3 px-6 py-3">
+    <div className="w-full bg-stone-100">
+      <div className="flex items-center gap-2 px-4 py-2">
         <Button
           onClick={onAddText}
           size="sm"
-          className="gap-2"
-          variant="default"
+          variant="outline"
+          className="gap-1.5 h-8 text-xs bg-white"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           Add Text
         </Button>
 
-        <Separator orientation="vertical" className="h-6" />
+        <Separator orientation="vertical" className="h-5" />
 
         <Select value={pageSize} onValueChange={onPageSizeChange}>
-          <SelectTrigger className="w-32">
+          <SelectTrigger className="w-28 h-8 text-xs bg-white">
             <SelectValue placeholder="Page Size" />
           </SelectTrigger>
           <SelectContent>
@@ -124,10 +126,10 @@ export default function Toolbar({ selectedElement, onUpdateElement, onAddText, p
 
         {isTextElement && (
           <>
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-5" />
 
             <Select value={textElement?.fontFamily || 'font-sans'} onValueChange={handleFontFamilyChange} disabled={isDisabled}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className="w-28 h-8 text-xs bg-white">
                 <SelectValue placeholder="Font" />
               </SelectTrigger>
               <SelectContent>
@@ -140,7 +142,7 @@ export default function Toolbar({ selectedElement, onUpdateElement, onAddText, p
             </Select>
 
             <Select value={selectedElement?.fontSize.toString() || '16'} onValueChange={handleFontSizeChange} disabled={isDisabled}>
-              <SelectTrigger className="w-28">
+              <SelectTrigger className="w-24 h-8 text-xs bg-white">
                 <SelectValue placeholder="Size" />
               </SelectTrigger>
               <SelectContent>
@@ -152,62 +154,62 @@ export default function Toolbar({ selectedElement, onUpdateElement, onAddText, p
               </SelectContent>
             </Select>
 
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-5" />
 
             <Button
               onClick={toggleBold}
               size="sm"
-              variant={selectedElement?.bold ? 'default' : 'outline'}
+              variant="outline"
               disabled={isDisabled}
-              className="w-10 p-0"
+              className={`w-8 h-8 p-0 ${selectedElement?.bold ? 'bg-stone-200' : 'bg-white'}`}
               title="Bold"
             >
-              <Bold className="w-4 h-4" />
+              <Bold className="w-3.5 h-3.5" />
             </Button>
 
             <Button
               onClick={toggleItalic}
               size="sm"
-              variant={selectedElement?.italic ? 'default' : 'outline'}
+              variant="outline"
               disabled={isDisabled}
-              className="w-10 p-0"
+              className={`w-8 h-8 p-0 ${selectedElement?.italic ? 'bg-stone-200' : 'bg-white'}`}
               title="Italic"
             >
-              <Italic className="w-4 h-4" />
+              <Italic className="w-3.5 h-3.5" />
             </Button>
 
             <Button
               onClick={toggleUnderline}
               size="sm"
-              variant={selectedElement?.underline ? 'default' : 'outline'}
+              variant="outline"
               disabled={isDisabled}
-              className="w-10 p-0"
+              className={`w-8 h-8 p-0 ${selectedElement?.underline ? 'bg-stone-200' : 'bg-white'}`}
               title="Underline"
             >
-              <Underline className="w-4 h-4" />
+              <Underline className="w-3.5 h-3.5" />
             </Button>
 
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-5" />
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <label className="text-xs text-stone-600">Color:</label>
               <input
                 type="color"
                 value={selectedElement?.color || '#000000'}
                 onChange={(e) => onUpdateElement?.({ color: e.target.value })}
                 disabled={isDisabled}
-                className="w-8 h-8 border border-stone-200 rounded cursor-pointer"
+                className="w-7 h-7 border border-stone-300 rounded cursor-pointer bg-white"
               />
             </div>
 
-            <Separator orientation="vertical" className="h-6" />
+            <Separator orientation="vertical" className="h-5" />
 
             <Button
               onClick={toggleShadow}
               size="sm"
-              variant={selectedElement?.shadow ? 'default' : 'outline'}
+              variant="outline"
               disabled={isDisabled}
-              className="text-xs"
+              className={`text-xs h-8 px-2.5 ${selectedElement?.shadow ? 'bg-stone-200' : 'bg-white'}`}
               title="Shadow"
             >
               Shadow
@@ -216,9 +218,9 @@ export default function Toolbar({ selectedElement, onUpdateElement, onAddText, p
             <Button
               onClick={toggleOutline}
               size="sm"
-              variant={selectedElement?.outline ? 'default' : 'outline'}
+              variant="outline"
               disabled={isDisabled}
-              className="text-xs"
+              className={`text-xs h-8 px-2.5 ${selectedElement?.outline ? 'bg-stone-200' : 'bg-white'}`}
               title="Outline"
             >
               Outline
@@ -226,15 +228,15 @@ export default function Toolbar({ selectedElement, onUpdateElement, onAddText, p
           </>
         )}
 
-        <Separator orientation="vertical" className="h-6 ml-auto" />
+        <Separator orientation="vertical" className="h-5 ml-auto" />
 
         <Button
           onClick={onPrint}
           size="sm"
-          className="gap-2 bg-transparent"
           variant="outline"
+          className="gap-1.5 h-8 text-xs bg-white"
         >
-          <Printer className="w-4 h-4" />
+          <Printer className="w-3.5 h-3.5" />
           Print
         </Button>
       </div>

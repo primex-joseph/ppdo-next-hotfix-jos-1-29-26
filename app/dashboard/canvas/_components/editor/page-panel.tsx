@@ -1,10 +1,12 @@
+// app/dashboard/canvas/_components/editor/page-panel.tsx
+
 'use client';
 
 import React from "react"
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { Page } from '../editor';
+import { Page } from "../editor";
 
 interface PagePanelProps {
   pages: Page[];
@@ -63,7 +65,7 @@ export default function PagePanel({
   };
 
   return (
-    <div className="fixed right-0 top-14 bottom-20 w-48 bg-stone-50 border-l border-stone-200 flex flex-col overflow-hidden z-40">
+    <div className="fixed right-0 top-44 bottom-20 w-48 bg-stone-50 border-l border-stone-200 flex flex-col overflow-hidden z-40">
       <div className="flex-1 overflow-y-auto p-2">
         <div className="space-y-2">
           {pages.map((page, index) => {

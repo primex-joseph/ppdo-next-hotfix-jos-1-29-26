@@ -1,8 +1,11 @@
+// app/dashboard/canvas/_components/editor/canvas.tsx
+
 'use client';
 
 import React from "react"
 import { useRef, useState } from 'react';
-import { Page, CanvasElement, ImageElement } from '../editor';
+import { Page, CanvasElement, ImageElement } from './types';
+import { PAGE_SIZES } from './constants';
 import TextElementComponent from './text-element';
 import ImageElementComponent from './image-element';
 
@@ -15,12 +18,6 @@ interface CanvasProps {
   isEditingElementId?: string | null;
   onEditingChange?: (id: string | null) => void;
 }
-
-const PAGE_SIZES = {
-  A4: { width: 595, height: 842 },
-  Short: { width: 612, height: 792 },
-  Long: { width: 612, height: 936 },
-};
 
 export default function Canvas({
   page,

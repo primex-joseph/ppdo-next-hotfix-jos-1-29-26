@@ -1,3 +1,5 @@
+// app/dashboard/canvas/_components/editor/layer-panel.tsx
+
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';

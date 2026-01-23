@@ -1,9 +1,11 @@
+// app/dashboard/canvas/_components/editor/text-element.tsx
+
 'use client';
 
 import React from "react"
 import { useState } from 'react';
-import { TextElement } from '../editor';
 import { X } from 'lucide-react';
+import { TextElement } from "../editor";
 
 interface TextElementComponentProps {
   element: TextElement;

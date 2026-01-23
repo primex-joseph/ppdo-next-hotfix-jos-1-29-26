@@ -1,4 +1,5 @@
-import { Page, CanvasElement } from '@/components/editor';
+import { CanvasElement, Page } from "@/app/dashboard/canvas/_components/editor";
+
 
 const PAGE_SIZES: Record<string, { width: number; height: number; widthInch: number; heightInch: number }> = {
   A4: { width: 595, height: 842, widthInch: 8.27, heightInch: 11.69 },

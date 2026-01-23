@@ -1,10 +1,12 @@
+// app/dashboard/canvas/_components/editor/bottom-page-controls.tsx
+
 'use client';
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Copy, Trash2, Layers } from 'lucide-react';
 import LayerPanel from './layer-panel';
-import { CanvasElement } from '../../editor';
+import { CanvasElement } from '../editor';
 
 interface BottomPageControlsProps {
   currentPageIndex: number;
