@@ -69,7 +69,7 @@ export function PrintPreviewModal({
   console.log('📅 year:', year);
   console.log('📝 particular:', particular);
   console.log('💾 existingDraft:', existingDraft);
-  
+
   if (!budgetItems || budgetItems.length === 0) {
     console.error('❌ PROBLEM: budgetItems is empty or undefined!');
   }
@@ -89,7 +89,7 @@ export function PrintPreviewModal({
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [isEditingElementId, setIsEditingElementId] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<ActiveSection>('page');
-  
+
   // Draft state
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -105,18 +105,18 @@ export function PrintPreviewModal({
 
     console.group('📍 STEP 4: Canvas Initialization - useEffect Triggered');
     console.log('🔄 Modal is open, initializing canvas...');
-    
+
     if (existingDraft) {
       console.log('💾 Loading from existing draft');
       console.log('📄 Draft pages count:', existingDraft.canvasState.pages.length);
-      
+
       setPages(existingDraft.canvasState.pages);
       setHeader(existingDraft.canvasState.header);
       setFooter(existingDraft.canvasState.footer);
       setCurrentPageIndex(existingDraft.canvasState.currentPageIndex);
       setLastSavedTime(existingDraft.timestamp);
       setIsDirty(false);
-      
+
       console.log('✅ Draft loaded successfully');
     } else {
       console.log('🆕 No draft found - Converting table to canvas');
@@ -125,9 +125,9 @@ export function PrintPreviewModal({
       console.log('  - totals:', totals);
       console.log('  - columns:', columns?.length || 0, 'columns');
       console.log('  - hiddenColumns size:', hiddenColumns?.size || 0);
-      
+
       console.log('🔄 Calling convertTableToCanvas...');
-      
+
       try {
         const result = convertTableToCanvas({
           items: budgetItems,
@@ -135,6 +135,7 @@ export function PrintPreviewModal({
           columns,
           hiddenColumns,
           pageSize: 'A4',
+          orientation: 'portrait',
           includeHeaders: true,
           includeTotals: true,
           title: `Budget Tracking ${year}`,
@@ -152,9 +153,9 @@ export function PrintPreviewModal({
         setFooter(result.footer);
         setCurrentPageIndex(0);
         setIsDirty(false);
-        
+
         toast.success(`Generated ${result.metadata.totalPages} page(s) from ${result.metadata.totalRows} row(s)`);
-        
+
         console.log('✅ State updated with new pages');
       } catch (error) {
         console.error('❌ ERROR during conversion:', error);
@@ -162,14 +163,14 @@ export function PrintPreviewModal({
         toast.error('Failed to convert table to canvas');
       }
     }
-    
+
     console.groupEnd();
   }, [isOpen, budgetItems, totals, columns, hiddenColumns, year, particular, existingDraft]);
 
   // Save draft handler
   const handleSaveDraft = useCallback(() => {
     if (!onDraftSaved) return;
-    
+
     setIsSaving(true);
 
     const draft: PrintDraft = {
@@ -259,8 +260,8 @@ export function PrintPreviewModal({
       return;
     }
 
-    setPages(prev => prev.map((page, idx) => 
-      idx === currentPageIndex 
+    setPages(prev => prev.map((page, idx) =>
+      idx === currentPageIndex
         ? { ...page, elements: page.elements.map(el => el.id === id ? { ...el, ...updates } : el) }
         : page
     ));
@@ -298,6 +299,17 @@ export function PrintPreviewModal({
     setSelectedElementId(null);
     setIsDirty(true);
   }, [currentPageIndex, header, footer]);
+
+  // Element operations
+  const changePageSize = useCallback((size: 'A4' | 'Short' | 'Long') => {
+    setPages(prev => prev.map(page => ({ ...page, size })));
+    setIsDirty(true);
+  }, []);
+
+  const changeOrientation = useCallback((orientation: 'portrait' | 'landscape') => {
+    setPages(prev => prev.map(page => ({ ...page, orientation })));
+    setIsDirty(true);
+  }, []);
 
   // Format last saved time
   const formattedLastSaved = lastSavedTime
@@ -337,9 +349,11 @@ export function PrintPreviewModal({
             <Toolbar
               selectedElement={currentPage.elements.find(el => el.id === selectedElementId)}
               onUpdateElement={selectedElementId ? (updates) => updateElement(selectedElementId, updates) : undefined}
-              onAddText={() => {/* Add text logic */}}
+              onAddText={() => {/* Add text logic */ }}
               pageSize={currentPage.size}
-              onPageSizeChange={(size) => {/* Change size logic */}}
+              orientation={currentPage.orientation}
+              onPageSizeChange={changePageSize}
+              onOrientationChange={changeOrientation}
               onPrint={handlePrint}
               activeSection={activeSection}
               headerBackgroundColor={header.backgroundColor || '#ffffff'}
@@ -380,8 +394,8 @@ export function PrintPreviewModal({
             pages={pages}
             currentPageIndex={currentPageIndex}
             onPageSelect={setCurrentPageIndex}
-            onAddPage={() => {/* Add page logic */}}
-            onReorderPages={(from, to) => {/* Reorder logic */}}
+            onAddPage={() => {/* Add page logic */ }}
+            onReorderPages={(from, to) => {/* Reorder logic */ }}
           />
         </div>
 
@@ -389,14 +403,14 @@ export function PrintPreviewModal({
         <BottomPageControls
           currentPageIndex={currentPageIndex}
           totalPages={pages.length}
-          onAddPage={() => {/* Add page logic */}}
-          onDuplicatePage={() => {/* Duplicate logic */}}
-          onDeletePage={() => {/* Delete logic */}}
+          onAddPage={() => {/* Add page logic */ }}
+          onDuplicatePage={() => {/* Duplicate logic */ }}
+          onDeletePage={() => {/* Delete logic */ }}
           elements={allElements}
           selectedElementId={selectedElementId}
           onSelectElement={setSelectedElementId}
           onUpdateElement={updateElement}
-          onReorderElements={(from, to) => {/* Reorder elements */}}
+          onReorderElements={(from, to) => {/* Reorder elements */ }}
           onPreviousPage={() => setCurrentPageIndex(prev => Math.max(0, prev - 1))}
           onNextPage={() => setCurrentPageIndex(prev => Math.min(pages.length - 1, prev + 1))}
         />
@@ -426,12 +440,12 @@ function formatTimestamp(timestamp: number): string {
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-  
+
   if (minutes < 1) return 'just now';
   if (minutes < 60) return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
   if (hours < 24) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
   if (days < 7) return `${days} day${days > 1 ? 's' : ''} ago`;
-  
+
   return new Date(timestamp).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

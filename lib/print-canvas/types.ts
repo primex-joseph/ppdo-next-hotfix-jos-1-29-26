@@ -23,6 +23,7 @@ export interface ConversionConfig {
   columns: ColumnDefinition[];
   hiddenColumns: Set<string>;
   pageSize: 'A4' | 'Short' | 'Long';
+  orientation: 'portrait' | 'landscape';
   includeHeaders: boolean;
   includeTotals: boolean;
   title?: string;
@@ -80,7 +81,7 @@ export interface PrintDraft {
   timestamp: number;
   budgetYear: number;
   budgetParticular?: string;
-  
+
   filterState: {
     searchQuery: string;
     statusFilter: string[];
@@ -89,14 +90,14 @@ export interface PrintDraft {
     sortDirection: string | null;
     hiddenColumns: string[];
   };
-  
+
   canvasState: {
     pages: Page[];
     currentPageIndex: number;
     header: HeaderFooter;
     footer: HeaderFooter;
   };
-  
+
   tableSnapshot: {
     items: BudgetItem[];
     totals: BudgetTotals;
