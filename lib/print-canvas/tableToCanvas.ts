@@ -27,6 +27,32 @@ const HEADER_ROW_HEIGHT = 28;
  * Converts budget table data into canvas pages
  */
 export function convertTableToCanvas(config: ConversionConfig): ConversionResult {
+  console.group('📍 STEP 5: Table to Canvas Conversion - Started');
+  console.log('🔧 Config received:', config);
+  console.log('📊 Items to convert:', config.items?.length || 0);
+  console.log('📊 First item:', config.items?.[0]);
+  console.log('📊 Totals:', config.totals);
+  console.log('📊 Columns:', config.columns);
+  console.log('📊 Columns count:', config.columns?.length || 0);
+  console.log('🔍 Hidden columns:', config.hiddenColumns);
+  console.log('🔍 Hidden columns size:', config.hiddenColumns?.size || 0);
+  console.log('📄 Page size:', config.pageSize);
+  console.log('📋 Include headers:', config.includeHeaders);
+  console.log('📋 Include totals:', config.includeTotals);
+  console.log('📝 Title:', config.title);
+  console.log('📝 Subtitle:', config.subtitle);
+  
+  // Validate inputs
+  if (!config.items || config.items.length === 0) {
+    console.error('❌ CRITICAL: No items to convert!');
+  }
+  if (!config.columns || config.columns.length === 0) {
+    console.error('❌ CRITICAL: No columns defined!');
+  }
+  if (!config.totals) {
+    console.error('❌ CRITICAL: Totals object is missing!');
+  }
+
   const {
     items,
     totals,
@@ -40,31 +66,41 @@ export function convertTableToCanvas(config: ConversionConfig): ConversionResult
   } = config;
 
   const size = PAGE_SIZES[pageSize];
+  console.log('📐 Page dimensions:', size);
+  
   const availableHeight = size.height - HEADER_HEIGHT - FOOTER_HEIGHT - (MARGIN * 2);
+  console.log('📐 Available height for content:', availableHeight);
   
   // Filter visible columns
   const visibleColumns = columns.filter(col => !hiddenColumns.has(col.key));
+  console.log('👁️ Visible columns:', visibleColumns);
+  console.log('👁️ Visible columns count:', visibleColumns.length);
+  
   const columnWidths = calculateColumnWidths(visibleColumns, size.width - (MARGIN * 2));
+  console.log('📏 Column widths calculated:', columnWidths);
   
   // Create pages
   const pages: Page[] = [];
-  let currentY = MARGIN;
-  let currentPageItems: BudgetItem[] = [];
-  let rowStartIndex = 0;
-
-  // Create title page if title provided
-  if (title) {
-    pages.push(createTitlePage(pageSize, title, subtitle));
-  }
-
+  
   // Calculate rows per page
   const headerHeight = includeHeaders ? HEADER_ROW_HEIGHT : 0;
   const rowsPerPage = Math.floor((availableHeight - headerHeight) / ROW_HEIGHT);
+  console.log('📊 Rows per page:', rowsPerPage);
+  console.log('📊 Expected page count:', Math.ceil(items.length / rowsPerPage));
+
+  // Create title page if title provided
+  if (title) {
+    console.log('📄 Creating title page...');
+    const titlePage = createTitlePage(pageSize, title, subtitle);
+    pages.push(titlePage);
+    console.log('✅ Title page created with', titlePage.elements.length, 'elements');
+  }
 
   // Paginate items
+  let rowStartIndex = 0;
   for (let i = 0; i < items.length; i += rowsPerPage) {
     const pageItems = items.slice(i, Math.min(i + rowsPerPage, items.length));
-    const isLastPage = i + rowsPerPage >= items.length;
+    console.log(`📄 Creating data page ${pages.length + 1} with ${pageItems.length} rows...`);
     
     const page = createDataPage(
       pageSize,
@@ -76,30 +112,35 @@ export function convertTableToCanvas(config: ConversionConfig): ConversionResult
       i
     );
     
+    console.log(`✅ Data page created with ${page.elements.length} elements`);
     pages.push(page);
     rowStartIndex = i + pageItems.length;
   }
 
   // Add totals page if requested
   if (includeTotals && pages.length > 0) {
+    console.log('📊 Adding totals...');
     const lastPage = pages[pages.length - 1];
     const hasSpace = checkSpaceForTotals(lastPage);
     
     if (hasSpace) {
-      // Add totals to last page
+      console.log('✅ Adding totals to last page');
       addTotalsToPage(lastPage, totals, visibleColumns, columnWidths);
     } else {
-      // Create new page for totals
+      console.log('📄 Creating separate totals page');
       const totalsPage = createTotalsPage(pageSize, totals, visibleColumns, columnWidths);
       pages.push(totalsPage);
     }
   }
 
   // Create header and footer
+  console.log('📄 Creating header and footer...');
   const header = createPrintHeader(title || 'Budget Tracking Report');
   const footer = createPrintFooter();
+  console.log('✅ Header elements:', header.elements.length);
+  console.log('✅ Footer elements:', footer.elements.length);
 
-  return {
+  const result = {
     pages,
     header,
     footer,
@@ -111,6 +152,13 @@ export function convertTableToCanvas(config: ConversionConfig): ConversionResult
       columnCount: visibleColumns.length,
     },
   };
+
+  console.log('✅ Conversion complete!');
+  console.log('📊 Final result:', result);
+  console.log('📄 Total pages created:', pages.length);
+  console.groupEnd();
+  
+  return result;
 }
 
 /**

@@ -1,4 +1,4 @@
-// app/dashboard/project/budget/components/BudgetTableToolbar.tsx
+// app/dashboard/project/[year]/components/BudgetTableToolbar.tsx
 
 "use client";
 

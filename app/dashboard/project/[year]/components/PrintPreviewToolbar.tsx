@@ -1,4 +1,4 @@
-// app/dashboard/project/budget/components/PrintPreviewToolbar.tsx
+// app/dashboard/project/[year]/components/PrintPreviewToolbar.tsx
 
 "use client";
 

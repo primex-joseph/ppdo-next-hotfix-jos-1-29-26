@@ -42,6 +42,27 @@ export default function Canvas({
   activeSection,
   onActiveSectionChange,
 }: CanvasProps) {
+  console.group('📍 STEP 7: Canvas Component - Rendering');
+  console.log('📄 Page data:', page);
+  console.log('📄 Page elements count:', page?.elements?.length || 0);
+  console.log('📄 Page size:', page?.size);
+  console.log('📄 Page background:', page?.backgroundColor);
+  console.log('📄 Header elements:', header?.elements?.length || 0);
+  console.log('📄 Footer elements:', footer?.elements?.length || 0);
+  console.log('📄 Page number:', pageNumber);
+  console.log('📄 Total pages:', totalPages);
+  
+  if (!page) {
+    console.error('❌ CRITICAL: Page prop is undefined!');
+  }
+  if (!page?.elements || page.elements.length === 0) {
+    console.warn('⚠️ WARNING: Page has no elements to render!');
+  } else {
+    console.log('✅ Page has', page.elements.length, 'elements to render');
+    console.log('📄 First 3 elements:', page.elements.slice(0, 3));
+  }
+  
+  console.groupEnd();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [draggedElementId, setDraggedElementId] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });

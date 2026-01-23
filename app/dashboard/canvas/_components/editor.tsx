@@ -19,7 +19,23 @@ export type { TextElement, ImageElement, CanvasElement, Page } from './editor/ty
 export type ActiveSection = 'header' | 'page' | 'footer';
 
 export default function Editor() {
+  console.group('📍 STEP 6: Canvas Editor - Initialization');
+  
   const { isHydrated, savedPages, savedIndex, savedHeader, savedFooter } = useStorage();
+  
+  console.log('💾 Storage state:');
+  console.log('  - isHydrated:', isHydrated);
+  console.log('  - savedPages:', savedPages?.length || 0, 'pages');
+  console.log('  - savedIndex:', savedIndex);
+  console.log('  - savedHeader elements:', savedHeader?.elements.length || 0);
+  console.log('  - savedFooter elements:', savedFooter?.elements.length || 0);
+  
+  if (savedPages && savedPages.length > 0) {
+    console.log('  - First page elements:', savedPages[0].elements.length);
+    console.log('  - First page sample:', savedPages[0].elements[0]);
+  }
+  
+  console.groupEnd();
   const initialPages = savedPages || [createNewPage()];
   const initialIndex = savedIndex ?? 0;
   const initialHeader = savedHeader || { elements: [] };

@@ -1,8 +1,8 @@
-// app/dashboard/project/budget/components/BudgetTrackingTable/hooks/useBudgetTableSelection.ts
+// app/dashboard/project/[year]/components/hooks/useBudgetTableSelection.ts
 
 import { useState, useMemo } from "react";
 import { BudgetItem } from "@/app/dashboard/project/[year]/types";
-import { UseBudgetTableSelectionReturn } from "../BudgetTrackingTable/types";
+import { UseBudgetTableSelectionReturn } from "../../types";
 
 /**
  * Manages row selection state and operations

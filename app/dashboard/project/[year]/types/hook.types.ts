@@ -1,97 +1,27 @@
-// app/dashboard/project/budget/components/BudgetTrackingTable/types.ts
+// app/dashboard/project/[year]/types/hook.types.ts
 
-import { BudgetItem, BudgetContextMenuState } from "@/app/dashboard/project/[year]/types";
+import { BudgetItem, BudgetSortField } from "./budget.types";
+import { BudgetContextMenuState, SortDirection } from "./table.types";
 
-/**
- * Props for the main BudgetTrackingTable component
- */
-export interface BudgetTrackingTableProps {
-  budgetItems: BudgetItem[];
-  onAdd?: (
-    item: Omit<
-      BudgetItem,
-      | "id"
-      | "utilizationRate"
-      | "projectCompleted"
-      | "projectDelayed"
-      | "projectsOnTrack"
-      | "status"
-    >
-  ) => void;
-  onEdit?: (
-    id: string,
-    item: Omit<
-      BudgetItem,
-      | "id"
-      | "utilizationRate"
-      | "projectCompleted"
-      | "projectDelayed"
-      | "projectsOnTrack"
-      | "status"
-    >
-  ) => void;
-  onDelete?: (id: string) => void;
-  expandButton?: React.ReactNode;
-  onOpenTrash?: () => void;
-}
-
-/**
- * Modal states for the table
- */
-export interface ModalStates {
-  showAddModal: boolean;
-  showEditModal: boolean;
-  showDeleteModal: boolean;
-  showShareModal: boolean;
-  showHideAllWarning: boolean;
-  showPrintPreview: boolean;
-  showDraftConfirm: boolean;
-  showBulkToggleDialog: boolean;
-  showTrashModal: boolean;
-}
-
-/**
- * Filter states for the table
- */
-export interface FilterStates {
-  searchQuery: string;
-  sortField: string | null;
-  sortDirection: "asc" | "desc" | null;
-  statusFilter: string[];
-  yearFilter: number[];
-  hiddenColumns: Set<string>;
-}
-
-/**
- * Selection states for the table
- */
-export interface SelectionStates {
-  selectedIds: Set<string>;
-  selectedItem: BudgetItem | null;
-  contextMenu: BudgetContextMenuState | null;
-}
-
-/**
- * Processing states for async operations
- */
-export interface ProcessingStates {
-  isTogglingAutoCalculate: boolean;
-  isBulkToggling: boolean;
-}
-
-/**
- * Draft states for print preview
- */
-export interface DraftStates {
-  hasDraft: boolean;
-  draftState: any | null;
-}
+// ============================================================================
+// HOOK RETURN TYPES
+// ============================================================================
 
 /**
  * Return type for useBudgetTableState hook
  */
 export interface UseBudgetTableStateReturn {
-  modalStates: ModalStates;
+  modalStates: {
+    showAddModal: boolean;
+    showEditModal: boolean;
+    showDeleteModal: boolean;
+    showShareModal: boolean;
+    showHideAllWarning: boolean;
+    showPrintPreview: boolean;
+    showDraftConfirm: boolean;
+    showBulkToggleDialog: boolean;
+    showTrashModal: boolean;
+  };
   setShowAddModal: (show: boolean) => void;
   setShowEditModal: (show: boolean) => void;
   setShowDeleteModal: (show: boolean) => void;
@@ -112,7 +42,7 @@ export interface UseBudgetTableFiltersReturn {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   sortField: string | null;
-  sortDirection: "asc" | "desc" | null;
+  sortDirection: SortDirection;
   statusFilter: string[];
   yearFilter: number[];
   hiddenColumns: Set<string>;
@@ -160,4 +90,60 @@ export interface UseBudgetTableActionsReturn {
   handleOpenBulkToggleDialog: () => void;
   handleBulkToggleAutoCalculate: (autoCalculate: boolean, reason?: string) => Promise<void>;
   isBulkToggling: boolean;
+}
+
+/**
+ * Return type for useBudgetTablePrint hook
+ */
+export interface UseBudgetTablePrintReturn {
+  year: number;
+  hasDraft: boolean;
+  handleOpenPrintPreview: () => void;
+  handleLoadDraft: () => void;
+  handleStartFresh: () => void;
+  handleExportCSV: () => void;
+}
+
+/**
+ * Return type for useBudgetAccess hook
+ */
+export interface UseBudgetAccessReturn {
+  accessCheck: any;
+  isLoading: boolean;
+  canAccess: boolean;
+  user?: any;
+  department?: any;
+}
+
+/**
+ * Return type for useBudgetData hook
+ */
+export interface UseBudgetDataReturn {
+  budgetItems: BudgetItem[];
+  statistics: any;
+  isLoading: boolean;
+}
+
+/**
+ * Return type for useBudgetMutations hook
+ */
+export interface UseBudgetMutationsReturn {
+  handleAdd: (item: any) => Promise<any>;
+  handleEdit: (id: string, item: any) => Promise<any>;
+  handleDelete: (id: string) => Promise<any>;
+}
+
+/**
+ * Return type for usePrintDraft hook
+ */
+export interface UsePrintDraftReturn {
+  draftState: any | null;
+  isDirty: boolean;
+  hasDraft: boolean;
+  lastSavedTime: number | null;
+  saveDraft: (draft: any) => boolean;
+  loadDraft: () => any | null;
+  deleteDraft: () => boolean;
+  setIsDirty: (dirty: boolean) => void;
+  formattedLastSaved: string;
 }

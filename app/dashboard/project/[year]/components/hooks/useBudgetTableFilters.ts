@@ -1,4 +1,4 @@
-// app/dashboard/project/budget/components/BudgetTrackingTable/hooks/useBudgetTableFilters.ts
+// app/dashboard/project/[year]/components/hooks/useBudgetTableFilters.ts
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { BudgetItem, SortField } from "@/app/dashboard/project/[year]/types";
@@ -7,7 +7,7 @@ import {
   extractUniqueYears,
 } from "@/app/dashboard/project/[year]/utils";
 import { STORAGE_KEYS } from "@/app/dashboard/project/[year]/constants";
-import { UseBudgetTableFiltersReturn } from "../BudgetTrackingTable/types";
+import { UseBudgetTableFiltersReturn } from "../../types";
 
 /**
  * Manages all filtering, sorting, and column visibility state

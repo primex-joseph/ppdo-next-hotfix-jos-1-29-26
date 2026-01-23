@@ -1,4 +1,4 @@
-// app/dashboard/project/budget/hooks/usePrintDraft.ts
+// app/dashboard/project/[year]/hooks/usePrintDraft.ts
 
 import { useState, useEffect, useCallback } from 'react';
 import { PrintDraft } from '@/lib/print-canvas/types';

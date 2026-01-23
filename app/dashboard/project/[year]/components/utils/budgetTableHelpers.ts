@@ -1,4 +1,4 @@
-// app/dashboard/project/budget/components/BudgetTrackingTable/utils/budgetTableHelpers.ts
+// app/dashboard/project/[year]/components/utils/budgetTableHelpers.ts
 
 import { BudgetItem, BudgetTotals } from "@/app/dashboard/project/[year]/types";
 import { BudgetTotals as PrintBudgetTotals } from "@/lib/print-canvas/types";

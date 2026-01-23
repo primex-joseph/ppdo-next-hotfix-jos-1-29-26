@@ -1,4 +1,4 @@
-// app/dashboard/project/budget/components/BudgetTrackingTable/hooks/useBudgetTablePrint.ts
+// app/dashboard/project/[year]/components/hooks/useBudgetTablePrint.ts
 
 import { useCallback } from "react";
 import { useSearchParams } from "next/navigation";
@@ -27,12 +27,21 @@ export function useBudgetTablePrint(
    * Handle print preview open
    */
   const handleOpenPrintPreview = useCallback(() => {
+    console.group('📍 STEP 1: Print Preview Button Clicked');
+    console.log('🔢 Total Items in Table:', filteredItems.length);
+    console.table(filteredItems.slice(0, 3)); // Show first 3 items in table format
+    console.log('📊 First Item Details:', filteredItems[0]);
+    console.log('🔍 Hidden Columns:', Array.from(hiddenColumns));
+    console.log('📅 Year:', year);
+    console.log('💾 Has Existing Draft:', hasDraft);
+    console.groupEnd();
+
     if (hasDraft) {
       setShowDraftConfirm(true);
     } else {
       setShowPrintPreview(true);
     }
-  }, [hasDraft, setShowDraftConfirm, setShowPrintPreview]);
+  }, [hasDraft, setShowDraftConfirm, setShowPrintPreview, filteredItems, hiddenColumns, year]);
 
   /**
    * Load existing draft

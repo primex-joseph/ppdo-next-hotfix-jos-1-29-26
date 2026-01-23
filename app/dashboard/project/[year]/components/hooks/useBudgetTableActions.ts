@@ -1,4 +1,4 @@
-// app/dashboard/project/budget/components/BudgetTrackingTable/hooks/useBudgetTableActions.ts
+// app/dashboard/project/[year]/components/hooks/useBudgetTableActions.ts
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -8,7 +8,7 @@ import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { withMutationHandling } from "@/services";
 import { BudgetItem, BudgetContextMenuState } from "@/app/dashboard/project/[year]/types";
-import { UseBudgetTableActionsReturn } from "../BudgetTrackingTable/types";
+import { UseBudgetTableActionsReturn } from "../../types";
 
 /**
  * Manages all table actions (CRUD, context menu, bulk operations)

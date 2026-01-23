@@ -1,9 +1,9 @@
-// app/dashboard/project/budget/components/BudgetTrackingTable/hooks/useBudgetTableState.ts
+// app/dashboard/project/[year]/components/hooks/useBudgetTableState.ts
 
 import { useState, useEffect } from "react";
 import { usePrintDraft } from "@/app/dashboard/project/[year]/hooks/usePrintDraft";
 import { STORAGE_KEYS, TIMEOUTS } from "@/app/dashboard/project/[year]/constants";
-import { UseBudgetTableStateReturn } from "../BudgetTrackingTable/types";
+import { UseBudgetTableStateReturn } from "../../types";
 
 /**
  * Manages all modal and UI state for the budget table
