@@ -8,9 +8,8 @@ import { toast } from 'sonner';
 import { PrintPreviewToolbar } from './PrintPreviewToolbar';
 import { ConfirmationModal } from './ConfirmationModal';
 import { convertTableToCanvas } from '@/lib/print-canvas/tableToCanvas';
-import { exportAsPDF } from '@/lib/export-pdf';
 import { printAllPages } from '@/lib/print';
-import { PrintDraft, ColumnDefinition, BudgetTotals } from '@/lib/print-canvas/types';
+import { PrintDraft, ColumnDefinition, BudgetTotals, RowMarker } from '@/lib/print-canvas/types';
 import { BudgetItem } from '@/app/dashboard/project/[year]/types';
 import { Page, HeaderFooter } from '@/app/dashboard/canvas/_components/editor/types';
 
@@ -38,6 +37,7 @@ interface PrintPreviewModalProps {
   particular?: string;
   existingDraft?: PrintDraft | null;
   onDraftSaved?: (draft: PrintDraft) => void;
+  rowMarkers?: RowMarker[]; // Optional: for category/group headers
 }
 
 type ActiveSection = 'header' | 'page' | 'footer';
@@ -54,32 +54,9 @@ export function PrintPreviewModal({
   particular,
   existingDraft,
   onDraftSaved,
+  rowMarkers,
 }: PrintPreviewModalProps) {
-  console.group('📍 STEP 3: Print Preview Modal - Props Received');
-  console.log('✅ isOpen:', isOpen);
-  console.log('📊 budgetItems received:', budgetItems);
-  console.log('📊 budgetItems.length:', budgetItems?.length || 0);
-  console.log('📊 budgetItems[0]:', budgetItems?.[0]);
-  console.log('📊 totals received:', totals);
-  console.log('📊 columns received:', columns);
-  console.log('📊 columns.length:', columns?.length || 0);
-  console.log('🔍 hiddenColumns:', hiddenColumns);
-  console.log('🔍 hiddenColumns size:', hiddenColumns?.size || 0);
-  console.log('🔍 filterState:', filterState);
-  console.log('📅 year:', year);
-  console.log('📝 particular:', particular);
-  console.log('💾 existingDraft:', existingDraft);
 
-  if (!budgetItems || budgetItems.length === 0) {
-    console.error('❌ PROBLEM: budgetItems is empty or undefined!');
-  }
-  if (!columns || columns.length === 0) {
-    console.error('❌ PROBLEM: columns is empty or undefined!');
-  }
-  if (!totals) {
-    console.error('❌ PROBLEM: totals is undefined!');
-  }
-  console.groupEnd();
 
   // ✅ Canvas state - initialized in useEffect
   const [pages, setPages] = useState<Page[]>([]);
@@ -99,34 +76,17 @@ export function PrintPreviewModal({
   // 🔧 FIX: Initialize canvas from table data or existing draft
   useEffect(() => {
     if (!isOpen) {
-      console.log('⏸️ STEP 4: Modal not open, skipping initialization');
       return;
     }
 
-    console.group('📍 STEP 4: Canvas Initialization - useEffect Triggered');
-    console.log('🔄 Modal is open, initializing canvas...');
-
     if (existingDraft) {
-      console.log('💾 Loading from existing draft');
-      console.log('📄 Draft pages count:', existingDraft.canvasState.pages.length);
-
       setPages(existingDraft.canvasState.pages);
       setHeader(existingDraft.canvasState.header);
       setFooter(existingDraft.canvasState.footer);
       setCurrentPageIndex(existingDraft.canvasState.currentPageIndex);
       setLastSavedTime(existingDraft.timestamp);
       setIsDirty(false);
-
-      console.log('✅ Draft loaded successfully');
     } else {
-      console.log('🆕 No draft found - Converting table to canvas');
-      console.log('📊 Input Data Check:');
-      console.log('  - budgetItems:', budgetItems?.length || 0, 'items');
-      console.log('  - totals:', totals);
-      console.log('  - columns:', columns?.length || 0, 'columns');
-      console.log('  - hiddenColumns size:', hiddenColumns?.size || 0);
-
-      console.log('🔄 Calling convertTableToCanvas...');
 
       try {
         const result = convertTableToCanvas({
@@ -140,12 +100,8 @@ export function PrintPreviewModal({
           includeTotals: true,
           title: `Budget Tracking ${year}`,
           subtitle: particular ? `Particular: ${particular}` : undefined,
+          rowMarkers,
         });
-
-        console.log('✅ Conversion completed!');
-        console.log('📄 Pages generated:', result.pages.length);
-        console.log('📄 Total rows:', result.metadata.totalRows);
-        console.log('📄 First page elements:', result.pages[0]?.elements.length);
 
         // ✅ Set the converted pages to state
         setPages(result.pages);
@@ -155,17 +111,11 @@ export function PrintPreviewModal({
         setIsDirty(false);
 
         toast.success(`Generated ${result.metadata.totalPages} page(s) from ${result.metadata.totalRows} row(s)`);
-
-        console.log('✅ State updated with new pages');
       } catch (error) {
-        console.error('❌ ERROR during conversion:', error);
-        console.error('Error stack:', (error as Error).stack);
         toast.error('Failed to convert table to canvas');
       }
     }
-
-    console.groupEnd();
-  }, [isOpen, budgetItems, totals, columns, hiddenColumns, year, particular, existingDraft]);
+  }, [isOpen, budgetItems, totals, columns, hiddenColumns, year, particular, existingDraft, rowMarkers]);
 
   // Save draft handler
   const handleSaveDraft = useCallback(() => {
@@ -201,30 +151,17 @@ export function PrintPreviewModal({
       setIsDirty(false);
       toast.success('Draft saved successfully');
     } catch (error) {
-      console.error('Failed to save draft:', error);
       toast.error('Failed to save draft');
     } finally {
       setIsSaving(false);
     }
   }, [pages, header, footer, currentPageIndex, budgetItems, totals, columns, hiddenColumns, filterState, year, particular, onDraftSaved]);
 
-  // Export PDF handler
-  const handleExportPDF = useCallback(async () => {
-    try {
-      await exportAsPDF(pages, header, footer);
-      toast.success('PDF exported successfully');
-    } catch (error) {
-      console.error('Export failed:', error);
-      toast.error('Failed to export PDF');
-    }
-  }, [pages, header, footer]);
-
-  // Print handler
+  // Print handler (used by canvas toolbar)
   const handlePrint = useCallback(() => {
     try {
       printAllPages(pages, header, footer);
     } catch (error) {
-      console.error('Print failed:', error);
       toast.error('Failed to print');
     }
   }, [pages, header, footer]);
@@ -337,8 +274,6 @@ export function PrintPreviewModal({
           lastSavedTime={formattedLastSaved}
           onBack={handleClose}
           onClose={handleClose}
-          onExportPDF={handleExportPDF}
-          onPrint={handlePrint}
           onSaveDraft={handleSaveDraft}
         />
 

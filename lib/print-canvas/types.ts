@@ -15,6 +15,17 @@ export interface ColumnDefinition {
 }
 
 /**
+ * Row marker for category or section headers
+ * Indicates where to insert a visual section/category header in the canvas
+ */
+export interface RowMarker {
+  index: number; // Position in items array where header should be inserted visually
+  type: 'category' | 'group';
+  label: string;
+  categoryId?: string;
+}
+
+/**
  * Configuration for table-to-canvas conversion
  */
 export interface ConversionConfig {
@@ -28,6 +39,7 @@ export interface ConversionConfig {
   includeTotals: boolean;
   title?: string;
   subtitle?: string;
+  rowMarkers?: RowMarker[]; // Optional markers for category/group headers
 }
 
 /**
