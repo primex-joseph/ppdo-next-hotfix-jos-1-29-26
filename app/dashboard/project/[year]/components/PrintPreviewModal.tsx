@@ -63,6 +63,9 @@ export function PrintPreviewModal({
   // State management
   const state = usePrintPreviewState();
 
+  // Viewer/Editor mode state (default to viewer mode)
+  const [isEditorMode, setIsEditorMode] = useState(false);
+
   // Loading state for template application
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
   const [templateToApply, setTemplateToApply] = useState<CanvasTemplate | null | undefined>(null);
@@ -400,13 +403,15 @@ export function PrintPreviewModal({
           onClose={handleClose}
           onSaveDraft={handleSaveDraft}
           onApplyTemplate={() => setShowLiveTemplateSelector(true)}
+          isEditorMode={isEditorMode}
+          onEditorModeChange={setIsEditorMode}
         />
 
         {/* Main Layout */}
         <div className="flex flex-1 overflow-hidden">
           {/* Canvas Area */}
           <div className="flex-1 flex flex-col overflow-hidden bg-stone-50 min-w-0">
-            {/* Canvas Toolbar */}
+            {/* Canvas Toolbar - Always visible but content changes based on mode */}
             <div className="sticky top-0 z-10 bg-stone-100 border-b border-stone-300 shadow-sm">
               <Toolbar
                 selectedElement={state.selectedElement}
@@ -431,6 +436,7 @@ export function PrintPreviewModal({
                 pages={state.pages}
                 header={state.header}
                 footer={state.footer}
+                isEditorMode={isEditorMode}
               />
             </div>
 
@@ -438,18 +444,18 @@ export function PrintPreviewModal({
             <div className="flex-1 overflow-y-auto overflow-x-auto flex items-start justify-center pt-4 pb-16 px-8">
               <Canvas
                 page={state.currentPage}
-                selectedElementId={state.selectedElementId}
-                onSelectElement={state.setSelectedElementId}
-                onUpdateElement={actions.updateElement}
-                onDeleteElement={actions.deleteElement}
-                isEditingElementId={state.isEditingElementId}
-                onEditingChange={state.setIsEditingElementId}
+                selectedElementId={isEditorMode ? state.selectedElementId : null}
+                onSelectElement={isEditorMode ? state.setSelectedElementId : () => {}}
+                onUpdateElement={isEditorMode ? actions.updateElement : () => {}}
+                onDeleteElement={isEditorMode ? actions.deleteElement : () => {}}
+                isEditingElementId={isEditorMode ? state.isEditingElementId : null}
+                onEditingChange={isEditorMode ? state.setIsEditingElementId : () => {}}
                 header={state.header}
                 footer={state.footer}
                 pageNumber={state.currentPageIndex + 1}
                 totalPages={state.pages.length}
                 activeSection={state.activeSection}
-                onActiveSectionChange={state.setActiveSection}
+                onActiveSectionChange={isEditorMode ? state.setActiveSection : () => {}}
               />
             </div>
 
@@ -474,11 +480,12 @@ export function PrintPreviewModal({
                     Math.min(state.pages.length - 1, prev + 1)
                   )
                 }
+                isEditorMode={isEditorMode}
               />
             </div>
           </div>
 
-          {/* Right Sidebar */}
+          {/* Right Sidebar - Always visible */}
           <div className="w-64 border-l border-stone-200 bg-zinc-50 flex-shrink-0 overflow-y-auto">
             <PagePanel
               pages={state.pages}

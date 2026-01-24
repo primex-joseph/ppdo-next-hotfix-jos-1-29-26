@@ -22,6 +22,7 @@ interface BottomPageControlsProps {
   onReorderElements: (fromIndex: number, toIndex: number) => void;
   onPreviousPage: () => void;
   onNextPage: () => void;
+  isEditorMode?: boolean;
 }
 
 export default function BottomPageControls({
@@ -37,6 +38,7 @@ export default function BottomPageControls({
   onReorderElements,
   onPreviousPage,
   onNextPage,
+  isEditorMode = true,
 }: BottomPageControlsProps) {
   const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
 
@@ -46,45 +48,47 @@ export default function BottomPageControls({
   return (
     <>
       <div className="z-40 fixed ml-18 bottom-0 left-0 right-0 bg-white border-t border-stone-200 shadow-sm">
-        <div className="flex items-center justify-between px-6 py-3">
-          <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setIsLayerPanelOpen(true)}
-              size="sm"
-              variant="outline"
-              className="gap-2 bg-transparent"
-            >
-              <Layers className="w-4 h-4" />
-              Layers
-            </Button>
-            <Button 
-              onClick={onAddPage} 
-              size="sm" 
-              variant="outline" 
-              className="gap-2 bg-transparent"
-            >
-              <Plus className="w-4 h-4" />
-              Add Page
-            </Button>
-            <Button 
-              onClick={onDuplicatePage} 
-              size="sm" 
-              variant="outline" 
-              className="gap-2 bg-transparent"
-            >
-              <Copy className="w-4 h-4" />
-              Duplicate Page
-            </Button>
-            <Button 
-              onClick={onDeletePage} 
-              size="sm" 
-              variant="outline" 
-              className="gap-2 bg-transparent"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete Page
-            </Button>
-          </div>
+        <div className={`flex items-center px-6 py-3 ${isEditorMode ? 'justify-between' : 'justify-center'}`}>
+          {isEditorMode && (
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => setIsLayerPanelOpen(true)}
+                size="sm"
+                variant="outline"
+                className="gap-2 bg-transparent"
+              >
+                <Layers className="w-4 h-4" />
+                Layers
+              </Button>
+              <Button
+                onClick={onAddPage}
+                size="sm"
+                variant="outline"
+                className="gap-2 bg-transparent"
+              >
+                <Plus className="w-4 h-4" />
+                Add Page
+              </Button>
+              <Button
+                onClick={onDuplicatePage}
+                size="sm"
+                variant="outline"
+                className="gap-2 bg-transparent"
+              >
+                <Copy className="w-4 h-4" />
+                Duplicate Page
+              </Button>
+              <Button
+                onClick={onDeletePage}
+                size="sm"
+                variant="outline"
+                className="gap-2 bg-transparent"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Page
+              </Button>
+            </div>
+          )}
 
           <div className="flex items-center gap-4">
             <Button
@@ -116,15 +120,17 @@ export default function BottomPageControls({
         </div>
       </div>
 
-      <LayerPanel
-        isOpen={isLayerPanelOpen}
-        onClose={() => setIsLayerPanelOpen(false)}
-        elements={elements}
-        selectedElementId={selectedElementId}
-        onSelectElement={onSelectElement}
-        onUpdateElement={onUpdateElement}
-        onReorderElements={onReorderElements}
-      />
+      {isEditorMode && (
+        <LayerPanel
+          isOpen={isLayerPanelOpen}
+          onClose={() => setIsLayerPanelOpen(false)}
+          elements={elements}
+          selectedElementId={selectedElementId}
+          onSelectElement={onSelectElement}
+          onUpdateElement={onUpdateElement}
+          onReorderElements={onReorderElements}
+        />
+      )}
     </>
   );
 }
