@@ -45,7 +45,7 @@ export default function BottomPageControls({
 
   return (
     <>
-      <div className="fixed ml-18 bottom-0 left-0 right-0 bg-white border-t border-stone-200 shadow-sm">
+      <div className="z-99 fixed ml-18 bottom-0 left-0 right-0 bg-white border-t border-stone-200 shadow-sm">
         <div className="flex items-center justify-between px-6 py-3">
           <div className="flex items-center gap-2">
             <Button

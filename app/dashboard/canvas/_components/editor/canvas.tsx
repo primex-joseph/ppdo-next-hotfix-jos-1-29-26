@@ -25,6 +25,7 @@ interface CanvasProps {
   totalPages: number;
   activeSection: ActiveSection;
   onActiveSectionChange: (section: ActiveSection) => void;
+  onImageDropped?: (image: any) => void;
 }
 
 export default function Canvas({
@@ -41,6 +42,7 @@ export default function Canvas({
   totalPages,
   activeSection,
   onActiveSectionChange,
+  onImageDropped,
 }: CanvasProps) {
   console.group('📋 STEP 7: Canvas Component - Rendering');
   console.log('📄 Page data:', page);
@@ -299,10 +301,41 @@ export default function Canvas({
     }
   }, [contextMenu]);
 
+  const [isDragOverCanvas, setIsDragOverCanvas] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setIsDragOverCanvas(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (e.currentTarget === canvasRef.current) {
+      setIsDragOverCanvas(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOverCanvas(false);
+
+    try {
+      const data = e.dataTransfer.getData('application/json');
+      if (data) {
+        const droppedData = JSON.parse(data);
+        if (droppedData.type === 'image' && droppedData.image && onImageDropped) {
+          onImageDropped(droppedData.image);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to parse dropped data:', error);
+    }
+  };
+
   const bodyHeight = size.height - HEADER_HEIGHT - FOOTER_HEIGHT;
 
   return (
-    <div className="-mb-(320px) relative bg-white shadow-lg transition-all duration-300">
+    <div className="relative bg-white shadow-lg">
       <HeaderFooterSection
         type="header"
         section={header}
@@ -327,9 +360,12 @@ export default function Canvas({
         onMouseLeave={handleMouseUp}
         onClick={handleCanvasClick}
         onDoubleClick={handleCanvasDoubleClick}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={`relative overflow-hidden transition-all ${
           activeSection === 'page' ? 'ring-2 ring-blue-400 ring-inset' : ''
-        }`}
+        } ${isDragOverCanvas ? 'bg-blue-50 ring-2 ring-blue-500' : ''}`}
         style={{
           width: `${size.width}px`,
           height: `${bodyHeight}px`,

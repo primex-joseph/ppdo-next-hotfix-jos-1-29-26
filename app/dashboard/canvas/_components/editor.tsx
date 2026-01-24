@@ -9,16 +9,22 @@ import Toolbar from './editor/toolbar';
 import Canvas from './editor/canvas';
 import PagePanel from './editor/page-panel';
 import BottomPageControls from './editor/bottom-page-controls';
+import LeftSidebar from './editor/left-sidebar/LeftSidebar';
 import { useEditorState } from './editor/hooks/useEditorState';
 import { useClipboard } from './editor/hooks/useClipboard';
 import { useKeyboard } from './editor/hooks/useKeyboard';
 import { useStorage, useSaveStorage } from './editor/hooks/useStorage';
 import { createNewPage } from './editor/utils';
+import type { UploadedImage } from './editor/types/upload';
 export type { TextElement, ImageElement, CanvasElement, Page } from './editor/types';
 
 export type ActiveSection = 'header' | 'page' | 'footer';
 
-export default function Editor() {
+export interface EditorProps {
+  enableUploadPanel?: boolean;
+}
+
+export default function Editor({ enableUploadPanel = true }: EditorProps = {}) {
   console.group('📋 STEP 6: Canvas Editor - Initialization');
   
   const { isHydrated, savedPages, savedIndex, savedHeader, savedFooter } = useStorage();
@@ -97,84 +103,108 @@ export default function Editor() {
     ...footer.elements.map(el => ({ ...el, section: 'footer' as const })),
   ];
 
+  const handleImageSelect = (image: UploadedImage) => {
+    // Insert the selected image onto the current page/section
+    addImage(image.dataUrl, activeSection);
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-stone-50">
-      <div className="no-print">
-        <PagePanel
+    <div className="h-screen bg-stone-50 flex flex-col -mt-10">
+      {/* Sticky Toolbar - Stays at top of editor, doesn't cover navbar/breadcrumb */}
+      <div className="sticky top-16 h-16 bg-stone-100 border-b border-stone-300 shadow-md z-40 no-print">
+        <Toolbar
+          selectedElement={selectedElement}
+          onUpdateElement={selectedElement ? (updates) => updateElement(selectedElement.id, updates) : undefined}
+          onAddText={() => addText(activeSection)}
+          pageSize={currentPage.size}
+          orientation={currentPage.orientation}
+          onPageSizeChange={changePageSize}
+          onOrientationChange={changeOrientation}
+          onPrint={() => printAllPages(pages, header, footer)}
+          activeSection={activeSection}
+          headerBackgroundColor={header.backgroundColor || '#ffffff'}
+          footerBackgroundColor={footer.backgroundColor || '#ffffff'}
+          pageBackgroundColor={currentPage.backgroundColor || '#ffffff'}
+          onHeaderBackgroundChange={updateHeaderBackground}
+          onFooterBackgroundChange={updateFooterBackground}
+          onPageBackgroundChange={updatePageBackground}
           pages={pages}
-          currentPageIndex={currentPageIndex}
-          onPageSelect={selectPage}
-          onAddPage={addPage}
-          onReorderPages={reorderPages}
-          onDuplicatePage={(index) => {
-            selectPage(index);
-            duplicatePage();
-          }}
-          onDeletePage={(index) => {
-            selectPage(index);
-            deletePage();
-          }}
+          header={header}
+          footer={footer}
         />
       </div>
 
-      <div className="flex-1 overflow-y-auto no-print" style={{ marginRight: '192px' }}>
-        <div className="sticky top-0 z-1 bg-stone-100 border-b border-stone-300 shadow-sm">
-          <Toolbar
-            selectedElement={selectedElement}
-            onUpdateElement={selectedElement ? (updates) => updateElement(selectedElement.id, updates) : undefined}
-            onAddText={() => addText(activeSection)}
-            pageSize={currentPage.size}
-            orientation={currentPage.orientation}
-            onPageSizeChange={changePageSize}
-            onOrientationChange={changeOrientation}
-            onPrint={() => printAllPages(pages, header, footer)}
-            activeSection={activeSection}
-            headerBackgroundColor={header.backgroundColor || '#ffffff'}
-            footerBackgroundColor={footer.backgroundColor || '#ffffff'}
-            pageBackgroundColor={currentPage.backgroundColor || '#ffffff'}
-            onHeaderBackgroundChange={updateHeaderBackground}
-            onFooterBackgroundChange={updateFooterBackground}
-            onPageBackgroundChange={updatePageBackground}
-            pages={pages}
-            header={header}
-            footer={footer}
-          />
-        </div>
-        
-        <div className="flex items-center justify-center pt-4 pb-16 px-8 min-h-full">
-          <Canvas
-            page={currentPage}
-            selectedElementId={selectedElementId}
-            onSelectElement={setSelectedElementId}
-            onUpdateElement={updateElement}
-            onDeleteElement={deleteElement}
-            isEditingElementId={isEditingElementId}
-            onEditingChange={setIsEditingElementId}
-            header={header}
-            footer={footer}
-            pageNumber={currentPageIndex + 1}
-            totalPages={pages.length}
-            activeSection={activeSection}
-            onActiveSectionChange={setActiveSection}
-          />
-        </div>
-      </div>
+      {/* Main Content Area - Left Sidebar | Canvas | Right Sidebar */}
+      <div className="flex flex-1 overflow-hidden mt-10">
+        {/* Left Sidebar - Upload Panel */}
+        {enableUploadPanel && (
+          <div className="w-64 border-r border-stone-200 overflow-hidden z-30">
+            <LeftSidebar
+              enableUploadFeature={enableUploadPanel}
+              onImageSelect={handleImageSelect}
+            />
+          </div>
+        )}
 
-      <div className="no-print">
-        <BottomPageControls
-          currentPageIndex={currentPageIndex}
-          totalPages={pages.length}
-          onAddPage={addPage}
-          onDuplicatePage={duplicatePage}
-          onDeletePage={deletePage}
-          elements={allElements}
-          selectedElementId={selectedElementId}
-          onSelectElement={setSelectedElementId}
-          onUpdateElement={updateElement}
-          onReorderElements={reorderElements}
-          onPreviousPage={goToPreviousPage}
-          onNextPage={goToNextPage}
-        />
+        {/* Main Canvas Area with Page Panel */}
+        <div className="flex-1 flex flex-col overflow-hidden bg-white mt-10">
+          {/* Page Panel */}
+          <div className="border-b border-stone-200 bg-white no-print flex-shrink-0">
+            <PagePanel
+              pages={pages}
+              currentPageIndex={currentPageIndex}
+              onPageSelect={selectPage}
+              onAddPage={addPage}
+              onReorderPages={reorderPages}
+              onDuplicatePage={(index) => {
+                selectPage(index);
+                duplicatePage();
+              }}
+              onDeletePage={(index) => {
+                selectPage(index);
+                deletePage();
+              }}
+            />
+          </div>
+
+          {/* Canvas Scrollable Area */}
+          <div className="flex-1 overflow-y-auto flex items-center justify-center pt-4 pb-16 px-8">
+            <Canvas
+              page={currentPage}
+              selectedElementId={selectedElementId}
+              onSelectElement={setSelectedElementId}
+              onUpdateElement={updateElement}
+              onDeleteElement={deleteElement}
+              isEditingElementId={isEditingElementId}
+              onEditingChange={setIsEditingElementId}
+              header={header}
+              footer={footer}
+              pageNumber={currentPageIndex + 1}
+              totalPages={pages.length}
+              activeSection={activeSection}
+              onActiveSectionChange={setActiveSection}
+              onImageDropped={handleImageSelect}
+            />
+          </div>
+
+          {/* Bottom Page Controls */}
+          <div className="no-print border-t border-stone-200 bg-white flex-shrink-0">
+            <BottomPageControls
+              currentPageIndex={currentPageIndex}
+              totalPages={pages.length}
+              onAddPage={addPage}
+              onDuplicatePage={duplicatePage}
+              onDeletePage={deletePage}
+              elements={allElements}
+              selectedElementId={selectedElementId}
+              onSelectElement={setSelectedElementId}
+              onUpdateElement={updateElement}
+              onReorderElements={reorderElements}
+              onPreviousPage={goToPreviousPage}
+              onNextPage={goToNextPage}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
