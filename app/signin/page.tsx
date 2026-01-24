@@ -358,7 +358,7 @@ export default function SignIn() {
           <div
             className="absolute inset-0 z-0 transition-transform duration-10000 ease-out group-hover:scale-110"
             style={{
-              backgroundImage: `url('/outline_b1 (1).jpg')`,
+              backgroundImage: `url('/outline_b1.jpg')`,
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
