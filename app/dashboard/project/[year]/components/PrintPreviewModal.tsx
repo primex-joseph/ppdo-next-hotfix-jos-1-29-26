@@ -22,7 +22,6 @@ import { usePrintPreviewState } from './hooks/usePrintPreviewState';
 import { usePrintPreviewActions } from './hooks/usePrintPreviewActions';
 import { usePrintPreviewDraft } from './hooks/usePrintPreviewDraft';
 import { convertTableToCanvas } from '@/lib/print-canvas/tableToCanvas';
-import { applyTemplateToPages } from '@/lib/canvas-utils';
 import { mergeTemplateWithCanvas } from '@/lib/canvas-utils/mergeTemplate';
 import { toast } from 'sonner';
 
@@ -81,7 +80,7 @@ export function PrintPreviewModal({
       console.group('🎨 INITIALIZING PRINT PREVIEW');
       console.log('Template:', template);
       console.log('Template Page Background:', template?.page?.backgroundColor);
-      
+
       try {
         // Convert table to canvas pages using template's page settings
         const result = convertTableToCanvas({
@@ -107,29 +106,29 @@ export function PrintPreviewModal({
         let finalFooter = result.footer;
 
         if (template) {
-          console.log('🎨 Applying template to pages...');
-          
-          // Apply template styling to all pages
-          finalPages = applyTemplateToPages(result.pages, template);
-          
-          // Use template's header and footer
-          finalHeader = {
-            elements: template.header.elements,
-            backgroundColor: template.header.backgroundColor || '#ffffff',
-          };
-          
-          finalFooter = {
-            elements: template.footer.elements,
-            backgroundColor: template.footer.backgroundColor || '#ffffff',
-          };
-          
-          console.log('✅ Template applied');
-          console.log('📄 First page background AFTER template:', finalPages[0]?.backgroundColor);
+          console.log('🎨 Merging template with generated canvas...');
+
+          // Use smart merge logic to combine template with generated content
+          const merged = mergeTemplateWithCanvas(
+            result.pages,
+            result.header,
+            result.footer,
+            template
+          );
+
+          finalPages = merged.pages;
+          finalHeader = merged.header;
+          finalFooter = merged.footer;
+
+          console.log('✅ Template merged');
+          console.log('📄 First page background AFTER merge:', finalPages[0]?.backgroundColor);
           console.log('📄 Header background:', finalHeader.backgroundColor);
           console.log('📄 Footer background:', finalFooter.backgroundColor);
-          
+          console.log('📄 Header elements:', finalHeader.elements.length);
+          console.log('📄 Footer elements:', finalFooter.elements.length);
+
           state.setAppliedTemplate(template);
-          
+
           toast.success(
             `Applied template "${template.name}" to ${finalPages.length} page(s)`
           );
@@ -148,7 +147,7 @@ export function PrintPreviewModal({
         state.setCurrentPageIndex(0);
         state.setIsDirty(false);
         state.setHasInitialized(true);
-        
+
         console.log('✅ Initialization complete');
         console.groupEnd();
       } catch (error) {
@@ -268,14 +267,6 @@ export function PrintPreviewModal({
     console.log('  - isOpen:', isOpen);
     console.log('  - hasInitialized:', state.hasInitialized);
     console.log('  - existingDraft:', !!existingDraft);
-    console.log('  - templateToApply:', templateToApply);
-
-    // Show template selector on first open (if no existing draft and not initialized)
-    if (!existingDraft && !state.hasInitialized && templateToApply === null) {
-      console.log('📋 Showing template selector...');
-      state.setShowTemplateSelector(true);
-      return;
-    }
 
     // Initialize from existing draft
     if (existingDraft && !state.hasInitialized) {
@@ -303,23 +294,22 @@ export function PrintPreviewModal({
       return;
     }
 
-    // Initialize from table data with template
-    if (!state.hasInitialized && templateToApply !== null) {
-      console.log('🎯 Initializing with template:', templateToApply?.name || 'none');
-      
-      // Show loading state
-      setIsLoadingTemplate(true);
-      
-      // Small delay to ensure smooth UI
+    // Initialize from table data (NEW FLOW: Load data first, then show template selector)
+    if (!existingDraft && !state.hasInitialized) {
+      console.log('📊 Loading table data...');
+
+      // Load table data immediately without template
+      initializeFromTableData(undefined);
+
+      // After data loads, show template selector modal
       setTimeout(() => {
-        initializeFromTableData(templateToApply || undefined);
-        setIsLoadingTemplate(false);
-      }, 500);
+        console.log('📋 Showing template selector after data load...');
+        setShowLiveTemplateSelector(true);
+      }, 600);
     }
   }, [
     isOpen,
     existingDraft,
-    templateToApply,
     state.hasInitialized,
     initializeFromTableData,
     state,
@@ -496,6 +486,8 @@ export function PrintPreviewModal({
               onPageSelect={state.setCurrentPageIndex}
               onAddPage={() => {}}
               onReorderPages={() => {}}
+              header={state.header}
+              footer={state.footer}
             />
           </div>
         </div>
