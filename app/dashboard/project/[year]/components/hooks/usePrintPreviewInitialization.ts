@@ -1,4 +1,4 @@
-// app/dashboard/project/[year]/components/hooks/usePrintPreviewInitialization.ts (NEW FILE)
+// app/dashboard/project/[year]/components/hooks/usePrintPreviewInitialization.ts (FIXED)
 
 import { useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -57,7 +57,12 @@ export function usePrintPreviewInitialization({
   
   const initializeFromTableData = useCallback(
     (template?: CanvasTemplate) => {
+      console.group('🎨 INITIALIZING PRINT PREVIEW');
+      console.log('Template:', template);
+      console.log('Template Page Background:', template?.page?.backgroundColor);
+      
       try {
+        // Convert table to canvas pages using template's page settings
         const result = convertTableToCanvas({
           items: budgetItems,
           totals,
@@ -72,33 +77,62 @@ export function usePrintPreviewInitialization({
           rowMarkers,
         });
 
+        console.log('📄 Generated pages:', result.pages.length);
+        console.log('📄 First page background BEFORE template:', result.pages[0]?.backgroundColor);
+
         // Apply template if selected
         let finalPages = result.pages;
         let finalHeader = result.header;
         let finalFooter = result.footer;
 
         if (template) {
+          console.log('🎨 Applying template to pages...');
+          
+          // CRITICAL FIX: Apply template styling to all pages
           finalPages = applyTemplateToPages(result.pages, template);
-          finalHeader = template.header;
-          finalFooter = template.footer;
+          
+          // CRITICAL FIX: Use template's header and footer
+          finalHeader = {
+            elements: template.header.elements,
+            backgroundColor: template.header.backgroundColor || '#ffffff',
+          };
+          
+          finalFooter = {
+            elements: template.footer.elements,
+            backgroundColor: template.footer.backgroundColor || '#ffffff',
+          };
+          
+          console.log('✅ Template applied');
+          console.log('📄 First page background AFTER template:', finalPages[0]?.backgroundColor);
+          console.log('📄 Header background:', finalHeader.backgroundColor);
+          console.log('📄 Footer background:', finalFooter.backgroundColor);
+          
           setAppliedTemplate(template);
+          
           toast.success(
             `Applied template "${template.name}" to ${finalPages.length} page(s)`
           );
         } else {
+          console.log('📄 No template - using default styling');
           toast.success(
             `Generated ${result.metadata.totalPages} page(s) from ${result.metadata.totalRows} row(s)`
           );
         }
 
+        // Set final state
+        console.log('💾 Setting final state...');
         setPages(finalPages);
         setHeader(finalHeader);
         setFooter(finalFooter);
         setCurrentPageIndex(0);
         setIsDirty(false);
         setHasInitialized(true);
+        
+        console.log('✅ Initialization complete');
+        console.groupEnd();
       } catch (error) {
-        console.error('Failed to convert table to canvas:', error);
+        console.error('❌ Failed to convert table to canvas:', error);
+        console.groupEnd();
         toast.error('Failed to convert table to canvas');
       }
     },
@@ -127,14 +161,22 @@ export function usePrintPreviewInitialization({
       return;
     }
 
+    console.log('🔄 Initialization useEffect triggered');
+    console.log('  - isOpen:', isOpen);
+    console.log('  - hasInitialized:', hasInitialized);
+    console.log('  - existingDraft:', !!existingDraft);
+    console.log('  - appliedTemplate:', appliedTemplate?.id);
+
     // Show template selector on first open (if no existing draft and not initialized)
-    if (!existingDraft && !hasInitialized && !appliedTemplate) {
+    if (!existingDraft && !hasInitialized && appliedTemplate === null) {
+      console.log('📋 Showing template selector...');
       setShowTemplateSelector(true);
       return;
     }
 
     // Initialize from existing draft
     if (existingDraft && !hasInitialized) {
+      console.log('📂 Loading from existing draft...');
       setPages(existingDraft.canvasState.pages);
       setHeader(existingDraft.canvasState.header);
       setFooter(existingDraft.canvasState.footer);
@@ -145,8 +187,12 @@ export function usePrintPreviewInitialization({
       return;
     }
 
-    // Initialize from table data (without template or after template selection)
-    if (!hasInitialized && (appliedTemplate !== undefined || existingDraft)) {
+    // Initialize from table data with template
+    // This triggers when:
+    // 1. Template is selected (appliedTemplate changes from null to template)
+    // 2. User skips template selection (appliedTemplate becomes undefined)
+    if (!hasInitialized && appliedTemplate !== null) {
+      console.log('🎯 Initializing with template:', appliedTemplate?.name || 'none');
       initializeFromTableData(appliedTemplate || undefined);
     }
   }, [

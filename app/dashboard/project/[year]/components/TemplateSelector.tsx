@@ -1,8 +1,8 @@
-// app/dashboard/project/[year]/components/TemplateSelector.tsx (NEW FILE)
+// app/dashboard/project/[year]/components/TemplateSelector.tsx (FIXED)
 
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Check, X, Trash2, Copy, ExternalLink } from 'lucide-react';
 import { CanvasTemplate } from '@/app/(extra)/canvas/_components/editor/types/template';
@@ -16,18 +16,33 @@ interface TemplateSelectorProps {
 }
 
 export function TemplateSelector({ isOpen, onClose, onSelectTemplate }: TemplateSelectorProps) {
-  const { templates, deleteTemplate, duplicateTemplate } = useTemplateStorage();
+  const { templates, deleteTemplate, duplicateTemplate, refreshTemplates } = useTemplateStorage();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
 
+  // Refresh templates when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      console.log('🔄 Template Selector opened - refreshing templates');
+      refreshTemplates();
+    }
+  }, [isOpen, refreshTemplates]);
+
   const handleApply = () => {
     const template = templates.find(t => t.id === selectedId);
-    onSelectTemplate(template || null);
+    console.log('✅ Applying template:', template?.name || 'none');
+    if (!template) {
+      toast.error('Please select a template first');
+      return;
+    }
+    onSelectTemplate(template);
     onClose();
   };
 
   const handleSkip = () => {
-    onSelectTemplate(null);
+    console.log('⏭️ Skipping template selection - starting blank');
+    // CRITICAL: Pass undefined (not null) to indicate "skip" vs "no template selected"
+    onSelectTemplate(undefined as any);
     onClose();
   };
 
@@ -72,7 +87,7 @@ export function TemplateSelector({ isOpen, onClose, onSelectTemplate }: Template
               Choose a Template
             </h2>
             <p className="text-sm text-stone-600 dark:text-stone-400 mt-1">
-              Select a template to apply to all pages in your print preview
+              Select a template to apply headers, footers, and styling to all pages
             </p>
           </div>
           <Button

@@ -1,15 +1,15 @@
-// app/(extra)/canvas/_components/TemplateCreator.tsx (UPDATED)
+// app/(extra)/canvas/_components/TemplateCreator.tsx (FIXED - Proper template loading)
 
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Save, Eye, X } from 'lucide-react';
 import { useTemplateStorage } from './editor/hooks/useTemplateStorage';
 import { CanvasTemplate } from './editor/types/template';
 import { generateId } from './editor/utils';
-import { captureCanvasAsThumbnail, validateTemplate } from '@/lib/canvas-utils';
+import { captureCanvasAsThumbnail, validateTemplate, safeLoadTemplate } from '@/lib/canvas-utils';
 
 // Import editor components
 import Toolbar from './editor/toolbar';
@@ -22,35 +22,66 @@ import { useKeyboard } from './editor/hooks/useKeyboard';
 interface TemplateCreatorProps {
   onBack: () => void;
   onClose?: () => void;
-  existingTemplateId?: string;
+  templateData?: CanvasTemplate | null;
 }
 
 type ActiveSection = 'header' | 'page' | 'footer';
 
-export default function TemplateCreator({ onBack, onClose, existingTemplateId }: TemplateCreatorProps) {
+export default function TemplateCreator({ onBack, onClose, templateData }: TemplateCreatorProps) {
   const { templates, addTemplate, updateTemplate, getTemplate } = useTemplateStorage();
-  const existingTemplate = existingTemplateId ? getTemplate(existingTemplateId) : undefined;
   
-  const [templateName, setTemplateName] = useState(existingTemplate?.name || 'Untitled Template');
+  const loadedTemplate = templateData;
+  
+  const [templateName, setTemplateName] = useState(loadedTemplate?.name || 'Untitled Template');
   const [isSaving, setIsSaving] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   
-  // Initialize with single page
-  const initialPages: Page[] = existingTemplate 
-    ? [{ 
+  // Update template name when loaded template changes
+  useEffect(() => {
+    if (loadedTemplate) {
+      setTemplateName(loadedTemplate.name);
+    }
+  }, [loadedTemplate]);
+  
+  // Initialize with template data or blank page
+  const initialPages: Page[] = React.useMemo(() => {
+    if (loadedTemplate) {
+      console.log('🎨 Creating initial pages from loaded template');
+      console.log('  - Template page background:', loadedTemplate.page.backgroundColor);
+      
+      return [{ 
         id: 'template-page', 
-        size: existingTemplate.page.size,
-        orientation: existingTemplate.page.orientation,
-        backgroundColor: existingTemplate.page.backgroundColor,
-        elements: existingTemplate.page.elements 
-      }]
-    : [{ 
-        id: 'template-page', 
-        size: 'A4', 
-        orientation: 'portrait', 
-        elements: [],
-        backgroundColor: '#ffffff'
+        size: loadedTemplate.page.size,
+        orientation: loadedTemplate.page.orientation,
+        backgroundColor: loadedTemplate.page.backgroundColor || '#ffffff',
+        elements: loadedTemplate.page.elements 
       }];
+    }
+    
+    console.log('🎨 Creating blank initial page');
+    return [{ 
+      id: 'template-page', 
+      size: 'A4', 
+      orientation: 'portrait', 
+      elements: [],
+      backgroundColor: '#ffffff'
+    }];
+  }, [loadedTemplate]);
+
+  const initialHeader: HeaderFooter = React.useMemo(() => {
+    return loadedTemplate?.header || { elements: [], backgroundColor: '#ffffff' };
+  }, [loadedTemplate]);
+  
+  const initialFooter: HeaderFooter = React.useMemo(() => {
+    return loadedTemplate?.footer || { elements: [], backgroundColor: '#ffffff' };
+  }, [loadedTemplate]);
+
+  console.group('🎨 TEMPLATE CREATOR STATE');
+  console.log('Loaded Template:', loadedTemplate);
+  console.log('Initial Pages:', initialPages);
+  console.log('Initial Header:', initialHeader);
+  console.log('Initial Footer:', initialFooter);
+  console.groupEnd();
 
   const {
     pages,
@@ -74,8 +105,8 @@ export default function TemplateCreator({ onBack, onClose, existingTemplateId }:
   } = useEditorState(
     initialPages, 
     0,
-    existingTemplate?.header || { elements: [] },
-    existingTemplate?.footer || { elements: [] }
+    initialHeader,
+    initialFooter
   );
 
   const [activeSection, setActiveSection] = useState<ActiveSection>('page');
@@ -109,8 +140,8 @@ export default function TemplateCreator({ onBack, onClose, existingTemplateId }:
     try {
       console.group('💾 SAVE TEMPLATE');
       console.log('Template Name:', templateName.trim());
-      console.log('Template ID:', existingTemplate?.id || `template-${generateId()}`);
-      console.log('Is Update:', !!existingTemplate);
+      console.log('Template ID:', loadedTemplate?.id || `template-${generateId()}`);
+      console.log('Is Update:', !!loadedTemplate);
       console.log('Page Size:', currentPage.size);
       console.log('Page Orientation:', currentPage.orientation);
       console.log('Page Background:', currentPage.backgroundColor);
@@ -120,63 +151,29 @@ export default function TemplateCreator({ onBack, onClose, existingTemplateId }:
       console.log('Header Background:', header.backgroundColor);
       console.log('Footer Background:', footer.backgroundColor);
       
-      // Log detailed elements
-      console.group('📄 Page Elements Details');
-      currentPage.elements.forEach((el, idx) => {
-        console.log(`Element ${idx + 1}:`, {
-          type: el.type,
-          id: el.id,
-          ...(el.type === 'text' && { text: el.text, fontSize: el.fontSize }),
-          ...(el.type === 'image' && { src: el.src?.substring(0, 50) + '...', width: el.width, height: el.height }),
-          x: el.x,
-          y: el.y,
-        });
-      });
-      console.groupEnd();
-
-      console.group('📋 Header Elements Details');
-      header.elements.forEach((el, idx) => {
-        console.log(`Header Element ${idx + 1}:`, {
-          type: el.type,
-          id: el.id,
-          ...(el.type === 'text' && { text: el.text, fontSize: el.fontSize }),
-          ...(el.type === 'image' && { src: el.src?.substring(0, 50) + '...', width: el.width, height: el.height }),
-          x: el.x,
-          y: el.y,
-        });
-      });
-      console.groupEnd();
-
-      console.group('📋 Footer Elements Details');
-      footer.elements.forEach((el, idx) => {
-        console.log(`Footer Element ${idx + 1}:`, {
-          type: el.type,
-          id: el.id,
-          ...(el.type === 'text' && { text: el.text, fontSize: el.fontSize }),
-          ...(el.type === 'image' && { src: el.src?.substring(0, 50) + '...', width: el.width, height: el.height }),
-          x: el.x,
-          y: el.y,
-        });
-      });
-      console.groupEnd();
-
       // Capture thumbnail
       console.log('📸 Capturing thumbnail...');
       const thumbnail = await captureCanvasAsThumbnail('template-canvas-container', 300, 400);
       console.log('✅ Thumbnail captured, size:', thumbnail.length, 'characters');
       
       const template: CanvasTemplate = {
-        id: existingTemplate?.id || `template-${generateId()}`,
+        id: loadedTemplate?.id || `template-${generateId()}`,
         name: templateName.trim(),
         thumbnail,
-        createdAt: existingTemplate?.createdAt || Date.now(),
+        createdAt: loadedTemplate?.createdAt || Date.now(),
         updatedAt: Date.now(),
-        header,
-        footer,
+        header: {
+          elements: header.elements,
+          backgroundColor: header.backgroundColor || '#ffffff',
+        },
+        footer: {
+          elements: footer.elements,
+          backgroundColor: footer.backgroundColor || '#ffffff',
+        },
         page: {
           size: currentPage.size,
           orientation: currentPage.orientation,
-          backgroundColor: currentPage.backgroundColor,
+          backgroundColor: currentPage.backgroundColor || '#ffffff',
           elements: currentPage.elements,
         },
         category: 'custom',
@@ -197,7 +194,7 @@ export default function TemplateCreator({ onBack, onClose, existingTemplateId }:
       console.log('✅ Template validated successfully');
       console.log('💾 Saving to localStorage...');
 
-      if (existingTemplate) {
+      if (loadedTemplate) {
         updateTemplate(template.id, template);
         console.log('✅ Template updated in localStorage');
         toast.success('Template updated successfully');
@@ -221,7 +218,7 @@ export default function TemplateCreator({ onBack, onClose, existingTemplateId }:
     } finally {
       setIsSaving(false);
     }
-  }, [templateName, header, footer, currentPage, existingTemplate, addTemplate, updateTemplate, onBack]);
+  }, [templateName, header, footer, currentPage, loadedTemplate, addTemplate, updateTemplate, onBack]);
 
   const handleImageDropped = useCallback((image: any) => {
     if (image.dataUrl) {
@@ -229,8 +226,11 @@ export default function TemplateCreator({ onBack, onClose, existingTemplateId }:
     }
   }, [addImage, activeSection]);
 
+  // CRITICAL: Force remount when template ID changes
+  const editorKey = loadedTemplate?.id || 'new-template';
+
   return (
-    <div className="h-screen bg-stone-50 dark:bg-stone-900 flex flex-col">
+    <div key={editorKey} className="h-screen bg-stone-50 dark:bg-stone-900 flex flex-col">
       {/* Header Bar */}
       <div className="bg-white dark:bg-stone-800 border-b border-stone-200 dark:border-stone-700 px-4 py-3 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-4">
@@ -285,7 +285,7 @@ export default function TemplateCreator({ onBack, onClose, existingTemplateId }:
             className="bg-[#4FBA76] hover:bg-green-700"
           >
             <Save className="w-4 h-4 mr-2" />
-            {isSaving ? 'Saving...' : existingTemplate ? 'Update Template' : 'Save Template'}
+            {isSaving ? 'Saving...' : loadedTemplate ? 'Update Template' : 'Save Template'}
           </Button>
         </div>
       </div>

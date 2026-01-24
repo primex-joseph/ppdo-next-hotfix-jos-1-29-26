@@ -1,146 +1,123 @@
-// app/(extra)/canvas/_components/editor/hooks/useTemplateStorage.ts (NEW FILE)
+// app/(extra)/canvas/_components/editor/hooks/useTemplateStorage.ts (FIXED - Add refresh function)
 
 import { useState, useEffect, useCallback } from 'react';
 import { CanvasTemplate } from '../types/template';
-import { generateId } from '../utils';
 
 const STORAGE_KEY = 'canvas-templates';
-const DEFAULT_TEMPLATES_KEY = 'canvas-default-templates-loaded';
 
-/**
- * Hook for managing template storage in localStorage
- * Provides CRUD operations for canvas templates
- */
-export const useTemplateStorage = () => {
+export function useTemplateStorage() {
   const [templates, setTemplates] = useState<CanvasTemplate[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   // Load templates from localStorage
-  useEffect(() => {
+  const loadTemplates = useCallback(() => {
+    if (typeof window === 'undefined') return [];
+    
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const loadedTemplates = JSON.parse(stored);
-        setTemplates(loadedTemplates);
-      } else {
-        // Initialize with default blank template
-        const defaultTemplates = getDefaultTemplates();
-        setTemplates(defaultTemplates);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultTemplates));
-        localStorage.setItem(DEFAULT_TEMPLATES_KEY, 'true');
+        const parsed = JSON.parse(stored);
+        console.log('%c📂 Loaded templates from storage:', 'font-weight: bold; color: #9C27B0;', parsed);
+        return Array.isArray(parsed) ? parsed : [];
       }
     } catch (error) {
       console.error('Failed to load templates:', error);
-      // Fallback to default templates
-      const defaultTemplates = getDefaultTemplates();
-      setTemplates(defaultTemplates);
-    } finally {
-      setIsLoading(false);
     }
+    return [];
   }, []);
+
+  // Refresh templates from storage
+  const refreshTemplates = useCallback(() => {
+    console.log('%c🔄 Refreshing templates from storage', 'font-weight: bold; color: #FF9800;');
+    const fresh = loadTemplates();
+    setTemplates(fresh);
+    console.log('%c✅ Templates refreshed:', 'font-weight: bold; color: #4CAF50;', fresh.length, 'templates');
+  }, [loadTemplates]);
+
+  // Initial load
+  useEffect(() => {
+    const loaded = loadTemplates();
+    setTemplates(loaded);
+    setIsHydrated(true);
+  }, [loadTemplates]);
 
   // Save templates to localStorage
   const saveTemplates = useCallback((newTemplates: CanvasTemplate[]) => {
+    if (typeof window === 'undefined') return;
+    
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newTemplates));
+      console.log('%c💾 Saved templates to storage:', 'font-weight: bold; color: #2196F3;', newTemplates.length, 'templates');
       setTemplates(newTemplates);
     } catch (error) {
       console.error('Failed to save templates:', error);
-      throw new Error('Failed to save templates to storage');
     }
   }, []);
 
-  // Add new template
+  // Add a new template
   const addTemplate = useCallback((template: CanvasTemplate) => {
-    const newTemplates = [...templates, template];
-    saveTemplates(newTemplates);
+    console.log('%c➕ Adding template:', 'font-weight: bold; color: #4CAF50;', template.id);
+    const updated = [...templates, template];
+    saveTemplates(updated);
   }, [templates, saveTemplates]);
 
   // Update existing template
   const updateTemplate = useCallback((id: string, updates: Partial<CanvasTemplate>) => {
-    const newTemplates = templates.map(t => 
+    console.log('%c✏️ Updating template:', 'font-weight: bold; color: #FF9800;', id);
+    const updated = templates.map(t => 
       t.id === id ? { ...t, ...updates, updatedAt: Date.now() } : t
     );
-    saveTemplates(newTemplates);
+    saveTemplates(updated);
   }, [templates, saveTemplates]);
 
   // Delete template
   const deleteTemplate = useCallback((id: string) => {
-    // Prevent deleting default templates
-    const template = templates.find(t => t.id === id);
-    if (template?.isDefault) {
-      throw new Error('Cannot delete default templates');
-    }
-    const newTemplates = templates.filter(t => t.id !== id);
-    saveTemplates(newTemplates);
+    console.log('%c🗑️ Deleting template:', 'font-weight: bold; color: #F44336;', id);
+    const updated = templates.filter(t => t.id !== id);
+    saveTemplates(updated);
   }, [templates, saveTemplates]);
 
-  // Get single template by ID
-  const getTemplate = useCallback((id: string) => {
-    return templates.find(t => t.id === id);
-  }, [templates]);
+  // Get single template
+  const getTemplate = useCallback((id: string): CanvasTemplate | undefined => {
+    // Always get fresh data from storage for reliability
+    const fresh = loadTemplates();
+    const template = fresh.find(t => t.id === id);
+    console.log('%c🔍 Getting template:', 'font-weight: bold; color: #2196F3;', id, template ? '✅ Found' : '❌ Not found');
+    return template;
+  }, [loadTemplates]);
 
   // Duplicate template
-  const duplicateTemplate = useCallback((id: string) => {
-    const template = templates.find(t => t.id === id);
-    if (!template) {
+  const duplicateTemplate = useCallback((id: string): CanvasTemplate => {
+    console.log('%c📋 Duplicating template:', 'font-weight: bold; color: #9C27B0;', id);
+    const original = templates.find(t => t.id === id);
+    
+    if (!original) {
       throw new Error('Template not found');
     }
 
     const duplicated: CanvasTemplate = {
-      ...template,
-      id: `template-${generateId()}`,
-      name: `${template.name} (Copy)`,
+      ...original,
+      id: `template-${Date.now()}`,
+      name: `${original.name} (Copy)`,
       createdAt: Date.now(),
       updatedAt: Date.now(),
       isDefault: false,
     };
 
-    addTemplate(duplicated);
+    const updated = [...templates, duplicated];
+    saveTemplates(updated);
+    
     return duplicated;
-  }, [templates, addTemplate]);
+  }, [templates, saveTemplates]);
 
   return {
     templates,
-    isLoading,
+    isHydrated,
     addTemplate,
     updateTemplate,
     deleteTemplate,
     getTemplate,
     duplicateTemplate,
+    refreshTemplates,
   };
-};
-
-/**
- * Create default blank template
- */
-function createBlankTemplate(): CanvasTemplate {
-  return {
-    id: 'blank-template',
-    name: 'Blank Template',
-    description: 'Start from scratch with a clean canvas',
-    thumbnail: '',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    header: { elements: [], backgroundColor: '#ffffff' },
-    footer: { elements: [], backgroundColor: '#ffffff' },
-    page: {
-      size: 'A4',
-      orientation: 'portrait',
-      backgroundColor: '#ffffff',
-      elements: [],
-    },
-    category: 'custom',
-    isDefault: true,
-  };
-}
-
-/**
- * Get default templates
- */
-function getDefaultTemplates(): CanvasTemplate[] {
-  return [
-    createBlankTemplate(),
-    // Add more default templates here as needed
-  ];
 }

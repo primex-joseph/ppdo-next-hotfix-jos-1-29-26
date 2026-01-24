@@ -1,4 +1,4 @@
-// app/(extra)/canvas/_components/CanvasModeModal.tsx (FIXED - No nested buttons)
+// app/(extra)/canvas/_components/CanvasModeModal.tsx (FIXED - Refresh templates on open)
 
 'use client';
 
@@ -28,23 +28,39 @@ export function CanvasModeModal({
   onSelectMode,
   onLoadTemplate,
 }: CanvasModeModalProps) {
-  const { templates, deleteTemplate } = useTemplateStorage();
+  const { templates, deleteTemplate, refreshTemplates } = useTemplateStorage();
   const [activeTab, setActiveTab] = useState<'new' | 'templates'>('new');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
 
+  // CRITICAL FIX: Refresh templates whenever modal opens
+  useEffect(() => {
+    if (isOpen) {
+      console.log('%c🔄 Modal opened - refreshing templates', 'font-weight: bold; color: #FF9800;');
+      refreshTemplates();
+      setSelectedTemplateId(null); // Reset selection when modal opens
+    }
+  }, [isOpen, refreshTemplates]);
+
   // Filter out default templates and show user-created ones
   const userTemplates = templates.filter(t => !t.isDefault);
+
+  console.log('%c📋 MODAL STATE', 'font-weight: bold; color: #2196F3;');
+  console.log('  - Total templates:', templates.length);
+  console.log('  - User templates:', userTemplates.length);
+  console.log('  - Template IDs:', userTemplates.map(t => t.id));
 
   const handleSelect = (mode: 'template' | 'editor') => {
     onSelectMode(mode);
   };
 
   const handleTemplateSelect = (template: CanvasTemplate) => {
+    console.log('%c✅ Template selected:', 'font-weight: bold; color: #4CAF50;', template.id);
     setSelectedTemplateId(template.id);
   };
 
   const handleLoadTemplate = () => {
     if (selectedTemplateId && onLoadTemplate) {
+      console.log('%c🚀 Loading template:', 'font-weight: bold; color: #4FBA76;', selectedTemplateId);
       onLoadTemplate(selectedTemplateId);
       onClose();
     }
@@ -262,7 +278,7 @@ export function CanvasModeModal({
                                 : ''
                             }`}
                           >
-                            {/* Template Card - Changed from button to div with onClick */}
+                            {/* Template Card */}
                             <div
                               onClick={() => handleTemplateSelect(template)}
                               className="relative aspect-[3/4] rounded-lg overflow-hidden border-2 border-stone-200 dark:border-stone-700 hover:border-blue-400 transition-all bg-white dark:bg-stone-800 cursor-pointer group"
@@ -287,7 +303,7 @@ export function CanvasModeModal({
                                 </div>
                               </div>
 
-                              {/* Delete Button - Now properly outside the card button */}
+                              {/* Delete Button */}
                               <button
                                 onClick={(e) => handleDeleteTemplate(e, template.id)}
                                 className="absolute top-2 right-2 p-2 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-all shadow-lg z-10"

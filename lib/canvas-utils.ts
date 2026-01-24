@@ -433,6 +433,9 @@ export function validateTemplate(template: CanvasTemplate): {
  * Safely load and normalize template data
  */
 export function safeLoadTemplate(template: CanvasTemplate): CanvasTemplate {
+  console.group('🔧 SAFE LOAD TEMPLATE');
+  console.log('Input Template:', template);
+  
   try {
     // Deep clone and normalize
     const normalized: CanvasTemplate = {
@@ -461,9 +464,19 @@ export function safeLoadTemplate(template: CanvasTemplate): CanvasTemplate {
       tags: Array.isArray(template.tags) ? template.tags : [],
     };
 
+    console.log('✅ Normalized Template:', normalized);
+    console.log('  - Page Background:', normalized.page.backgroundColor);
+    console.log('  - Header Background:', normalized.header.backgroundColor);
+    console.log('  - Footer Background:', normalized.footer.backgroundColor);
+    console.log('  - Page Elements:', normalized.page.elements.length);
+    console.log('  - Header Elements:', normalized.header.elements.length);
+    console.log('  - Footer Elements:', normalized.footer.elements.length);
+    console.groupEnd();
+
     return normalized;
   } catch (error) {
-    console.error('Failed to normalize template:', error);
+    console.error('❌ Failed to normalize template:', error);
+    console.groupEnd();
     throw new Error('Template data is corrupted and cannot be loaded');
   }
 }

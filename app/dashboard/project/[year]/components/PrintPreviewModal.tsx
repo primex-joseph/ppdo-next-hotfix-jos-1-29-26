@@ -1,8 +1,8 @@
-// app/dashboard/project/[year]/components/PrintPreviewModal.tsx (REFACTORED)
+// app/dashboard/project/[year]/components/PrintPreviewModal.tsx (ROBUST FIX)
 
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { PrintPreviewToolbar } from './PrintPreviewToolbar';
 import { ConfirmationModal } from './ConfirmationModal';
 import { TemplateSelector } from './TemplateSelector';
@@ -18,9 +18,11 @@ import BottomPageControls from '@/app/(extra)/canvas/_components/editor/bottom-p
 
 // Custom hooks
 import { usePrintPreviewState } from './hooks/usePrintPreviewState';
-import { usePrintPreviewInitialization } from './hooks/usePrintPreviewInitialization';
 import { usePrintPreviewActions } from './hooks/usePrintPreviewActions';
 import { usePrintPreviewDraft } from './hooks/usePrintPreviewDraft';
+import { convertTableToCanvas } from '@/lib/print-canvas/tableToCanvas';
+import { applyTemplateToPages } from '@/lib/canvas-utils';
+import { toast } from 'sonner';
 
 interface PrintPreviewModalProps {
   isOpen: boolean;
@@ -59,30 +61,171 @@ export function PrintPreviewModal({
 }: PrintPreviewModalProps) {
   // State management
   const state = usePrintPreviewState();
+  
+  // Loading state for template application
+  const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
+  const [templateToApply, setTemplateToApply] = useState<CanvasTemplate | null | undefined>(null);
 
-  // Initialization
-  const { initializeFromTableData } = usePrintPreviewInitialization({
+  // Initialize from table data with optional template
+  const initializeFromTableData = useCallback(
+    (template?: CanvasTemplate) => {
+      console.group('🎨 INITIALIZING PRINT PREVIEW');
+      console.log('Template:', template);
+      console.log('Template Page Background:', template?.page?.backgroundColor);
+      
+      try {
+        // Convert table to canvas pages using template's page settings
+        const result = convertTableToCanvas({
+          items: budgetItems,
+          totals,
+          columns,
+          hiddenColumns,
+          pageSize: template?.page.size || 'A4',
+          orientation: template?.page.orientation || 'portrait',
+          includeHeaders: true,
+          includeTotals: true,
+          title: `Budget Tracking ${year}`,
+          subtitle: particular ? `Particular: ${particular}` : undefined,
+          rowMarkers,
+        });
+
+        console.log('📄 Generated pages:', result.pages.length);
+        console.log('📄 First page background BEFORE template:', result.pages[0]?.backgroundColor);
+
+        // Apply template if selected
+        let finalPages = result.pages;
+        let finalHeader = result.header;
+        let finalFooter = result.footer;
+
+        if (template) {
+          console.log('🎨 Applying template to pages...');
+          
+          // Apply template styling to all pages
+          finalPages = applyTemplateToPages(result.pages, template);
+          
+          // Use template's header and footer
+          finalHeader = {
+            elements: template.header.elements,
+            backgroundColor: template.header.backgroundColor || '#ffffff',
+          };
+          
+          finalFooter = {
+            elements: template.footer.elements,
+            backgroundColor: template.footer.backgroundColor || '#ffffff',
+          };
+          
+          console.log('✅ Template applied');
+          console.log('📄 First page background AFTER template:', finalPages[0]?.backgroundColor);
+          console.log('📄 Header background:', finalHeader.backgroundColor);
+          console.log('📄 Footer background:', finalFooter.backgroundColor);
+          
+          state.setAppliedTemplate(template);
+          
+          toast.success(
+            `Applied template "${template.name}" to ${finalPages.length} page(s)`
+          );
+        } else {
+          console.log('📄 No template - using default styling');
+          toast.success(
+            `Generated ${result.metadata.totalPages} page(s) from ${result.metadata.totalRows} row(s)`
+          );
+        }
+
+        // Set final state
+        console.log('💾 Setting final state...');
+        state.setPages(finalPages);
+        state.setHeader(finalHeader);
+        state.setFooter(finalFooter);
+        state.setCurrentPageIndex(0);
+        state.setIsDirty(false);
+        state.setHasInitialized(true);
+        
+        console.log('✅ Initialization complete');
+        console.groupEnd();
+      } catch (error) {
+        console.error('❌ Failed to convert table to canvas:', error);
+        console.groupEnd();
+        toast.error('Failed to convert table to canvas');
+      }
+    },
+    [
+      budgetItems,
+      totals,
+      columns,
+      hiddenColumns,
+      year,
+      particular,
+      rowMarkers,
+      state,
+    ]
+  );
+
+  // Handle template selection
+  const handleTemplateSelect = useCallback(
+    (template: CanvasTemplate | null) => {
+      console.log('✅ Template selected:', template?.name || 'none');
+      setTemplateToApply(template);
+      // CRITICAL: Close the selector immediately after selection
+      state.setShowTemplateSelector(false);
+    },
+    [state]
+  );
+
+  // Initialize when modal opens or template is selected
+  useEffect(() => {
+    if (!isOpen) {
+      state.setHasInitialized(false);
+      setTemplateToApply(null);
+      return;
+    }
+
+    console.log('🔄 Initialization useEffect triggered');
+    console.log('  - isOpen:', isOpen);
+    console.log('  - hasInitialized:', state.hasInitialized);
+    console.log('  - existingDraft:', !!existingDraft);
+    console.log('  - templateToApply:', templateToApply);
+
+    // Show template selector on first open (if no existing draft and not initialized)
+    if (!existingDraft && !state.hasInitialized && templateToApply === null) {
+      console.log('📋 Showing template selector...');
+      state.setShowTemplateSelector(true);
+      return;
+    }
+
+    // Initialize from existing draft
+    if (existingDraft && !state.hasInitialized) {
+      console.log('📂 Loading from existing draft...');
+      state.setPages(existingDraft.canvasState.pages);
+      state.setHeader(existingDraft.canvasState.header);
+      state.setFooter(existingDraft.canvasState.footer);
+      state.setCurrentPageIndex(existingDraft.canvasState.currentPageIndex);
+      state.setLastSavedTime(existingDraft.timestamp);
+      state.setIsDirty(false);
+      state.setHasInitialized(true);
+      return;
+    }
+
+    // Initialize from table data with template
+    if (!state.hasInitialized && templateToApply !== null) {
+      console.log('🎯 Initializing with template:', templateToApply?.name || 'none');
+      
+      // Show loading state
+      setIsLoadingTemplate(true);
+      
+      // Small delay to ensure smooth UI
+      setTimeout(() => {
+        initializeFromTableData(templateToApply || undefined);
+        setIsLoadingTemplate(false);
+      }, 500);
+    }
+  }, [
     isOpen,
     existingDraft,
-    hasInitialized: state.hasInitialized,
-    appliedTemplate: state.appliedTemplate,
-    budgetItems,
-    totals,
-    columns,
-    hiddenColumns,
-    year,
-    particular,
-    rowMarkers,
-    setPages: state.setPages,
-    setHeader: state.setHeader,
-    setFooter: state.setFooter,
-    setCurrentPageIndex: state.setCurrentPageIndex,
-    setLastSavedTime: state.setLastSavedTime,
-    setIsDirty: state.setIsDirty,
-    setHasInitialized: state.setHasInitialized,
-    setShowTemplateSelector: state.setShowTemplateSelector,
-    setAppliedTemplate: state.setAppliedTemplate,
-  });
+    templateToApply,
+    state.hasInitialized,
+    initializeFromTableData,
+    state,
+  ]);
 
   // Canvas actions
   const actions = usePrintPreviewActions({
@@ -119,18 +262,42 @@ export function PrintPreviewModal({
     onClose,
   });
 
-  // Template selection handler
-  const handleTemplateSelect = useCallback(
-    (template: CanvasTemplate | null) => {
-      state.setAppliedTemplate(template);
-      state.setHasInitialized(false); // Trigger re-initialization
-    },
-    [state]
-  );
-
   const formattedLastSaved = state.lastSavedTime ? formatTimestamp(state.lastSavedTime) : '';
 
   if (!isOpen) return null;
+
+  // Show loading screen while template is being applied
+  if (isLoadingTemplate) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-zinc-900">
+        <div className="text-center">
+          <div className="mb-6">
+            <div className="relative w-24 h-24 mx-auto">
+              <div className="absolute inset-0 border-4 border-stone-200 dark:border-stone-700 rounded-full"></div>
+              <div className="absolute inset-0 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+              <div className="absolute inset-3 bg-blue-100 dark:bg-blue-900/30 rounded-full animate-pulse"></div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <svg className="w-10 h-10 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+            </div>
+          </div>
+          <p className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2">
+            {templateToApply ? 'Applying Template' : 'Generating Print Preview'}
+          </p>
+          <p className="text-sm text-stone-600 dark:text-stone-400">
+            {templateToApply ? `Applying "${templateToApply.name}"...` : 'Preparing your pages...'}
+          </p>
+          <div className="flex items-center justify-center gap-2 mt-4">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -238,11 +405,14 @@ export function PrintPreviewModal({
       <TemplateSelector
         isOpen={state.showTemplateSelector}
         onClose={() => {
-          state.setShowTemplateSelector(false);
-          if (!state.hasInitialized) {
-            // User closed without selecting - initialize with no template
-            handleTemplateSelect(null);
+          // CRITICAL: Only call handleTemplateSelect if user hasn't already selected
+          // Check if we're closing without any template selection
+          if (!state.hasInitialized && templateToApply === null) {
+            // User closed without selecting - start blank
+            console.log('❌ User closed template selector without choosing - starting blank');
+            handleTemplateSelect(undefined as any);
           }
+          state.setShowTemplateSelector(false);
         }}
         onSelectTemplate={handleTemplateSelect}
       />
