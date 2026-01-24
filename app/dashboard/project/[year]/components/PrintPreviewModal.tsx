@@ -293,6 +293,7 @@ export function PrintPreviewModal({
   useEffect(() => {
     if (!isOpen) {
       state.setHasInitialized(false);
+      state.setDocumentTitle(''); // Reset document title
       setTemplateToApply(null);
       setSavedTemplate(null);
       setShowTemplateApplicationModal(false);
@@ -308,6 +309,11 @@ export function PrintPreviewModal({
     // Initialize from existing draft
     if (existingDraft && !state.hasInitialized) {
       console.log('📂 Loading from existing draft...');
+
+      // Load document title from draft (with fallback for legacy drafts)
+      const draftTitle = existingDraft.documentTitle ||
+        (particular ? `Budget ${year} - ${particular}` : `Budget ${year}`);
+      state.setDocumentTitle(draftTitle);
 
       // Check if draft has a saved template
       if (existingDraft.appliedTemplate) {
@@ -334,6 +340,12 @@ export function PrintPreviewModal({
     // Initialize from table data (NEW FLOW: Load data first, then show template selector)
     if (!existingDraft && !state.hasInitialized) {
       console.log('📊 Loading table data...');
+
+      // Generate default document title
+      const defaultTitle = particular
+        ? `Budget ${year} - ${particular}`
+        : `Budget ${year}`;
+      state.setDocumentTitle(defaultTitle);
 
       // Load table data immediately without template
       initializeFromTableData(undefined);
@@ -366,6 +378,7 @@ export function PrintPreviewModal({
 
   // Draft management
   const { handleSaveDraft, handlePrint, handleClose } = usePrintPreviewDraft({
+    documentTitle: state.documentTitle,
     pages: state.pages,
     header: state.header,
     footer: state.footer,
@@ -389,6 +402,15 @@ export function PrintPreviewModal({
   });
 
   const formattedLastSaved = state.lastSavedTime ? formatTimestamp(state.lastSavedTime) : '';
+
+  // Handle document title change
+  const handleTitleChange = useCallback(
+    (newTitle: string) => {
+      state.setDocumentTitle(newTitle);
+      state.setIsDirty(true);
+    },
+    [state]
+  );
 
   if (!isOpen) return null;
 
@@ -430,6 +452,8 @@ export function PrintPreviewModal({
       <div className="fixed inset-0 z-50 bg-white dark:bg-zinc-900 flex flex-col">
         {/* Custom Toolbar */}
         <PrintPreviewToolbar
+          documentTitle={state.documentTitle}
+          onTitleChange={handleTitleChange}
           isDirty={state.isDirty}
           isSaving={state.isSaving}
           lastSavedTime={formattedLastSaved}

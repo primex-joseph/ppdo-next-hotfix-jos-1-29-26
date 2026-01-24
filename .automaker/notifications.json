@@ -33,6 +33,83 @@
       "dismissed": false,
       "featureId": "feature-1769259774187-bt4z5tpot",
       "projectPath": "C:\\ppdo\\ppdo-next"
+    },
+    {
+      "id": "7388d3ea-bfd4-44b4-9975-59d1f7ee3bec",
+      "type": "feature_waiting_approval",
+      "title": "Feature Ready for Review",
+      "message": "\"feature-1769260868567-jjjf4i7z4\" is ready for your review and approval.",
+      "createdAt": "2026-01-24T18:46:22.934Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1769260868567-jjjf4i7z4",
+      "projectPath": "C:\\ppdo\\ppdo-next"
+    },
+    {
+      "id": "905e5a89-ac5d-40e5-98c0-747ce8eac764",
+      "type": "feature_waiting_approval",
+      "title": "Feature Ready for Review",
+      "message": "\"feature-1769260868567-jjjf4i7z4\" is ready for your review and approval.",
+      "createdAt": "2026-01-24T18:56:50.297Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1769260868567-jjjf4i7z4",
+      "projectPath": "C:\\ppdo\\ppdo-next"
+    },
+    {
+      "id": "05a627a2-aae7-4455-a4f8-5500a3207a69",
+      "type": "feature_waiting_approval",
+      "title": "Feature Ready for Review",
+      "message": "\"feature-1769281359271-88qlgrgg1\" is ready for your review and approval.",
+      "createdAt": "2026-01-24T19:07:48.612Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1769281359271-88qlgrgg1",
+      "projectPath": "C:\\ppdo\\ppdo-next"
+    },
+    {
+      "id": "435f70ce-1776-43c5-b7d8-01cb21fb3746",
+      "type": "feature_waiting_approval",
+      "title": "Feature Ready for Review",
+      "message": "\"feature-1769281359271-88qlgrgg1\" is ready for your review and approval.",
+      "createdAt": "2026-01-24T19:16:32.956Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1769281359271-88qlgrgg1",
+      "projectPath": "C:\\ppdo\\ppdo-next"
+    },
+    {
+      "id": "ec8ef755-a2ab-486d-8785-037c29e5bf86",
+      "type": "feature_waiting_approval",
+      "title": "Feature Ready for Review",
+      "message": "\"feature-1769259774187-bt4z5tpot\" is ready for your review and approval.",
+      "createdAt": "2026-01-24T19:32:45.667Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1769259774187-bt4z5tpot",
+      "projectPath": "C:\\ppdo\\ppdo-next"
+    },
+    {
+      "id": "b8dc010d-7d70-48bf-bf65-8be9703fa803",
+      "type": "feature_waiting_approval",
+      "title": "Feature Ready for Review",
+      "message": "\"feature-1769282828760-4q0wwfnr3\" is ready for your review and approval.",
+      "createdAt": "2026-01-24T19:44:28.440Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1769282828760-4q0wwfnr3",
+      "projectPath": "C:\\ppdo\\ppdo-next"
+    },
+    {
+      "id": "776d6323-4281-43a9-9ab4-6779733783d3",
+      "type": "feature_waiting_approval",
+      "title": "Feature Ready for Review",
+      "message": "\"feature-1769282828760-4q0wwfnr3\" is ready for your review and approval.",
+      "createdAt": "2026-01-24T19:58:23.306Z",
+      "read": false,
+      "dismissed": false,
+      "featureId": "feature-1769282828760-4q0wwfnr3",
+      "projectPath": "C:\\ppdo\\ppdo-next"
     }
   ]
 }

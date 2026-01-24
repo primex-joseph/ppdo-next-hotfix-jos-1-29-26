@@ -92,6 +92,8 @@ export interface PageMetadata {
 export interface PrintDraft {
   id: string;
   timestamp: number;
+  lastModified?: number; // Track separate modification time (optional for backward compatibility)
+  documentTitle?: string; // User-defined document name (optional for backward compatibility)
   budgetYear: number;
   budgetParticular?: string;
 
@@ -136,6 +138,8 @@ export interface DraftInfo {
   year: number;
   particular?: string;
   timestamp: number;
+  lastModified?: number; // Last modification time (optional for backward compatibility)
+  documentTitle?: string; // Document title (optional for backward compatibility)
   pageCount: number;
 }
 
