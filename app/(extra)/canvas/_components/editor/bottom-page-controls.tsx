@@ -23,6 +23,8 @@ interface BottomPageControlsProps {
   onPreviousPage: () => void;
   onNextPage: () => void;
   isEditorMode?: boolean;
+  selectedGroupId?: string | null;
+  onSelectGroup?: (groupId: string | null) => void;
 }
 
 export default function BottomPageControls({
@@ -39,8 +41,14 @@ export default function BottomPageControls({
   onPreviousPage,
   onNextPage,
   isEditorMode = true,
+  selectedGroupId: externalSelectedGroupId,
+  onSelectGroup: externalOnSelectGroup,
 }: BottomPageControlsProps) {
   const [isLayerPanelOpen, setIsLayerPanelOpen] = useState(false);
+  const [internalSelectedGroupId, setInternalSelectedGroupId] = useState<string | null>(null);
+
+  const selectedGroupId = externalSelectedGroupId ?? internalSelectedGroupId;
+  const setSelectedGroupId = externalOnSelectGroup ?? setInternalSelectedGroupId;
 
   const isFirst = currentPageIndex === 0;
   const isLast = currentPageIndex === totalPages - 1;
@@ -126,7 +134,12 @@ export default function BottomPageControls({
           onClose={() => setIsLayerPanelOpen(false)}
           elements={elements}
           selectedElementId={selectedElementId}
-          onSelectElement={onSelectElement}
+          onSelectElement={(id) => {
+            onSelectElement(id);
+            setSelectedGroupId(null);
+          }}
+          selectedGroupId={selectedGroupId}
+          onSelectGroup={setSelectedGroupId}
           onUpdateElement={onUpdateElement}
           onReorderElements={onReorderElements}
         />

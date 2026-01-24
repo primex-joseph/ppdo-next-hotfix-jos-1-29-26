@@ -456,6 +456,7 @@ export function PrintPreviewModal({
                 totalPages={state.pages.length}
                 activeSection={state.activeSection}
                 onActiveSectionChange={isEditorMode ? state.setActiveSection : () => {}}
+                selectedGroupId={state.selectedGroupId}
               />
             </div>
 
@@ -481,6 +482,8 @@ export function PrintPreviewModal({
                   )
                 }
                 isEditorMode={isEditorMode}
+                selectedGroupId={state.selectedGroupId}
+                onSelectGroup={state.setSelectedGroupId}
               />
             </div>
           </div>

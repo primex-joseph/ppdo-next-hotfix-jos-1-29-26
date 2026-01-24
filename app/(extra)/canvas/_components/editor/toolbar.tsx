@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { loadGoogleFont } from '@/lib/fonts';
 import { exportAsPDF } from '@/lib/export-pdf';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { Bold, Italic, Underline, Plus, Printer, FileDown } from 'lucide-react';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Bold, Italic, Underline, Plus, Printer, FileDown, X } from 'lucide-react';
 import { CanvasElement, Page, HeaderFooter } from './types';
 
 type ActiveSection = 'header' | 'page' | 'footer';
@@ -218,47 +223,66 @@ export default function Toolbar({
 
             <Separator orientation="vertical" className="h-5" />
 
-            <div className="flex items-center gap-1.5">
-              <label className="text-xs text-stone-600 whitespace-nowrap">Background:</label>
-              <input
-                type="color"
-                value={getCurrentBackgroundColor()}
-                onChange={(e) => handleBackgroundColorChange(e.target.value)}
-                className="w-7 h-7 border border-stone-300 rounded cursor-pointer bg-white"
-                title="Background color"
-              />
-              <div className="relative">
-                <Button
-                  onClick={() => setShowHexInput(!showHexInput)}
-                  size="sm"
-                  variant="outline"
-                  className="h-7 px-2 text-xs bg-white"
-                  title="Enter hex code"
-                >
-                  #
-                </Button>
-                {showHexInput && (
-                  <div className="absolute top-full mt-1 left-0 bg-white border border-stone-300 rounded shadow-lg p-2 flex items-center gap-1 z-10">
-                    <span className="text-xs text-stone-600">#</span>
-                    <input
-                      type="text"
-                      value={hexInput}
-                      onChange={(e) => setHexInput(e.target.value)}
-                      onKeyDown={handleHexKeyDown}
-                      placeholder="FFFFFF"
-                      maxLength={6}
-                      className="w-20 px-1 py-0.5 text-xs border border-stone-300 rounded uppercase"
-                      autoFocus
-                    />
+            <div className="flex items-center gap-2 bg-white rounded-md border border-stone-300 px-2.5 py-1.5 shadow-sm">
+              <label className="text-xs text-stone-600 font-medium whitespace-nowrap">Background</label>
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="color"
+                  value={getCurrentBackgroundColor()}
+                  onChange={(e) => handleBackgroundColorChange(e.target.value)}
+                  className="w-8 h-8 border-2 border-stone-200 rounded-md cursor-pointer transition-all hover:border-stone-400"
+                  title="Pick background color"
+                />
+                <Popover open={showHexInput} onOpenChange={setShowHexInput}>
+                  <PopoverTrigger asChild>
                     <Button
-                      onClick={handleHexSubmit}
                       size="sm"
-                      className="h-6 px-2 text-xs"
+                      variant="ghost"
+                      className="h-8 px-2.5 text-xs font-mono hover:bg-stone-100"
+                      title="Enter hex code"
                     >
-                      OK
+                      {getCurrentBackgroundColor().toUpperCase()}
                     </Button>
-                  </div>
-                )}
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-3 z-50" align="start" side="bottom" sideOffset={4}>
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-stone-700">Hex Color</label>
+                        <Button
+                          onClick={() => {
+                            setShowHexInput(false);
+                            setHexInput('');
+                          }}
+                          size="sm"
+                          variant="ghost"
+                          className="h-5 w-5 p-0 hover:bg-stone-100"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-stone-500 font-mono">#</span>
+                        <input
+                          type="text"
+                          value={hexInput}
+                          onChange={(e) => setHexInput(e.target.value)}
+                          onKeyDown={handleHexKeyDown}
+                          placeholder="FFFFFF"
+                          maxLength={6}
+                          className="w-2.5 flex-1 px-2 py-1.5 text-sm font-mono border border-stone-300 rounded-md uppercase focus:outline-none focus:ring-2 focus:ring-[#4FBA76]"
+                          autoFocus
+                        />
+                      </div>
+                      <Button
+                        onClick={handleHexSubmit}
+                        size="sm"
+                        className="h-8 w-full text-xs bg-[#4FBA76] hover:bg-[#45a869] text-white"
+                      >
+                        Apply
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
@@ -405,12 +429,24 @@ export default function Toolbar({
           </>
         )}
 
+        {!isEditorMode && (
+          <>
+            <span className="text-xs text-stone-600 font-medium">
+              SIZE: <span className="text-stone-700">{pageSize === 'Short' ? 'Short (8.5×11")' : pageSize === 'Long' ? 'Long (8.5×13")' : pageSize}</span>
+              {' '}<span className="text-stone-400">|</span>{' '}
+              ORIENTATION: <span className="text-stone-700 capitalize">{orientation}</span>
+            </span>
+
+            <Separator orientation="vertical" className="h-5 ml-auto" />
+          </>
+        )}
+
         <Button
           onClick={handleExportPDF}
           size="sm"
           variant="outline"
           disabled={isExporting}
-          className={`gap-1.5 h-8 text-xs bg-white ${!isEditorMode ? 'ml-auto' : ''}`}
+          className="gap-1.5 h-8 text-xs bg-white"
         >
           <FileDown className="w-3.5 h-3.5" />
           {isExporting ? 'Exporting...' : 'Export as PDF'}
