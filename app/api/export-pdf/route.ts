@@ -96,8 +96,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Ensure we have a Buffer and convert to Uint8Array for NextResponse
+    if (!result.buffer) {
+      return NextResponse.json(
+        { error: 'PDF generation produced no buffer.' },
+        { status: 500 }
+      );
+    }
+
+    // Convert Node Buffer to Uint8Array (BodyInit-compatible)
+    const pdfBody = new Uint8Array(result.buffer);
+
     // Return PDF as binary with proper headers
-    return new NextResponse(result.buffer, {
+    return new NextResponse(pdfBody, {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${filename}"`,

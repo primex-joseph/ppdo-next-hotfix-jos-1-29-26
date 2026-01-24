@@ -85,10 +85,9 @@ export default function PagePanel({
             const isDropTarget = index === dragOverIndex;
 
             return (
-              <ContextMenu>
+              <ContextMenu key={page.id}>
                 <ContextMenuTrigger asChild>
                   <div
-                    key={page.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={(e) => handleDragOver(e, index)}

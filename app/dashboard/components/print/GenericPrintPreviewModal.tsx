@@ -13,8 +13,10 @@ import { ConfirmationModal } from '@/app/dashboard/project/[year]/components/Con
 import { convertTableToCanvas } from '@/lib/print-canvas/tableToCanvas';
 import { printAllPages } from '@/lib/print';
 import { PrintDraft, ColumnDefinition, BudgetTotals, RowMarker } from '@/lib/print-canvas/types';
-import { Page, HeaderFooter } from '@/app/dashboard/canvas/_components/editor/types';
+import { Page, HeaderFooter, ImageElement, CanvasElement } from '@/app/dashboard/canvas/_components/editor/types';
 import { PrintDataAdapter } from '@/lib/print/adapters/types';
+import { usePrintClipboard } from '@/app/dashboard/canvas/_components/editor/hooks/usePrintClipboard';
+import { getPageDimensions } from '@/app/dashboard/canvas/_components/editor/constants';
 
 // ✅ Import the actual canvas components we need
 import Toolbar from '@/app/dashboard/canvas/_components/editor/toolbar';
@@ -177,6 +179,50 @@ export function GenericPrintPreviewModal({
     }
   }, [adapter, pages, header, footer, currentPageIndex, hiddenColumns, filterState, onDraftSaved]);
 
+  // 🆕 Handler to add pasted image to canvas
+  const handleAddImage = useCallback((
+    element: ImageElement,
+    section: 'header' | 'page' | 'footer'
+  ) => {
+    setIsDirty(true);
+
+    if (section === 'header') {
+      setHeader(prev => ({
+        ...prev,
+        elements: [...prev.elements, element],
+      }));
+    } else if (section === 'footer') {
+      setFooter(prev => ({
+        ...prev,
+        elements: [...prev.elements, element],
+      }));
+    } else {
+      // Add to current page
+      setPages(prev => prev.map((page, idx) =>
+        idx === currentPageIndex
+          ? { ...page, elements: [...page.elements, element] }
+          : page
+      ));
+    }
+
+    // Select the newly added image
+    setSelectedElementId(element.id);
+  }, [currentPageIndex]);
+
+  // 🆕 Integrate clipboard hook for image paste support
+  const currentPage = pages[currentPageIndex] || { id: 'empty', size: 'A4', elements: [] };
+  const pageSize = getPageDimensions(currentPage.size, currentPage.orientation);
+
+  usePrintClipboard({
+    isOpen,
+    currentPage,
+    selectedElementId,
+    isEditingElementId,
+    onAddImage: handleAddImage,
+    activeSection,
+    pageSize,
+  });
+
   // Print handler (used by canvas toolbar)
   const handlePrint = useCallback(() => {
     try {
@@ -275,8 +321,6 @@ export function GenericPrintPreviewModal({
     : '';
 
   if (!isOpen) return null;
-
-  const currentPage = pages[currentPageIndex] || { id: 'empty', size: 'A4', elements: [] };
 
   // Combine all elements for layer panel
   const allElements = [
