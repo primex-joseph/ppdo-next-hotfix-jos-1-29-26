@@ -1,4 +1,4 @@
-// app/dashboard/canvas/_components/editor/text-element.tsx
+// app/(extra)/canvas/_components/editor/text-element.tsx (UPDATED - Data attributes)
 
 'use client';
 
@@ -95,6 +95,8 @@ export default function TextElementComponent({
 
   return (
     <div
+      data-element-type="text"
+      data-element-id={element.id}
       onMouseDown={onMouseDown}
       className={`absolute ${
         isSelected ? 'ring-2 ring-blue-500' : ''

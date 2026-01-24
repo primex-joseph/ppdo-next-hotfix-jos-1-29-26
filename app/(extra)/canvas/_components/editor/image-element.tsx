@@ -1,4 +1,4 @@
-// app/(extra)/canvas/_components/editor/image-element.tsx
+// app/(extra)/canvas/_components/editor/image-element.tsx (UPDATED - Data attributes)
 
 'use client';
 
@@ -150,7 +150,9 @@ export default function ImageElementComponent({
   if (isCropping) {
     return (
       <div
-        className="absolute"
+        data-element-type="image"
+        data-element-id={element.id}
+        className="absolute no-capture"
         style={{
           left: `${element.x}px`,
           top: `${element.y}px`,
@@ -223,6 +225,8 @@ export default function ImageElementComponent({
 
   return (
     <div
+      data-element-type="image"
+      data-element-id={element.id}
       onMouseDown={onMouseDown}
       onContextMenu={onContextMenu}
       className={`absolute ${
@@ -248,7 +252,7 @@ export default function ImageElementComponent({
       {isSelected && !element.locked && (
         <>
           <div
-            className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 cursor-nwse-resize rounded-sm"
+            className="absolute -top-1 -left-1 w-3 h-3 bg-blue-500 cursor-nwse-resize rounded-sm no-capture"
             data-handle="nw"
             onMouseDown={(e) => {
               e.stopPropagation();
@@ -256,7 +260,7 @@ export default function ImageElementComponent({
             }}
           />
           <div
-            className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 cursor-nesw-resize rounded-sm"
+            className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 cursor-nesw-resize rounded-sm no-capture"
             data-handle="ne"
             onMouseDown={(e) => {
               e.stopPropagation();
@@ -264,7 +268,7 @@ export default function ImageElementComponent({
             }}
           />
           <div
-            className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 cursor-nesw-resize rounded-sm"
+            className="absolute -bottom-1 -left-1 w-3 h-3 bg-blue-500 cursor-nesw-resize rounded-sm no-capture"
             data-handle="sw"
             onMouseDown={(e) => {
               e.stopPropagation();
@@ -272,7 +276,7 @@ export default function ImageElementComponent({
             }}
           />
           <div
-            className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 cursor-nwse-resize rounded-sm"
+            className="absolute -bottom-1 -right-1 w-3 h-3 bg-blue-500 cursor-nwse-resize rounded-sm no-capture"
             data-handle="se"
             onMouseDown={(e) => {
               e.stopPropagation();
@@ -281,7 +285,7 @@ export default function ImageElementComponent({
           />
 
           <div
-            className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 cursor-ns-resize rounded-sm"
+            className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 cursor-ns-resize rounded-sm no-capture"
             data-handle="n"
             onMouseDown={(e) => {
               e.stopPropagation();
@@ -289,7 +293,7 @@ export default function ImageElementComponent({
             }}
           />
           <div
-            className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 cursor-ns-resize rounded-sm"
+            className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-blue-500 cursor-ns-resize rounded-sm no-capture"
             data-handle="s"
             onMouseDown={(e) => {
               e.stopPropagation();
@@ -297,7 +301,7 @@ export default function ImageElementComponent({
             }}
           />
           <div
-            className="absolute top-1/2 -translate-y-1/2 -left-1 w-3 h-3 bg-blue-500 cursor-ew-resize rounded-sm"
+            className="absolute top-1/2 -translate-y-1/2 -left-1 w-3 h-3 bg-blue-500 cursor-ew-resize rounded-sm no-capture"
             data-handle="w"
             onMouseDown={(e) => {
               e.stopPropagation();
@@ -305,7 +309,7 @@ export default function ImageElementComponent({
             }}
           />
           <div
-            className="absolute top-1/2 -translate-y-1/2 -right-1 w-3 h-3 bg-blue-500 cursor-ew-resize rounded-sm"
+            className="absolute top-1/2 -translate-y-1/2 -right-1 w-3 h-3 bg-blue-500 cursor-ew-resize rounded-sm no-capture"
             data-handle="e"
             onMouseDown={(e) => {
               e.stopPropagation();
@@ -318,7 +322,7 @@ export default function ImageElementComponent({
               e.stopPropagation();
               onDelete();
             }}
-            className="absolute -top-6 -right-6 bg-red-500 text-white p-1 rounded hover:bg-red-600 transition-colors"
+            className="absolute -top-6 -right-6 bg-red-500 text-white p-1 rounded hover:bg-red-600 transition-colors no-capture"
             title="Delete element"
           >
             <X className="w-3 h-3" />

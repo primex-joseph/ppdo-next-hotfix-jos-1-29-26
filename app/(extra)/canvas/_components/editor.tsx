@@ -1,10 +1,12 @@
-// app/(extra)/canvas/_components/editor.tsx
+// app/(extra)/canvas/_components/editor.tsx (UPDATED - ADD onClose PROP)
 
 'use client';
 
 import { useState } from 'react';
 import { Toaster } from 'sonner';
 import { printAllPages } from '@/lib/print';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 import Toolbar from './editor/toolbar';
 import Canvas from './editor/canvas';
 import PagePanel from './editor/page-panel';
@@ -24,26 +26,17 @@ export interface EditorProps {
   enableUploadPanel?: boolean;
   showPagePanel?: boolean;
   variant?: 'default' | 'modal';
+  onClose?: () => void; // NEW PROP
 }
 
-export default function Editor({ enableUploadPanel = true, showPagePanel = true, variant = 'default' }: EditorProps = {}) {
-  console.group('📋 STEP 6: Canvas Editor - Initialization');
-  
+export default function Editor({ 
+  enableUploadPanel = true, 
+  showPagePanel = true, 
+  variant = 'default',
+  onClose 
+}: EditorProps = {}) {
   const { isHydrated, savedPages, savedIndex, savedHeader, savedFooter } = useStorage();
   
-  console.log('💾 Storage state:');
-  console.log('  - isHydrated:', isHydrated);
-  console.log('  - savedPages:', savedPages?.length || 0, 'pages');
-  console.log('  - savedIndex:', savedIndex);
-  console.log('  - savedHeader elements:', savedHeader?.elements.length || 0);
-  console.log('  - savedFooter elements:', savedFooter?.elements.length || 0);
-  
-  if (savedPages && savedPages.length > 0) {
-    console.log('  - First page elements:', savedPages[0].elements.length);
-    console.log('  - First page sample:', savedPages[0].elements[0]);
-  }
-  
-  console.groupEnd();
   const initialPages = savedPages || [createNewPage()];
   const initialIndex = savedIndex ?? 0;
   const initialHeader = savedHeader || { elements: [] };
@@ -106,39 +99,55 @@ export default function Editor({ enableUploadPanel = true, showPagePanel = true,
   ];
 
   const handleImageSelect = (image: UploadedImage) => {
-    // Insert the selected image onto the current page/section
     addImage(image.dataUrl, activeSection);
   };
 
   return (
     <div className="h-screen bg-stone-50 flex flex-col">
-      {/* Sticky Toolbar - Stays at top of editor, doesn't cover navbar/breadcrumb */}
+      {/* Sticky Toolbar */}
       <div className="sticky top-0 h-auto bg-stone-100 border-b border-stone-300 shadow-md z-40 no-print">
-        <Toolbar
-          selectedElement={selectedElement}
-          onUpdateElement={selectedElement ? (updates) => updateElement(selectedElement.id, updates) : undefined}
-          onAddText={() => addText(activeSection)}
-          pageSize={currentPage.size}
-          orientation={currentPage.orientation}
-          onPageSizeChange={changePageSize}
-          onOrientationChange={changeOrientation}
-          onPrint={() => printAllPages(pages, header, footer)}
-          activeSection={activeSection}
-          headerBackgroundColor={header.backgroundColor || '#ffffff'}
-          footerBackgroundColor={footer.backgroundColor || '#ffffff'}
-          pageBackgroundColor={currentPage.backgroundColor || '#ffffff'}
-          onHeaderBackgroundChange={updateHeaderBackground}
-          onFooterBackgroundChange={updateFooterBackground}
-          onPageBackgroundChange={updatePageBackground}
-          pages={pages}
-          header={header}
-          footer={footer}
-        />
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <Toolbar
+              selectedElement={selectedElement}
+              onUpdateElement={selectedElement ? (updates) => updateElement(selectedElement.id, updates) : undefined}
+              onAddText={() => addText(activeSection)}
+              pageSize={currentPage.size}
+              orientation={currentPage.orientation}
+              onPageSizeChange={changePageSize}
+              onOrientationChange={changeOrientation}
+              onPrint={() => printAllPages(pages, header, footer)}
+              activeSection={activeSection}
+              headerBackgroundColor={header.backgroundColor || '#ffffff'}
+              footerBackgroundColor={footer.backgroundColor || '#ffffff'}
+              pageBackgroundColor={currentPage.backgroundColor || '#ffffff'}
+              onHeaderBackgroundChange={updateHeaderBackground}
+              onFooterBackgroundChange={updateFooterBackground}
+              onPageBackgroundChange={updatePageBackground}
+              pages={pages}
+              header={header}
+              footer={footer}
+            />
+          </div>
+          {onClose && (
+            <div className="px-4 border-l border-stone-300">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="text-stone-600 hover:text-stone-900"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Close
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Main Content Area - Left Sidebar | Canvas | Right Sidebar */}
+      {/* Main Content Area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar - Upload Panel */}
+        {/* Left Sidebar */}
         {enableUploadPanel && variant === 'default' && (
           <div className="w-64 border-r border-stone-200 bg-zinc-50 overflow-hidden z-30 flex-shrink-0">
             <LeftSidebar
@@ -148,11 +157,9 @@ export default function Editor({ enableUploadPanel = true, showPagePanel = true,
           </div>
         )}
 
-        {/* Main Canvas Area - Dynamic width that respects right sidebar */}
+        {/* Main Canvas Area */}
         <div className="flex-1 flex flex-row overflow-hidden bg-stone-50 min-w-0">
-          {/* Canvas Container - Takes remaining space after right sidebar */}
           <div className="flex-1 flex flex-col overflow-hidden min-w-0">
-            {/* Canvas Scrollable Area */}
             <div className="flex-1 overflow-y-auto overflow-x-auto flex items-start justify-center pt-4 pb-16 px-8 bg-stone-50">
               <Canvas
                 page={currentPage}
@@ -191,7 +198,7 @@ export default function Editor({ enableUploadPanel = true, showPagePanel = true,
             </div>
           </div>
 
-          {/* Right Sidebar - Page Thumbnails Panel (Only in default variant) */}
+          {/* Right Sidebar */}
           {showPagePanel && variant === 'default' && (
             <div className="w-64 border-l border-stone-200 bg-zinc-50 flex-shrink-0 overflow-y-auto no-print">
               <PagePanel
