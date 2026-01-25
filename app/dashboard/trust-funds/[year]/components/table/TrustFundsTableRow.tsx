@@ -3,6 +3,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Pin, MoreVertical, Eye, Edit, Archive } from "lucide-react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { TrustFund } from "@/types/trustFund.types";
-import { formatCurrency, formatDate, formatStatus, getStatusClassName, truncateText, formatPercentage, calculateUtilizationRate } from "../../../utils";
+import { formatCurrency, formatDate, formatStatus, getStatusClassName, truncateText, formatPercentage, calculateUtilizationRate, createTrustFundSlug } from "../../../utils";
 import { STATUS_COLUMN_WIDTH } from "../../../constants";
 
 interface StatusCellProps {
@@ -114,6 +115,7 @@ function StatusCell({ status, onStatusChange, isUpdating = false }: StatusCellPr
 
 interface TrustFundsTableRowProps {
   item: TrustFund;
+  year: number;
   isAdmin: boolean;
   isSelected: boolean;
   hiddenColumns: Set<string>;
@@ -132,6 +134,7 @@ interface TrustFundsTableRowProps {
 
 export function TrustFundsTableRow({
   item,
+  year,
   isAdmin,
   isSelected,
   hiddenColumns,
@@ -147,13 +150,32 @@ export function TrustFundsTableRow({
   canDelete,
   isUpdatingStatus = false,
 }: TrustFundsTableRowProps) {
+  const router = useRouter();
   const isColumnVisible = (columnId: string) => !hiddenColumns.has(columnId);
 
   // Calculate utilization rate if not already present
   const utilizationRate = item.utilizationRate ?? calculateUtilizationRate(item.utilized, item.received);
 
+  // Handle row click to navigate to breakdown page
+  const handleRowClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on interactive elements
+    if (
+      (e.target as HTMLElement).closest("button") ||
+      (e.target as HTMLElement).closest("[role='checkbox']") ||
+      (e.target as HTMLElement).closest("[role='combobox']") ||
+      (e.target as HTMLElement).closest("[role='listbox']") ||
+      (e.target as HTMLElement).closest("[data-radix-select-viewport]")
+    ) {
+      return;
+    }
+
+    const slug = createTrustFundSlug(item.projectTitle, item.id);
+    router.push(`/dashboard/trust-funds/${year}/${slug}`);
+  };
+
   return (
-    <TableRow 
+    <TableRow
+      onClick={handleRowClick}
       onContextMenu={onContextMenu}
       className={`
         border-b border-zinc-200 dark:border-zinc-800 

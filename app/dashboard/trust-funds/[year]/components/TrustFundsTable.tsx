@@ -228,6 +228,7 @@ export function TrustFundsTable({ data, onAdd, onEdit, onDelete, onOpenTrash, ye
 
             <TrustFundsTableBody
               data={filteredAndSortedData}
+              year={year}
               isAdmin={isAdmin}
               selected={selected}
               hiddenColumns={hiddenColumns}
