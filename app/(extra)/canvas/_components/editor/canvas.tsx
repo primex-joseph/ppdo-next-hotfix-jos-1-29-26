@@ -498,6 +498,8 @@ export default function Canvas({
             onUpdateElement={onUpdateElement}
             setIsDirty={onSetDirty}
             isEditorMode={isEditorMode}
+            pageSize={page.size}
+            pageOrientation={page.orientation}
           />
         )}
       </div>

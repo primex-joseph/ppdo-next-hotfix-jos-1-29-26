@@ -94,11 +94,12 @@ export function TableBorderOverlay({ elements, tableStructure: providedStructure
 /**
  * Detect table structure from canvas elements
  * Groups elements by groupId and analyzes their layout
+ * Only considers visible elements to support column hiding
  */
 function detectTableStructure(elements: CanvasElement[]): TableStructure | null {
-  // Find table group (elements with groupId and groupName containing "Table")
+  // Find visible table elements (filter out hidden columns)
   const tableElements = elements.filter(
-    (el) => el.groupId && el.groupName?.toLowerCase().includes('table')
+    (el) => el.groupId && el.groupName?.toLowerCase().includes('table') && el.visible !== false
   );
 
   if (tableElements.length === 0) return null;

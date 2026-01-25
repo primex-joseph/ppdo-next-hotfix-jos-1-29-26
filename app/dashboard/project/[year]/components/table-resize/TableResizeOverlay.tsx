@@ -26,6 +26,8 @@ export function TableResizeOverlay({
   onUpdateElement,
   setIsDirty,
   isEditorMode,
+  pageSize,
+  pageOrientation,
 }: TableResizeOverlayProps) {
   const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
@@ -57,6 +59,8 @@ export function TableResizeOverlay({
     onUpdateElement,
     setIsDirty,
     isEditorMode,
+    pageSize,
+    pageOrientation,
   });
 
   /**

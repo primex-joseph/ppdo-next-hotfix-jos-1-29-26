@@ -172,3 +172,55 @@ export const FOCUS_RING_COLOR = '#3b82f6';
  * Minimum contrast ratio for WCAG AA compliance
  */
 export const MIN_CONTRAST_RATIO = 3;
+
+// ============================================================================
+// PAGE SIZE CONSTRAINTS
+// ============================================================================
+
+/**
+ * Page sizes in pixels at 72 DPI (web/screen standard)
+ * These match the values used in tableToCanvas.ts
+ */
+export const PAGE_SIZES = {
+  A4: { width: 595, height: 842 },
+  Short: { width: 612, height: 792 },
+  Long: { width: 612, height: 936 },
+} as const;
+
+/**
+ * Default margin used in table canvas rendering (from tableToCanvas.ts)
+ */
+export const TABLE_MARGIN = 20;
+
+/**
+ * Calculate maximum allowed table width based on page size and orientation
+ * @param pageSize - 'A4', 'Short', or 'Long'
+ * @param orientation - 'portrait' or 'landscape'
+ * @returns Maximum table width in pixels
+ */
+export function getMaxTableWidth(
+  pageSize: keyof typeof PAGE_SIZES = 'A4',
+  orientation: 'portrait' | 'landscape' = 'portrait'
+): number {
+  const baseSize = PAGE_SIZES[pageSize] || PAGE_SIZES.A4;
+  const pageWidth = orientation === 'landscape' ? baseSize.height : baseSize.width;
+  return pageWidth - (TABLE_MARGIN * 2);
+}
+
+/**
+ * Calculate maximum allowed table height based on page size and orientation
+ * @param pageSize - 'A4', 'Short', or 'Long'
+ * @param orientation - 'portrait' or 'landscape'
+ * @returns Maximum table height in pixels
+ */
+export function getMaxTableHeight(
+  pageSize: keyof typeof PAGE_SIZES = 'A4',
+  orientation: 'portrait' | 'landscape' = 'portrait'
+): number {
+  const baseSize = PAGE_SIZES[pageSize] || PAGE_SIZES.A4;
+  const pageHeight = orientation === 'landscape' ? baseSize.width : baseSize.height;
+  // Account for header, footer, and margins
+  const HEADER_HEIGHT = 80;
+  const FOOTER_HEIGHT = 60;
+  return pageHeight - HEADER_HEIGHT - FOOTER_HEIGHT - (TABLE_MARGIN * 2);
+}

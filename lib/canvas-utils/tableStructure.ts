@@ -59,13 +59,14 @@ interface RowPosition {
 
 /**
  * Detects all table groups from canvas elements
+ * Only considers visible elements to support column hiding
  * @param elements - Array of canvas elements
  * @returns Array of detected table groups
  */
 export function detectTableGroups(elements: CanvasElement[]): TableGroup[] {
-  // Filter elements that belong to table groups
+  // Filter elements that belong to table groups (exclude hidden elements)
   const tableElements = elements.filter(
-    (el) => el.groupId && el.groupId.startsWith('table-group-')
+    (el) => el.groupId && el.groupId.startsWith('table-group-') && el.visible !== false
   );
 
   // Group elements by groupId

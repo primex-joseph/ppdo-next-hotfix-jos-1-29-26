@@ -17,6 +17,7 @@ import {
   KEYBOARD_RESIZE_STEP,
   KEYBOARD_RESIZE_STEP_LARGE,
   KEYBOARD_RESIZE_STEP_SMALL,
+  getMaxTableWidth,
 } from '../table-resize/constants';
 import {
   ResizingColumnState,
@@ -29,12 +30,15 @@ import {
 /**
  * Hook for managing table column and row resizing in canvas
  * Provides Google Docs-like resize behavior for canvas-based tables
+ * Enforces page boundary constraints to prevent table from exceeding page size
  */
 export function useTableCanvasResize({
   elements,
   onUpdateElement,
   setIsDirty,
   isEditorMode,
+  pageSize = 'A4',
+  pageOrientation = 'portrait',
 }: UseTableCanvasResizeOptions): UseTableCanvasResizeReturn {
   // State for tracking resize operations
   const [resizingColumn, setResizingColumn] = useState<ResizingColumnState | null>(null);
@@ -105,8 +109,15 @@ export function useTableCanvasResize({
     [tableGroups]
   );
 
+  // Calculate max table width based on page size and orientation
+  const maxTableWidth = useMemo(
+    () => getMaxTableWidth(pageSize, pageOrientation),
+    [pageSize, pageOrientation]
+  );
+
   /**
    * Handles column resize during mouse move
+   * Enforces page boundary constraints
    */
   const handleColumnMouseMove = useCallback(
     (e: MouseEvent) => {
@@ -117,10 +128,27 @@ export function useTableCanvasResize({
 
       const column = group.columns[resizingColumn.columnIndex];
       const delta = e.clientX - resizingColumn.startX;
-      const newWidth = Math.max(
+
+      // Calculate current table width (sum of all column widths)
+      const currentTableWidth = group.columns.reduce((sum, col) => sum + col.width, 0);
+
+      // Calculate proposed new width
+      let newWidth = Math.max(
         MIN_COLUMN_WIDTH,
         Math.min(MAX_COLUMN_WIDTH, resizingColumn.startWidth + delta)
       );
+
+      // Enforce page boundary: don't let total table width exceed max
+      const proposedDelta = newWidth - resizingColumn.startWidth;
+      const proposedTableWidth = currentTableWidth + proposedDelta;
+
+      if (proposedTableWidth > maxTableWidth) {
+        // Limit the resize to stay within page bounds
+        const allowedDelta = maxTableWidth - currentTableWidth;
+        newWidth = resizingColumn.startWidth + allowedDelta;
+        newWidth = Math.max(MIN_COLUMN_WIDTH, newWidth);
+      }
+
       const actualDelta = newWidth - resizingColumn.startWidth;
 
       // Update current delta, width, and tooltip position for visual feedback
@@ -151,7 +179,7 @@ export function useTableCanvasResize({
         }
       }
     },
-    [resizingColumn, tableGroups, onUpdateElement]
+    [resizingColumn, tableGroups, onUpdateElement, maxTableWidth]
   );
 
   /**

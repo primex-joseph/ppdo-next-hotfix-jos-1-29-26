@@ -70,6 +70,10 @@ export interface TableResizeOverlayProps {
   ) => void;
   setIsDirty: (dirty: boolean) => void;
   isEditorMode: boolean;
+  /** Page size for calculating resize constraints */
+  pageSize?: 'A4' | 'Short' | 'Long';
+  /** Page orientation for calculating resize constraints */
+  pageOrientation?: 'portrait' | 'landscape';
 }
 
 /**
@@ -97,4 +101,8 @@ export interface UseTableCanvasResizeOptions {
   ) => void;
   setIsDirty: (dirty: boolean) => void;
   isEditorMode: boolean;
+  /** Page size for calculating resize constraints */
+  pageSize?: 'A4' | 'Short' | 'Long';
+  /** Page orientation for calculating resize constraints */
+  pageOrientation?: 'portrait' | 'landscape';
 }

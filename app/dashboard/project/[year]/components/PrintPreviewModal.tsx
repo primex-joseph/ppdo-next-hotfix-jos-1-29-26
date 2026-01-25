@@ -2,11 +2,12 @@
 
 'use client';
 
-import { useCallback, useState, useEffect, useRef } from 'react';
+import { useCallback, useState, useEffect, useRef, useMemo } from 'react';
 import { PrintPreviewToolbar } from './PrintPreviewToolbar';
 import { ConfirmationModal } from './ConfirmationModal';
 import { TemplateSelector } from './TemplateSelector';
 import { TemplateApplicationModal } from './TemplateApplicationModal';
+import { ColumnVisibilityPanel } from './ColumnVisibilityPanel';
 import { PrintDraft, ColumnDefinition, BudgetTotals, RowMarker } from '@/lib/print-canvas/types';
 import { BudgetItem } from '@/app/dashboard/project/[year]/types';
 import { CanvasTemplate } from '@/app/(extra)/canvas/_components/editor/types/template';
@@ -87,8 +88,270 @@ export function PrintPreviewModal({
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showLiveTemplateSelector, setShowLiveTemplateSelector] = useState(false);
 
+  // --- Column Visibility State ---
+  const [hiddenCanvasColumns, setHiddenCanvasColumns] = useState<Set<string>>(new Set());
+  // Version counter to force React re-renders when Set changes (React doesn't detect Set mutations)
+  const [hiddenColumnsVersion, setHiddenColumnsVersion] = useState(0);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('printPreview.panelCollapsed') === 'true';
+    }
+    return false;
+  });
+
   // Track initialization to prevent re-triggering
   const initializationStartedRef = useRef(false);
+
+  // Persist panel state
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('printPreview.panelCollapsed', isPanelCollapsed.toString());
+    }
+  }, [isPanelCollapsed]);
+
+  // Prepare table data for ColumnVisibilityPanel
+  const tables = useMemo(() => [{
+    tableId: 'main-table',
+    tableName: 'Budget Table',
+    columns: columns.map(col => ({
+      key: col.key,
+      label: col.label,
+      required: col.key === 'particular'
+    }))
+  }], [columns]);
+
+  // Filter and redistribute canvas elements based on hidden columns
+  const visibleElements = useMemo(() => {
+    if (hiddenCanvasColumns.size === 0) {
+      return state.currentPage.elements;
+    }
+
+    // Group elements by row (same Y position) to identify table structure
+    const tableElements = state.currentPage.elements.filter(
+      el => el.groupId && el.groupName?.toLowerCase().includes('table')
+    );
+
+    if (tableElements.length === 0) {
+      return state.currentPage.elements;
+    }
+
+    // Helper function to extract column key from any table element ID
+    const extractColumnKey = (id: string): string | null => {
+      // Match patterns: cell-xxx-COLUMNKEY-xxx, header-COLUMNKEY-xxx, total-COLUMNKEY-xxx
+      const patterns = [
+        /cell-\w+-(\w+)-/,           // Data cells: cell-123-particular-456
+        /header-(\w+)-/,              // Headers: header-particular-123
+        /total-(\w+)-/,               // Totals: total-particular-123
+        /cell-\w+-(\w+)$/,            // Alternative: cell-123-particular
+        /header-(\w+)$/,              // Alternative: header-particular
+        /total-(\w+)$/,               // Alternative: total-particular
+      ];
+
+      for (const pattern of patterns) {
+        const match = id.match(pattern);
+        if (match) return match[1];
+      }
+
+      return null;
+    };
+
+    // Get unique columns from element IDs
+    const columnInfo = new Map<string, { key: string; originalX: number; originalWidth: number }>();
+    tableElements.forEach(el => {
+      const columnKey = extractColumnKey(el.id);
+      if (columnKey && !columnInfo.has(columnKey)) {
+        columnInfo.set(columnKey, {
+          key: columnKey,
+          originalX: el.x,
+          originalWidth: el.width
+        });
+      }
+    });
+
+    // Determine visible columns
+    const allColumns = Array.from(columnInfo.entries()).sort((a, b) => a[1].originalX - b[1].originalX);
+    const visibleColumns = allColumns.filter(([key]) => !hiddenCanvasColumns.has(`main-table.${key}`));
+    const hiddenColumnsSet = new Set(allColumns.filter(([key]) => hiddenCanvasColumns.has(`main-table.${key}`)).map(([key]) => key));
+
+    if (visibleColumns.length === 0) {
+      return state.currentPage.elements;
+    }
+
+    // Calculate total available width (full canvas width minus margins)
+    const pageSize = state.currentPage.size || 'A4';
+    const orientation = state.currentPage.orientation || 'portrait';
+    const MARGIN = 20; // Same as tableToCanvas.ts
+    
+    // Page dimensions
+    const PAGE_SIZES = {
+      A4: { width: 595, height: 842 },
+      Short: { width: 612, height: 792 },
+      Long: { width: 612, height: 936 },
+    };
+    
+    const baseSize = PAGE_SIZES[pageSize as keyof typeof PAGE_SIZES] || PAGE_SIZES.A4;
+    const size = orientation === 'landscape'
+      ? { width: baseSize.height, height: baseSize.width }
+      : baseSize;
+    
+    const totalAvailableWidth = size.width - (MARGIN * 2);
+    const firstColumnX = allColumns[0][1].originalX;
+
+    // Create new width and position map for visible columns
+    // Distribute full available width among visible columns proportionally
+    const totalVisibleOriginalWidth = visibleColumns.reduce((sum, [, info]) => sum + info.originalWidth, 0);
+    const newColumnLayout = new Map<string, { x: number; width: number }>();
+    let currentX = firstColumnX;
+
+    visibleColumns.forEach(([key, info]) => {
+      // Proportional width based on original weight
+      const widthRatio = info.originalWidth / totalVisibleOriginalWidth;
+      const newWidth = totalAvailableWidth * widthRatio;
+      
+      newColumnLayout.set(key, {
+        x: currentX,
+        width: newWidth
+      });
+      currentX += newWidth;
+    });
+
+    // Apply transformations to elements
+    return state.currentPage.elements.map(el => {
+      // Non-table elements pass through unchanged
+      if (!el.groupId || !el.groupName?.toLowerCase().includes('table')) {
+        return el;
+      }
+
+      // Extract column key from element ID
+      const columnKey = extractColumnKey(el.id);
+      if (!columnKey) return el;
+
+      // Hide if column is hidden
+      if (hiddenColumnsSet.has(columnKey)) {
+        return { ...el, visible: false };
+      }
+
+      // Reposition and resize visible columns
+      const newLayout = newColumnLayout.get(columnKey);
+      if (newLayout) {
+        return {
+          ...el,
+          x: newLayout.x,
+          width: newLayout.width,
+          visible: true
+        };
+      }
+
+      return el;
+    });
+  }, [state.currentPage.elements, hiddenCanvasColumns, state.currentPage.size, state.currentPage.orientation]);
+
+  // Calculate column widths and table dimensions from visible elements
+  const { columnWidths, tableDimensions } = useMemo(() => {
+    const tableElements = visibleElements.filter(
+      el => el.groupId && el.groupName?.toLowerCase().includes('table') && el.visible !== false
+    );
+
+    if (tableElements.length === 0) {
+      return { columnWidths: new Map<string, number>(), tableDimensions: undefined };
+    }
+
+    // Extract column key from element ID
+    const extractColumnKey = (id: string): string | null => {
+      const patterns = [
+        /cell-\w+-(\w+)-/,
+        /header-(\w+)-/,
+        /total-(\w+)-/,
+        /cell-\w+-(\w+)$/,
+        /header-(\w+)$/,
+        /total-(\w+)$/,
+      ];
+      for (const pattern of patterns) {
+        const match = id.match(pattern);
+        if (match) return match[1];
+      }
+      return null;
+    };
+
+    // Build column widths map
+    const widthsMap = new Map<string, number>();
+    tableElements.forEach(el => {
+      const colKey = extractColumnKey(el.id);
+      if (colKey && !widthsMap.has(colKey)) {
+        widthsMap.set(colKey, el.width);
+      }
+    });
+
+    // Calculate table bounds
+    const minX = Math.min(...tableElements.map(el => el.x));
+    const minY = Math.min(...tableElements.map(el => el.y));
+    const maxX = Math.max(...tableElements.map(el => el.x + el.width));
+    const maxY = Math.max(...tableElements.map(el => el.y + el.height));
+
+    return {
+      columnWidths: widthsMap,
+      tableDimensions: {
+        width: maxX - minX,
+        height: maxY - minY
+      }
+    };
+  }, [visibleElements]);
+
+  // Column visibility handlers
+  const handleToggleCanvasColumn = useCallback((tableId: string, columnKey: string) => {
+    setHiddenCanvasColumns(prev => {
+      const next = new Set(prev);
+      const fullKey = `${tableId}.${columnKey}`;
+
+      if (next.has(fullKey)) {
+        next.delete(fullKey);
+      } else {
+        next.add(fullKey);
+      }
+
+      return next;
+    });
+    setHiddenColumnsVersion(v => v + 1); // Force re-render for counter update
+    state.setIsDirty(true);
+  }, [state]);
+
+  const handleShowAllColumns = useCallback((tableId: string) => {
+    setHiddenCanvasColumns(prev => {
+      const next = new Set(prev);
+      const table = tables.find(t => t.tableId === tableId);
+
+      if (table) {
+        table.columns.forEach(col => {
+          if (!col.required) {
+            next.delete(`${tableId}.${col.key}`);
+          }
+        });
+      }
+
+      return next;
+    });
+    setHiddenColumnsVersion(v => v + 1); // Force re-render for counter update
+    state.setIsDirty(true);
+  }, [tables, state]);
+
+  const handleHideAllColumns = useCallback((tableId: string) => {
+    setHiddenCanvasColumns(prev => {
+      const next = new Set(prev);
+      const table = tables.find(t => t.tableId === tableId);
+
+      if (table) {
+        table.columns.forEach(col => {
+          if (!col.required) {
+            next.add(`${tableId}.${col.key}`);
+          }
+        });
+      }
+
+      return next;
+    });
+    setHiddenColumnsVersion(v => v + 1); // Force re-render for counter update
+    state.setIsDirty(true);
+  }, [tables, state]);
 
   // Initialize from table data with template and orientation
   const initializeFromTableData = useCallback(
@@ -248,6 +511,8 @@ export function PrintPreviewModal({
       setShowLiveTemplateSelector(false);
       setShowSetupModal(false);
       initializationStartedRef.current = false;
+      setHiddenCanvasColumns(new Set());
+      setHiddenColumnsVersion(0);
       return;
     }
 
@@ -292,7 +557,8 @@ export function PrintPreviewModal({
     state.setDocumentTitle(defaultTitle);
     setShowSetupModal(true);
     // Don't set hasInitialized yet - wait for wizard completion
-  }, [isOpen, existingDraft, particular, year, state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, existingDraft, particular, year]);
 
   const actions = usePrintPreviewActions({
     currentPageIndex: state.currentPageIndex,
@@ -387,6 +653,20 @@ export function PrintPreviewModal({
             </div>
           )}
 
+          {/* Column Visibility Panel */}
+          <ColumnVisibilityPanel
+            tables={tables}
+            hiddenColumns={hiddenCanvasColumns}
+            hiddenColumnsVersion={hiddenColumnsVersion}
+            columnWidths={columnWidths}
+            tableDimensions={tableDimensions}
+            onToggleColumn={handleToggleCanvasColumn}
+            onShowAll={handleShowAllColumns}
+            onHideAll={handleHideAllColumns}
+            isCollapsed={isPanelCollapsed}
+            onToggleCollapse={() => setIsPanelCollapsed(!isPanelCollapsed)}
+          />
+
           <div className="flex-1 flex flex-col overflow-hidden bg-stone-50 min-w-0">
             <div className="sticky top-0 z-10 bg-stone-100 border-b border-stone-300 shadow-sm">
               <Toolbar
@@ -413,7 +693,7 @@ export function PrintPreviewModal({
             </div>
 
             <div ref={canvasScrollRef} className="flex-1 overflow-y-auto overflow-x-auto flex items-start justify-center pt-4 pb-16 px-8" onScroll={(e) => { const target = e.target as HTMLDivElement; setScrollLeft(target.scrollLeft); setScrollTop(target.scrollTop); }}>
-              <Canvas page={state.currentPage} selectedElementId={isEditorMode ? state.selectedElementId : null} onSelectElement={isEditorMode ? state.setSelectedElementId : () => {}} onUpdateElement={isEditorMode ? actions.updateElement : () => {}} onDeleteElement={isEditorMode ? actions.deleteElement : () => {}} isEditingElementId={isEditorMode ? state.isEditingElementId : null} onEditingChange={isEditorMode ? state.setIsEditingElementId : () => {}} header={state.header} footer={state.footer} pageNumber={state.currentPageIndex + 1} totalPages={state.pages.length} activeSection={state.activeSection} onActiveSectionChange={isEditorMode ? state.setActiveSection : () => {}} selectedGroupId={state.selectedGroupId} isEditorMode={isEditorMode} onSetDirty={state.setIsDirty} />
+              <Canvas page={{ ...state.currentPage, elements: visibleElements }} selectedElementId={isEditorMode ? state.selectedElementId : null} onSelectElement={isEditorMode ? state.setSelectedElementId : () => {}} onUpdateElement={isEditorMode ? actions.updateElement : () => {}} onDeleteElement={isEditorMode ? actions.deleteElement : () => {}} isEditingElementId={isEditorMode ? state.isEditingElementId : null} onEditingChange={isEditorMode ? state.setIsEditingElementId : () => {}} header={state.header} footer={state.footer} pageNumber={state.currentPageIndex + 1} totalPages={state.pages.length} activeSection={state.activeSection} onActiveSectionChange={isEditorMode ? state.setActiveSection : () => {}} selectedGroupId={state.selectedGroupId} isEditorMode={isEditorMode} onSetDirty={state.setIsDirty} />
             </div>
 
             <div className="border-t border-stone-200 bg-white flex-shrink-0">
