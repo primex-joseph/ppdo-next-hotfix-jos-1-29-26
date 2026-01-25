@@ -29,6 +29,7 @@ import { budgetParticularSharedAccessTables } from "./schema/budgetParticularSha
 import { fiscalYearTables } from "./schema/fiscalYears";
 import { trustFundTables } from "./schema/trustFunds";
 import { trustFundActivityTables } from "./schema/trustFundActivities";
+import { trustFundSharedAccessTables } from "./schema/trustFundSharedAccess";
 
 export default defineSchema({
   ...authTables,
@@ -59,4 +60,5 @@ export default defineSchema({
   ...fiscalYearTables,
   ...trustFundTables,
   ...trustFundActivityTables,
+  ...trustFundSharedAccessTables,
 });
