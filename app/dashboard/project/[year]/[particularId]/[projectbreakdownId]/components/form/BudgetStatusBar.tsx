@@ -1,9 +1,9 @@
-// app/dashboard/project/[year]/[particularId]/[projectbreakdownId]/components/form-sections/BudgetStatusBar.tsx
+// app/dashboard/project/[year]/[particularId]/[projectbreakdownId]/components/form/BudgetStatusBar.tsx
 
 "use client";
 
-import { BudgetAllocationStatus } from "../../types/form.types";
-import { formatCurrency, calculatePercentageUsed } from "../../utils/form.utils";
+import { BudgetAllocationStatus } from "./utils/budgetCalculations";
+import { formatCurrency, calculatePercentageUsed } from "./utils/formHelpers";
 
 interface BudgetStatusBarProps {
   budgetAllocationStatus: BudgetAllocationStatus;

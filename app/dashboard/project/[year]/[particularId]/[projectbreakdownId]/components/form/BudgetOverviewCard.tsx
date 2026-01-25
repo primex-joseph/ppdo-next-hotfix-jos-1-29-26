@@ -1,10 +1,10 @@
-// app/dashboard/project/[year]/[particularId]/[projectbreakdownId]/components/form-sections/BudgetOverviewCard.tsx
+// app/dashboard/project/[year]/[particularId]/[projectbreakdownId]/components/form/BudgetOverviewCard.tsx
 
 "use client";
 
 import { Package, TrendingUp, Info } from "lucide-react";
-import { BudgetAllocationStatus } from "../../types/form.types";
-import { formatCurrency } from "../../utils/form.utils";
+import { BudgetAllocationStatus } from "./utils/budgetCalculations";
+import { formatCurrency } from "./utils/formHelpers";
 
 interface BudgetOverviewCardProps {
   budgetAllocationStatus: BudgetAllocationStatus;

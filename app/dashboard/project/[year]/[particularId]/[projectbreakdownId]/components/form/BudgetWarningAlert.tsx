@@ -1,10 +1,10 @@
-// app/dashboard/project/[year]/[particularId]/[projectbreakdownId]/components/form-sections/BudgetWarningAlert.tsx
+// app/dashboard/project/[year]/[particularId]/[projectbreakdownId]/components/form/BudgetWarningAlert.tsx
 
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { BudgetWarning } from "../../types/form.types";
-import { formatCurrency } from "../../utils/form.utils";
+import { BudgetWarning } from "./utils/budgetCalculations";
+import { formatCurrency } from "./utils/formHelpers";
 
 interface BudgetWarningAlertProps {
   warning: BudgetWarning;
