@@ -2,6 +2,47 @@
   "version": 1,
   "events": [
     {
+      "id": "evt-1769301875062-e20398e1",
+      "trigger": "feature_error",
+      "timestamp": "2026-01-25T00:44:35.062Z",
+      "featureName": "Fix resizable modal orientation selector blocking",
+      "featureId": "feature-1769301804138-3x0x4qwca"
+    },
+    {
+      "id": "evt-1769301804411-f4ad3f23",
+      "trigger": "feature_created",
+      "timestamp": "2026-01-25T00:43:24.411Z",
+      "featureId": "feature-1769301804138-3x0x4qwca"
+    },
+    {
+      "id": "evt-1769301573605-e7820282",
+      "trigger": "feature_success",
+      "timestamp": "2026-01-25T00:39:33.605Z",
+      "featureName": "Add page orientation selection to template modal",
+      "featureId": "feature-1769283733574-hq0n7u1ml"
+    },
+    {
+      "id": "evt-1769301091941-412b8fed",
+      "trigger": "feature_success",
+      "timestamp": "2026-01-25T00:31:31.942Z",
+      "featureName": "Add page orientation selection to template modal",
+      "featureId": "feature-1769283733574-hq0n7u1ml"
+    },
+    {
+      "id": "evt-1769300171626-de5541b5",
+      "trigger": "feature_success",
+      "timestamp": "2026-01-25T00:16:11.626Z",
+      "featureName": "Add page orientation selection to template modal",
+      "featureId": "feature-1769283733574-hq0n7u1ml"
+    },
+    {
+      "id": "evt-1769299309650-ad2d31cf",
+      "trigger": "feature_success",
+      "timestamp": "2026-01-25T00:01:49.650Z",
+      "featureName": "Add page orientation selection to template modal",
+      "featureId": "feature-1769283733574-hq0n7u1ml"
+    },
+    {
       "id": "evt-1769298541390-10f88b0d",
       "trigger": "feature_success",
       "timestamp": "2026-01-24T23:49:01.390Z",

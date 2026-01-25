@@ -1,4 +1,7 @@
-// app/dashboard/project/[year]/components/PrintPreviewModal.tsx (ROBUST FIX)
+// ========================================================================================
+// UPDATED PRINT PREVIEW MODAL - SIMPLIFIED APPROACH
+// ========================================================================================
+// app/dashboard/project/[year]/components/PrintPreviewModal.tsx
 
 'use client';
 
@@ -6,6 +9,7 @@ import { useCallback, useState, useEffect, useRef } from 'react';
 import { PrintPreviewToolbar } from './PrintPreviewToolbar';
 import { ConfirmationModal } from './ConfirmationModal';
 import { TemplateSelector } from './TemplateSelector';
+import { PageOrientationModal } from './PageOrientationModal';
 import { TemplateApplicationModal } from './TemplateApplicationModal';
 import { PrintDraft, ColumnDefinition, BudgetTotals, RowMarker } from '@/lib/print-canvas/types';
 import { BudgetItem } from '@/app/dashboard/project/[year]/types';
@@ -18,7 +22,7 @@ import PagePanel from '@/app/(extra)/canvas/_components/editor/page-panel';
 import BottomPageControls from '@/app/(extra)/canvas/_components/editor/bottom-page-controls';
 import { HorizontalRuler, VerticalRuler } from '@/app/(extra)/canvas/_components/editor/ruler';
 import { useRulerState } from '@/app/(extra)/canvas/_components/editor/hooks/useRulerState';
-import { getPageDimensions, RULER_WIDTH, RULER_HEIGHT, HEADER_HEIGHT, FOOTER_HEIGHT } from '@/app/(extra)/canvas/_components/editor/constants';
+import { getPageDimensions, RULER_WIDTH, RULER_HEIGHT } from '@/app/(extra)/canvas/_components/editor/constants';
 
 // Custom hooks
 import { usePrintPreviewState } from './hooks/usePrintPreviewState';
@@ -82,36 +86,39 @@ export function PrintPreviewModal({
   const [scrollTop, setScrollTop] = useState(0);
   const canvasScrollRef = useRef<HTMLDivElement>(null);
 
-  // Viewer/Editor mode state (default to viewer mode)
+  // Viewer/Editor mode state
   const [isEditorMode, setIsEditorMode] = useState(false);
 
-  // Loading state for template application
+  // Loading state
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false);
-  const [templateToApply, setTemplateToApply] = useState<CanvasTemplate | null | undefined>(null);
 
-  // Template application confirmation state
+  // Template application confirmation
   const [showTemplateApplicationModal, setShowTemplateApplicationModal] = useState(false);
   const [savedTemplate, setSavedTemplate] = useState<CanvasTemplate | null>(null);
 
-  // Live template application state (for "Apply Template" button)
+  // Live template application (from toolbar button)
   const [showLiveTemplateSelector, setShowLiveTemplateSelector] = useState(false);
 
-  // Initialize from table data with optional template
+  // ⭐ SIMPLIFIED: Just two boolean states - no complex state machine
+  const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+  const [showOrientationModal, setShowOrientationModal] = useState(false);
+  const [pendingTemplate, setPendingTemplate] = useState<CanvasTemplate | null | undefined>(undefined);
+
+  // Initialize from table data with template and orientation
   const initializeFromTableData = useCallback(
-    (template?: CanvasTemplate) => {
+    (template?: CanvasTemplate, orientation: 'portrait' | 'landscape' = 'portrait') => {
       console.group('🎨 INITIALIZING PRINT PREVIEW');
-      console.log('Template:', template);
-      console.log('Template Page Background:', template?.page?.backgroundColor);
+      console.log('Template:', template?.name || 'none');
+      console.log('Orientation:', orientation);
 
       try {
-        // Convert table to canvas pages using template's page settings
         const result = convertTableToCanvas({
           items: budgetItems,
           totals,
           columns,
           hiddenColumns,
           pageSize: template?.page.size || 'A4',
-          orientation: template?.page.orientation || 'portrait',
+          orientation: orientation,
           includeHeaders: true,
           includeTotals: true,
           title: `Budget Tracking ${year}`,
@@ -119,18 +126,11 @@ export function PrintPreviewModal({
           rowMarkers,
         });
 
-        console.log('📄 Generated pages:', result.pages.length);
-        console.log('📄 First page background BEFORE template:', result.pages[0]?.backgroundColor);
-
-        // Apply template if selected
         let finalPages = result.pages;
         let finalHeader = result.header;
         let finalFooter = result.footer;
 
         if (template) {
-          console.log('🎨 Merging template with generated canvas...');
-
-          // Use smart merge logic to combine template with generated content
           const merged = mergeTemplateWithCanvas(
             result.pages,
             result.header,
@@ -142,27 +142,12 @@ export function PrintPreviewModal({
           finalHeader = merged.header;
           finalFooter = merged.footer;
 
-          console.log('✅ Template merged');
-          console.log('📄 First page background AFTER merge:', finalPages[0]?.backgroundColor);
-          console.log('📄 Header background:', finalHeader.backgroundColor);
-          console.log('📄 Footer background:', finalFooter.backgroundColor);
-          console.log('📄 Header elements:', finalHeader.elements.length);
-          console.log('📄 Footer elements:', finalFooter.elements.length);
-
           state.setAppliedTemplate(template);
-
-          toast.success(
-            `Applied template "${template.name}" to ${finalPages.length} page(s)`
-          );
+          toast.success(`Applied template "${template.name}" to ${finalPages.length} page(s)`);
         } else {
-          console.log('📄 No template - using default styling');
-          toast.success(
-            `Generated ${result.metadata.totalPages} page(s) from ${result.metadata.totalRows} row(s)`
-          );
+          toast.success(`Generated ${result.metadata.totalPages} page(s) in ${orientation} orientation`);
         }
 
-        // Set final state
-        console.log('💾 Setting final state...');
         state.setPages(finalPages);
         state.setHeader(finalHeader);
         state.setFooter(finalFooter);
@@ -178,27 +163,57 @@ export function PrintPreviewModal({
         toast.error('Failed to convert table to canvas');
       }
     },
-    [
-      budgetItems,
-      totals,
-      columns,
-      hiddenColumns,
-      year,
-      particular,
-      rowMarkers,
-      state,
-    ]
+    [budgetItems, totals, columns, hiddenColumns, year, particular, rowMarkers, state]
   );
 
-  // Handle template selection
+  // ⭐ SIMPLIFIED: Handle template selection
   const handleTemplateSelect = useCallback(
     (template: CanvasTemplate | null) => {
-      console.log('✅ Template selected:', template?.name || 'none');
-      setTemplateToApply(template);
-      // CRITICAL: Close the selector immediately after selection
-      state.setShowTemplateSelector(false);
+      console.log('✅ Template selected:', template?.name || 'blank');
+      
+      // Store the template
+      setPendingTemplate(template);
+      
+      // Close template selector first
+      setShowTemplateSelector(false);
+      
+      // Open orientation modal after template selector closes
+      // Use a longer delay to ensure clean transition
+      setTimeout(() => {
+        console.log('🔄 Opening orientation modal');
+        setShowOrientationModal(true);
+      }, 350);
     },
-    [state]
+    []
+  );
+
+  // ⭐ SIMPLIFIED: Handle orientation selection
+  const handleOrientationSelect = useCallback(
+    (orientation: 'portrait' | 'landscape') => {
+      console.log('✅ Orientation selected:', orientation);
+      
+      // Close orientation modal
+      setShowOrientationModal(false);
+      
+      // Initialize with both template and orientation
+      if (pendingTemplate) {
+        const templateWithOrientation = {
+          ...pendingTemplate,
+          page: {
+            ...pendingTemplate.page,
+            orientation: orientation,
+          },
+        };
+        initializeFromTableData(templateWithOrientation, orientation);
+      } else {
+        initializeFromTableData(undefined, orientation);
+      }
+      
+      // Mark as initialized and cleanup
+      state.setHasInitialized(true);
+      setPendingTemplate(undefined);
+    },
+    [pendingTemplate, initializeFromTableData, state]
   );
 
   // Handle applying saved template to fresh data
@@ -208,12 +223,9 @@ export function PrintPreviewModal({
     console.log('🎯 Applying saved template to fresh data:', savedTemplate.name);
     setIsLoadingTemplate(true);
 
-    // Small delay for smooth UI transition
     setTimeout(() => {
-      // Regenerate canvas with fresh data + saved template
-      initializeFromTableData(savedTemplate);
+      initializeFromTableData(savedTemplate, savedTemplate.page.orientation);
 
-      // Store timestamp from existing draft if available
       if (existingDraft) {
         state.setLastSavedTime(existingDraft.timestamp);
       }
@@ -223,7 +235,7 @@ export function PrintPreviewModal({
     }, 500);
   }, [savedTemplate, initializeFromTableData, existingDraft, state]);
 
-  // Handle skipping template application (load old canvas state)
+  // Handle skipping template application
   const handleSkipTemplate = useCallback(() => {
     if (!existingDraft) return;
 
@@ -234,7 +246,6 @@ export function PrintPreviewModal({
     state.setCurrentPageIndex(existingDraft.canvasState.currentPageIndex);
     state.setLastSavedTime(existingDraft.timestamp);
 
-    // Still restore the template reference for future saves
     if (existingDraft.appliedTemplate) {
       state.setAppliedTemplate(existingDraft.appliedTemplate);
     }
@@ -246,14 +257,10 @@ export function PrintPreviewModal({
   // Handle applying template to live canvas (from toolbar button)
   const handleApplyLiveTemplate = useCallback(
     (template: CanvasTemplate | null) => {
-      if (!template) {
-        console.log('❌ No template selected');
-        return;
-      }
+      if (!template) return;
 
       console.log('🎨 Applying template to live canvas:', template.name);
 
-      // Merge template with existing canvas content
       const merged = mergeTemplateWithCanvas(
         state.pages,
         state.header,
@@ -261,7 +268,6 @@ export function PrintPreviewModal({
         template
       );
 
-      // Update state with merged content
       state.setPages(merged.pages);
       state.setHeader(merged.header);
       state.setFooter(merged.footer);
@@ -274,7 +280,7 @@ export function PrintPreviewModal({
     [state]
   );
 
-  // Keyboard shortcut for ruler toggle (Ctrl+Shift+R)
+  // Keyboard shortcut for ruler toggle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'r') {
@@ -289,43 +295,39 @@ export function PrintPreviewModal({
     }
   }, [isOpen, toggleRulerVisibility]);
 
-  // Initialize when modal opens or template is selected
+  // Initialize when modal opens
   useEffect(() => {
     if (!isOpen) {
+      // Reset everything when modal closes
       state.setHasInitialized(false);
-      state.setDocumentTitle(''); // Reset document title
-      setTemplateToApply(null);
+      state.setDocumentTitle('');
+      setPendingTemplate(undefined);
       setSavedTemplate(null);
       setShowTemplateApplicationModal(false);
       setShowLiveTemplateSelector(false);
+      setShowTemplateSelector(false);
+      setShowOrientationModal(false);
       return;
     }
 
-    console.log('🔄 Initialization useEffect triggered');
-    console.log('  - isOpen:', isOpen);
-    console.log('  - hasInitialized:', state.hasInitialized);
-    console.log('  - existingDraft:', !!existingDraft);
+    console.log('📄 Modal opened - checking initialization');
 
     // Initialize from existing draft
     if (existingDraft && !state.hasInitialized) {
       console.log('📂 Loading from existing draft...');
 
-      // Load document title from draft (with fallback for legacy drafts)
       const draftTitle = existingDraft.documentTitle ||
         (particular ? `Budget ${year} - ${particular}` : `Budget ${year}`);
       state.setDocumentTitle(draftTitle);
 
-      // Check if draft has a saved template
       if (existingDraft.appliedTemplate) {
         console.log('🎨 Draft has saved template:', existingDraft.appliedTemplate.name);
-        // Show template application modal
         setSavedTemplate(existingDraft.appliedTemplate);
         setShowTemplateApplicationModal(true);
         state.setHasInitialized(true);
         return;
       }
 
-      // No template - just load the saved canvas state
       console.log('📄 Loading saved canvas state without template...');
       state.setPages(existingDraft.canvasState.pages);
       state.setHeader(existingDraft.canvasState.header);
@@ -337,32 +339,19 @@ export function PrintPreviewModal({
       return;
     }
 
-    // Initialize from table data (NEW FLOW: Load data first, then show template selector)
+    // Initialize from table data - show template selector first
     if (!existingDraft && !state.hasInitialized) {
-      console.log('📊 Loading table data...');
+      console.log('📊 New print preview - showing template selector');
 
-      // Generate default document title
       const defaultTitle = particular
         ? `Budget ${year} - ${particular}`
         : `Budget ${year}`;
       state.setDocumentTitle(defaultTitle);
 
-      // Load table data immediately without template
-      initializeFromTableData(undefined);
-
-      // After data loads, show template selector modal
-      setTimeout(() => {
-        console.log('📋 Showing template selector after data load...');
-        setShowLiveTemplateSelector(true);
-      }, 600);
+      // Show template selector
+      setShowTemplateSelector(true);
     }
-  }, [
-    isOpen,
-    existingDraft,
-    state.hasInitialized,
-    initializeFromTableData,
-    state,
-  ]);
+  }, [isOpen, existingDraft, state.hasInitialized, particular, year, state]);
 
   // Canvas actions
   const actions = usePrintPreviewActions({
@@ -403,7 +392,6 @@ export function PrintPreviewModal({
 
   const formattedLastSaved = state.lastSavedTime ? formatTimestamp(state.lastSavedTime) : '';
 
-  // Handle document title change
   const handleTitleChange = useCallback(
     (newTitle: string) => {
       state.setDocumentTitle(newTitle);
@@ -414,7 +402,7 @@ export function PrintPreviewModal({
 
   if (!isOpen) return null;
 
-  // Show loading screen while template is being applied
+  // Show loading screen
   if (isLoadingTemplate) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-white dark:bg-zinc-900">
@@ -432,10 +420,10 @@ export function PrintPreviewModal({
             </div>
           </div>
           <p className="text-lg font-semibold text-stone-900 dark:text-stone-100 mb-2">
-            {templateToApply ? 'Applying Template' : 'Generating Print Preview'}
+            Applying Template
           </p>
           <p className="text-sm text-stone-600 dark:text-stone-400">
-            {templateToApply ? `Applying "${templateToApply.name}"...` : 'Preparing your pages...'}
+            Preparing your pages...
           </p>
           <div className="flex items-center justify-center gap-2 mt-4">
             <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
@@ -450,7 +438,7 @@ export function PrintPreviewModal({
   return (
     <>
       <div className="fixed inset-0 z-50 bg-white dark:bg-zinc-900 flex flex-col">
-        {/* Custom Toolbar */}
+        {/* Toolbar */}
         <PrintPreviewToolbar
           documentTitle={state.documentTitle}
           onTitleChange={handleTitleChange}
@@ -465,23 +453,20 @@ export function PrintPreviewModal({
           onEditorModeChange={setIsEditorMode}
           rulerVisible={rulerState.visible}
           onToggleRuler={toggleRulerVisibility}
+          pageOrientation={state.currentPage.orientation}
+          pageSize={state.currentPage.size}
         />
 
-        {/* Horizontal Ruler - Fixed below toolbar (Google Docs style) */}
+        {/* Horizontal Ruler */}
         {rulerState.visible && (
           <div className="sticky top-0 z-30 bg-stone-200 border-b border-stone-300 flex">
-            {/* Vertical ruler corner space */}
             {rulerState.showVertical && (
               <div
                 className="flex-shrink-0 bg-stone-200 border-r border-stone-300"
                 style={{ width: RULER_WIDTH, height: RULER_HEIGHT }}
               />
             )}
-            {/* Horizontal ruler - centered with canvas */}
-            <div
-              className="flex-1 overflow-hidden flex justify-center"
-              style={{ height: RULER_HEIGHT }}
-            >
+            <div className="flex-1 overflow-hidden flex justify-center" style={{ height: RULER_HEIGHT }}>
               <div style={{ transform: `translateX(${-scrollLeft}px)` }}>
                 <HorizontalRuler
                   width={getPageDimensions(state.currentPage.size, state.currentPage.orientation).width}
@@ -495,25 +480,16 @@ export function PrintPreviewModal({
                 />
               </div>
             </div>
-            {/* Right sidebar placeholder space */}
             <div className="w-64 flex-shrink-0 bg-stone-200" style={{ height: RULER_HEIGHT }} />
           </div>
         )}
 
         {/* Main Layout */}
         <div className="flex flex-1 overflow-hidden">
-          {/* Vertical Ruler - Fixed on far left (Google Docs style) */}
+          {/* Vertical Ruler */}
           {rulerState.visible && rulerState.showVertical && (
-            <div
-              className="flex-shrink-0 bg-stone-100 border-r border-stone-300 overflow-hidden"
-              style={{ width: RULER_WIDTH }}
-            >
-              <div
-                style={{
-                  transform: `translateY(${-scrollTop}px)`,
-                  marginTop: 16, // Match pt-4 padding
-                }}
-              >
+            <div className="flex-shrink-0 bg-stone-100 border-r border-stone-300 overflow-hidden" style={{ width: RULER_WIDTH }}>
+              <div style={{ transform: `translateY(${-scrollTop}px)`, marginTop: 16 }}>
                 <VerticalRuler
                   height={getPageDimensions(state.currentPage.size, state.currentPage.orientation).height}
                   rulerState={rulerState}
@@ -527,7 +503,6 @@ export function PrintPreviewModal({
 
           {/* Canvas Area */}
           <div className="flex-1 flex flex-col overflow-hidden bg-stone-50 min-w-0">
-            {/* Canvas Toolbar - Always visible but content changes based on mode */}
             <div className="sticky top-0 z-10 bg-stone-100 border-b border-stone-300 shadow-sm">
               <Toolbar
                 selectedElement={state.selectedElement}
@@ -556,7 +531,6 @@ export function PrintPreviewModal({
               />
             </div>
 
-            {/* Canvas Scroll Area */}
             <div
               ref={canvasScrollRef}
               className="flex-1 overflow-y-auto overflow-x-auto flex items-start justify-center pt-4 pb-16 px-8"
@@ -586,7 +560,6 @@ export function PrintPreviewModal({
               />
             </div>
 
-            {/* Bottom Controls */}
             <div className="border-t border-stone-200 bg-white flex-shrink-0">
               <BottomPageControls
                 currentPageIndex={state.currentPageIndex}
@@ -599,14 +572,8 @@ export function PrintPreviewModal({
                 onSelectElement={state.setSelectedElementId}
                 onUpdateElement={actions.updateElement}
                 onReorderElements={actions.reorderElements}
-                onPreviousPage={() =>
-                  state.setCurrentPageIndex((prev) => Math.max(0, prev - 1))
-                }
-                onNextPage={() =>
-                  state.setCurrentPageIndex((prev) =>
-                    Math.min(state.pages.length - 1, prev + 1)
-                  )
-                }
+                onPreviousPage={() => state.setCurrentPageIndex((prev) => Math.max(0, prev - 1))}
+                onNextPage={() => state.setCurrentPageIndex((prev) => Math.min(state.pages.length - 1, prev + 1))}
                 isEditorMode={isEditorMode}
                 selectedGroupId={state.selectedGroupId}
                 onSelectGroup={state.setSelectedGroupId}
@@ -614,7 +581,7 @@ export function PrintPreviewModal({
             </div>
           </div>
 
-          {/* Right Sidebar - Always visible */}
+          {/* Right Sidebar */}
           <div className="w-64 border-l border-stone-200 bg-zinc-50 flex-shrink-0 overflow-y-auto">
             <PagePanel
               pages={state.pages}
@@ -629,21 +596,36 @@ export function PrintPreviewModal({
         </div>
       </div>
 
-      {/* Template Selector */}
-      <TemplateSelector
-        isOpen={state.showTemplateSelector}
-        onClose={() => {
-          // CRITICAL: Only call handleTemplateSelect if user hasn't already selected
-          // Check if we're closing without any template selection
-          if (!state.hasInitialized && templateToApply === null) {
-            // User closed without selecting - start blank
-            console.log('❌ User closed template selector without choosing - starting blank');
-            handleTemplateSelect(undefined as any);
-          }
-          state.setShowTemplateSelector(false);
-        }}
-        onSelectTemplate={handleTemplateSelect}
-      />
+      {/* Template Selector Modal */}
+      {showTemplateSelector && (
+        <TemplateSelector
+          isOpen={true}
+          onClose={() => {
+            console.log('⏩ Skip clicked - moving to orientation');
+            handleTemplateSelect(null);
+          }}
+          onCloseAll={onClose}
+          onSelectTemplate={handleTemplateSelect}
+        />
+      )}
+
+      {/* Orientation Modal */}
+      {showOrientationModal && (
+        <PageOrientationModal
+          isOpen={true}
+          onClose={() => {
+            console.log('⬅️ Back clicked - returning to template');
+            setShowOrientationModal(false);
+            if (!state.hasInitialized) {
+              setTimeout(() => {
+                setShowTemplateSelector(true);
+              }, 350);
+            }
+          }}
+          onSelectOrientation={handleOrientationSelect}
+          defaultOrientation="portrait"
+        />
+      )}
 
       {/* Close Confirmation */}
       <ConfirmationModal
