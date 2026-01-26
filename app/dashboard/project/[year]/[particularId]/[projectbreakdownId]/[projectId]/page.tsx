@@ -67,7 +67,30 @@ export default function BreakdownDetailPage() {
   const params = useParams();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState(tabs[0].id);
-  const [showSummary, setShowSummary] = useState(true);
+  // Default: start with summary hidden
+  const [showSummary, setShowSummary] = useState(false);
+
+  // View mode for Inspections: 'table' or 'list' (default table)
+  const [viewMode, setViewMode] = useState<"table" | "list">(() => {
+    try {
+      if (typeof window === "undefined") return "table";
+      const v = localStorage.getItem("inspectionViewMode");
+      return v === "list" ? "list" : "table";
+    } catch (e) {
+      return "table";
+    }
+  });
+
+  // Persist view mode
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("inspectionViewMode", viewMode);
+      }
+    } catch (e) {
+      // ignore storage errors
+    }
+  }, [viewMode]);
   const { setCustomBreadcrumbs } = useBreadcrumb();
 
   // Extract IDs from URL
@@ -137,7 +160,7 @@ export default function BreakdownDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Back Button and Tab Selector */}
+        {/* Back Button */}
         <div className="flex items-center justify-between gap-4">
           <button
             onClick={handleBack}
@@ -146,11 +169,6 @@ export default function BreakdownDetailPage() {
             <ChevronLeft className="w-5 h-5" />
             <span>Back to Breakdown List</span>
           </button>
-
-          {/* Tab Selector */}
-          <div className="flex-1 flex justify-end">
-            <FinancialBreakdownHeader activeTab={activeTab} onTabChange={setActiveTab} />
-          </div>
         </div>
 
         {/* Header */}
@@ -182,6 +200,12 @@ export default function BreakdownDetailPage() {
               )}
             </button>
           </div>
+
+          {/* Tabs: show beneath the Hide/Show Summary toggle */}
+          <div className="flex justify-end mt-3">
+            <FinancialBreakdownHeader activeTab={activeTab} onTabChange={setActiveTab} />
+          </div>
+
           <p className="text-gray-600 dark:text-gray-400">
             {breakdown.implementingOffice && (
               <span className="font-medium">{breakdown.implementingOffice} • </span>
@@ -206,7 +230,7 @@ export default function BreakdownDetailPage() {
           <div className={showSummary ? 'lg:col-span-3' : 'lg:col-span-1'}>
             <Card className="border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
               <div className="pt-0">
-                <FinancialBreakdownMain activeTab={activeTab} projectId={validProjectId} />
+                <FinancialBreakdownMain activeTab={activeTab} projectId={validProjectId} viewMode={viewMode} onViewModeChange={setViewMode} />
               </div>
             </Card>
           </div>

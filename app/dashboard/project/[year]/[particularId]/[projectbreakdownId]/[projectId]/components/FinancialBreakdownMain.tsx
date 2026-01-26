@@ -6,7 +6,6 @@ import { OverviewContent } from "./tabs/OverviewContent"
 import { AnalyticsContent } from "./tabs/AnalyticsContent"
 import { InspectionContent } from "./tabs/InspectionContent"
 import { RemarksContent } from "./tabs/RemarksContent"
-import { mockFinancialBreakdown } from "./mockData"
 
 interface FinancialBreakdownMainProps {
     activeTab: string
@@ -26,9 +25,16 @@ const ReportContent: React.FC = () => {
     )
 }
 
-export const FinancialBreakdownMain: React.FC<FinancialBreakdownMainProps> = ({
+interface FinancialBreakdownMainPropsExt extends FinancialBreakdownMainProps {
+    viewMode?: "table" | "list"
+    onViewModeChange?: (mode: "table" | "list") => void
+}
+
+export const FinancialBreakdownMain: React.FC<FinancialBreakdownMainPropsExt> = ({
     activeTab,
     projectId,
+    viewMode = "table",
+    onViewModeChange,
 }) => {
     switch (activeTab) {
         case "overview":
@@ -37,7 +43,7 @@ export const FinancialBreakdownMain: React.FC<FinancialBreakdownMainProps> = ({
             return <AnalyticsContent />
         case "inspection":
             return (
-                <InspectionContent data={mockFinancialBreakdown} projectId={projectId} />
+                <InspectionContent projectId={projectId} viewMode={viewMode} onViewModeChange={onViewModeChange} />
             )
         case "remarks":
             return <RemarksContent projectId={projectId} />
@@ -45,7 +51,7 @@ export const FinancialBreakdownMain: React.FC<FinancialBreakdownMainProps> = ({
             return <ReportContent />
         default:
             return (
-                <InspectionContent data={mockFinancialBreakdown} projectId={projectId} />
+                <InspectionContent projectId={projectId} viewMode={viewMode} onViewModeChange={onViewModeChange} />
             )
     }
 }

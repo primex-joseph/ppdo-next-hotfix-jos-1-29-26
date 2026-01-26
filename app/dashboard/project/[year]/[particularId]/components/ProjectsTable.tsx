@@ -337,21 +337,10 @@ export function ProjectsTable({
 
     const projectSlug = createProjectSlug(project.particulars, project.id);
 
-    // Decode particularId first to avoid double-encoding
-    const decodedParticularId = decodeURIComponent(particularId);
-    const targetUrl = `/dashboard/project/${year}/${encodeURIComponent(decodedParticularId)}/${projectSlug}`;
-
-    // Debug logging in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[Navigation Debug]', {
-        particularId,
-        decodedParticularId,
-        projectSlug,
-        targetUrl,
-        projectId: project.id,
-        projectName: project.particulars,
-      });
-    }
+    // The `particularId` is already decoded by the page-level route handler.
+    // Avoid calling `decodeURIComponent` here which can throw on malformed inputs.
+    const encodedParticularId = encodeURIComponent(particularId);
+    const targetUrl = `/dashboard/project/${year}/${encodedParticularId}/${projectSlug}`;
 
     router.push(targetUrl);
   };
