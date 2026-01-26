@@ -45,7 +45,9 @@ export interface ProjectsTableToolbarProps {
 
   // Export/Print
   onExportCSV: () => void;
-  onPrint: () => void;
+  onPrint?: () => void;
+  onOpenPrintPreview?: () => void;
+  hasPrintDraft?: boolean;
 
   // Trash
   onOpenTrash?: () => void;
@@ -83,6 +85,8 @@ export function ProjectsTableToolbar({
   onHideAllColumns,
   onExportCSV,
   onPrint,
+  onOpenPrintPreview,
+  hasPrintDraft,
   onOpenTrash,
   onBulkTrash,
   isAdmin,
@@ -126,6 +130,8 @@ export function ProjectsTableToolbar({
       onHideAllColumns={onHideAllColumns}
       onExportCSV={onExportCSV}
       onPrint={onPrint}
+      onOpenPrintPreview={onOpenPrintPreview}
+      hasPrintDraft={hasPrintDraft}
       isAdmin={isAdmin}
       pendingRequestsCount={pendingRequestsCount}
       onOpenShare={onOpenShare}

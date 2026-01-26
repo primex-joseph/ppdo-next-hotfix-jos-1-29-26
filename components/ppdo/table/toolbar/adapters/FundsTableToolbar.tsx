@@ -31,7 +31,9 @@ export interface FundsTableToolbarProps {
   onShowAllColumns: () => void;
   onHideAllColumns: () => void;
   onExportCSV: () => void;
-  onPrint: () => void;
+  onPrint?: () => void;
+  onOpenPrintPreview?: () => void;
+  hasPrintDraft?: boolean;
   isAdmin: boolean;
   onOpenTrash?: () => void;
   onBulkTrash: () => void;
@@ -53,6 +55,8 @@ export function FundsTableToolbar({
   onHideAllColumns,
   onExportCSV,
   onPrint,
+  onOpenPrintPreview,
+  hasPrintDraft,
   isAdmin,
   onOpenTrash,
   onBulkTrash,
@@ -77,6 +81,8 @@ export function FundsTableToolbar({
       onHideAllColumns={onHideAllColumns}
       onExportCSV={onExportCSV}
       onPrint={onPrint}
+      onOpenPrintPreview={onOpenPrintPreview}
+      hasPrintDraft={hasPrintDraft}
       isAdmin={isAdmin}
       onOpenTrash={onOpenTrash}
       onBulkTrash={onBulkTrash}
