@@ -6,7 +6,7 @@ import { TrendingUp, Package, FolderTree } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAccentColor } from "@/contexts/AccentColorContext";
-import { FiscalYearModal } from "../project/components/FiscalYearModal";
+import { FiscalYearModal } from "@/components/ppdo/fiscal-years";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { FiscalYearHeader } from "@/components/ppdo/fiscal-years/FiscalYearHeader";

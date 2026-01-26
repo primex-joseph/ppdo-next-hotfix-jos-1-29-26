@@ -8,7 +8,7 @@ import { api } from "@/convex/_generated/api";
 import AccessDeniedPage from "@/components/AccessDeniedPage";
 import { LoadingState, useBudgetAccess } from "@/app/dashboard/project/[year]/components";
 import { useAccentColor } from "@/contexts/AccentColorContext";
-import { FiscalYearModal } from "./components/FiscalYearModal";
+import { FiscalYearModal } from "@/components/ppdo/fiscal-years";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { FiscalYearHeader } from "@/components/ppdo/fiscal-years/FiscalYearHeader";
