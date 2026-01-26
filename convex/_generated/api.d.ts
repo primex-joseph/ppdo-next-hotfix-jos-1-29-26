@@ -48,6 +48,7 @@ import type * as lib_rbac from "../lib/rbac.js";
 import type * as lib_specialEducationFundActivityLogger from "../lib/specialEducationFundActivityLogger.js";
 import type * as lib_specialEducationFundBreakdownActivityLogger from "../lib/specialEducationFundBreakdownActivityLogger.js";
 import type * as lib_specialHealthFundActivityLogger from "../lib/specialHealthFundActivityLogger.js";
+import type * as lib_specialHealthFundBreakdownActivityLogger from "../lib/specialHealthFundBreakdownActivityLogger.js";
 import type * as lib_statusValidation from "../lib/statusValidation.js";
 import type * as lib_trustFundActivityLogger from "../lib/trustFundActivityLogger.js";
 import type * as lib_trustFundBreakdownActivityLogger from "../lib/trustFundBreakdownActivityLogger.js";
@@ -94,6 +95,8 @@ import type * as schema_specialEducationFundBreakdowns from "../schema/specialEd
 import type * as schema_specialEducationFundSharedAccess from "../schema/specialEducationFundSharedAccess.js";
 import type * as schema_specialEducationFunds from "../schema/specialEducationFunds.js";
 import type * as schema_specialHealthFundActivities from "../schema/specialHealthFundActivities.js";
+import type * as schema_specialHealthFundBreakdownActivities from "../schema/specialHealthFundBreakdownActivities.js";
+import type * as schema_specialHealthFundBreakdowns from "../schema/specialHealthFundBreakdowns.js";
 import type * as schema_specialHealthFunds from "../schema/specialHealthFunds.js";
 import type * as schema_tableSettings from "../schema/tableSettings.js";
 import type * as schema_trustFundActivities from "../schema/trustFundActivities.js";
@@ -107,6 +110,7 @@ import type * as specialEducationFundActivities from "../specialEducationFundAct
 import type * as specialEducationFundBreakdowns from "../specialEducationFundBreakdowns.js";
 import type * as specialEducationFundSharedAccess from "../specialEducationFundSharedAccess.js";
 import type * as specialEducationFunds from "../specialEducationFunds.js";
+import type * as specialHealthFundBreakdowns from "../specialHealthFundBreakdowns.js";
 import type * as specialHealthFunds from "../specialHealthFunds.js";
 import type * as tableSettings from "../tableSettings.js";
 import type * as trustFundAccess from "../trustFundAccess.js";
@@ -164,6 +168,7 @@ declare const fullApi: ApiFromModules<{
   "lib/specialEducationFundActivityLogger": typeof lib_specialEducationFundActivityLogger;
   "lib/specialEducationFundBreakdownActivityLogger": typeof lib_specialEducationFundBreakdownActivityLogger;
   "lib/specialHealthFundActivityLogger": typeof lib_specialHealthFundActivityLogger;
+  "lib/specialHealthFundBreakdownActivityLogger": typeof lib_specialHealthFundBreakdownActivityLogger;
   "lib/statusValidation": typeof lib_statusValidation;
   "lib/trustFundActivityLogger": typeof lib_trustFundActivityLogger;
   "lib/trustFundBreakdownActivityLogger": typeof lib_trustFundBreakdownActivityLogger;
@@ -210,6 +215,8 @@ declare const fullApi: ApiFromModules<{
   "schema/specialEducationFundSharedAccess": typeof schema_specialEducationFundSharedAccess;
   "schema/specialEducationFunds": typeof schema_specialEducationFunds;
   "schema/specialHealthFundActivities": typeof schema_specialHealthFundActivities;
+  "schema/specialHealthFundBreakdownActivities": typeof schema_specialHealthFundBreakdownActivities;
+  "schema/specialHealthFundBreakdowns": typeof schema_specialHealthFundBreakdowns;
   "schema/specialHealthFunds": typeof schema_specialHealthFunds;
   "schema/tableSettings": typeof schema_tableSettings;
   "schema/trustFundActivities": typeof schema_trustFundActivities;
@@ -223,6 +230,7 @@ declare const fullApi: ApiFromModules<{
   specialEducationFundBreakdowns: typeof specialEducationFundBreakdowns;
   specialEducationFundSharedAccess: typeof specialEducationFundSharedAccess;
   specialEducationFunds: typeof specialEducationFunds;
+  specialHealthFundBreakdowns: typeof specialHealthFundBreakdowns;
   specialHealthFunds: typeof specialHealthFunds;
   tableSettings: typeof tableSettings;
   trustFundAccess: typeof trustFundAccess;
