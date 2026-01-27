@@ -157,6 +157,22 @@ export function ProjectsTable({
     return groupProjectsByCategory(filteredAndSortedProjects, allCategories);
   }, [filteredAndSortedProjects, allCategories]);
 
+  // Prepare categories for the category filter UI (include counts)
+  const categoriesForFilter = useMemo(() => {
+    const total = filteredAndSortedProjects.length;
+    // groupedProjects contains only groups with projects (>0)
+    const groups = groupedProjects.map(([id, group]) => ({
+      _id: id,
+      fullName: group.category?.fullName || "Uncategorized",
+      count: group.projects.length,
+    }));
+
+    return [
+      { _id: "all", fullName: "All Categories", count: total },
+      ...groups,
+    ];
+  }, [groupedProjects, filteredAndSortedProjects]);
+
   // Calculate totals
   const totals = useMemo(() => {
     return calculateProjectTotals(filteredAndSortedProjects);
@@ -634,7 +650,7 @@ export function ProjectsTable({
 
         {/* 🆕 Category Filter - YouTube Style */}
         <ProjectCategoryFilter
-          categories={allCategories}
+          categories={categoriesForFilter}
           selectedCategoryIds={categoryFilter}
           onSelectionChange={handleCategoryFilterChange}
           accentColor={accentColorValue}
