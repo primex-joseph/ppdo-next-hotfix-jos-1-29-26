@@ -12,14 +12,14 @@ interface TabbedPieChartProps {
 }
 
 export function TabbedPieChart({ data, isLoading }: TabbedPieChartProps) {
-    const [activeTab, setActiveTab] = useState<keyof DashboardPieChartData>("sector");
+    const [activeTab, setActiveTab] = useState<keyof DashboardPieChartData>("budget");
 
     const tabs: { key: keyof DashboardPieChartData; label: string }[] = [
+        { key: "budget", label: "Budget" },
         { key: "sector", label: "Sector" },
         { key: "finance", label: "Finance" },
         { key: "status", label: "Status" },
         { key: "department", label: "Department" },
-        { key: "budget", label: "Budget" },
     ];
 
     if (isLoading) {
