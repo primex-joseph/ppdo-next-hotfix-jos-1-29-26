@@ -4,6 +4,7 @@ import React, { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Eye, Edit2, Trash2 } from "lucide-react"
 import { Inspection } from "../types/inspection"
+import { useContextMenuPosition } from "@/components/ui/hooks/useContextMenuPosition";
 
 interface InspectionContextMenuProps {
   x: number
@@ -38,13 +39,15 @@ export function InspectionContextMenu({
       document.removeEventListener("keydown", handleEscape)
     }
   }, [onClose])
+  const { ref, style } = useContextMenuPosition(x, y);
 
   return (
     <div
+      ref={ref}
       className="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-1"
       style={{
-        left: `${x}px`,
-        top: `${y}px`,
+        left: (style as any).left ? `${(style as any).left}px` : undefined,
+        top: (style as any).top ? `${(style as any).top}px` : undefined,
       }}
       onClick={(e) => e.stopPropagation()}
     >

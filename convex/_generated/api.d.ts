@@ -19,6 +19,7 @@ import type * as budgetParticulars from "../budgetParticulars.js";
 import type * as budgetSharedAccess from "../budgetSharedAccess.js";
 import type * as config from "../config.js";
 import type * as config_onboardingConfig from "../config/onboardingConfig.js";
+import type * as dashboard from "../dashboard.js";
 import type * as departments from "../departments.js";
 import type * as fiscalYears from "../fiscalYears.js";
 import type * as govtProjectActivities from "../govtProjectActivities.js";
@@ -141,6 +142,7 @@ declare const fullApi: ApiFromModules<{
   budgetSharedAccess: typeof budgetSharedAccess;
   config: typeof config;
   "config/onboardingConfig": typeof config_onboardingConfig;
+  dashboard: typeof dashboard;
   departments: typeof departments;
   fiscalYears: typeof fiscalYears;
   govtProjectActivities: typeof govtProjectActivities;

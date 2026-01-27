@@ -146,9 +146,13 @@ export default function ProjectBreakdownPage() {
         toast.error("No breakdown selected");
         return;
       }
+      // Remove client-only / audit fields not accepted by the server validator
+      // (e.g. `batchId` is present on records created by bulk imports)
+      const { batchId, ...validData } = breakdownData as any;
+
       await updateBreakdown({
         breakdownId: selectedBreakdown._id as Id<"govtProjectBreakdowns">,
-        ...breakdownData,
+        ...validData,
         projectId: projectId as Id<"projects">,
         reason: "Updated via dashboard edit form",
       } as any);

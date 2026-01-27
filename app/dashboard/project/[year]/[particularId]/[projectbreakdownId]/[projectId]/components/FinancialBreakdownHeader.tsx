@@ -3,9 +3,9 @@
 import type React from "react"
 
 export const tabs = [
+  { id: "inspection", label: "Inspections" },
   { id: "overview", label: "Overview" },
   { id: "analytics", label: "Analytics" },
-  { id: "inspection", label: "Inspections" },
   { id: "remarks", label: "Remarks" },
   { id: "report", label: "Report" },
 ]

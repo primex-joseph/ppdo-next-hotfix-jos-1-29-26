@@ -66,7 +66,7 @@ const getParticularFullName = (particular: string): string => {
 export default function BreakdownDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState(tabs[0].id);
+  const [activeTab, setActiveTab] = useState("inspection");
   // Default: start with summary hidden
   const [showSummary, setShowSummary] = useState(false);
 
@@ -159,9 +159,9 @@ export default function BreakdownDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
+      <div className="max-w-7xl mx-auto p-6 space-y-4">
         {/* Back Button */}
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center justify-between gap-4 -mb-2">
           <button
             onClick={handleBack}
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 transition-colors"
@@ -172,7 +172,7 @@ export default function BreakdownDetailPage() {
         </div>
 
         {/* Header */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div className="flex items-center justify-between gap-4">
             <h1
               className="text-4xl font-bold text-gray-900 dark:text-gray-100"
@@ -202,11 +202,11 @@ export default function BreakdownDetailPage() {
           </div>
 
           {/* Tabs: show beneath the Hide/Show Summary toggle */}
-          <div className="flex justify-end mt-3">
+          <div className="flex justify-end mt-2">
             <FinancialBreakdownHeader activeTab={activeTab} onTabChange={setActiveTab} />
           </div>
 
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-gray-600 dark:text-gray-400 text-sm">
             {breakdown.implementingOffice && (
               <span className="font-medium">{breakdown.implementingOffice} • </span>
             )}
@@ -215,7 +215,7 @@ export default function BreakdownDetailPage() {
         </div>
 
         {/* Layout Grid - Tabs Integration */}
-        <div className={`grid grid-cols-1 ${showSummary ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-6`}>
+        <div className={`grid grid-cols-1 ${showSummary ? 'lg:grid-cols-4' : 'lg:grid-cols-1'} gap-4`}>
           {/* Left Card - Financial Stats */}
           {showSummary && (
             <div className="lg:col-span-1">
@@ -237,8 +237,8 @@ export default function BreakdownDetailPage() {
         </div>
 
         {/* Parent Project Info - Moved to bottom for reference */}
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-800 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-800 p-4 mt-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
             Parent Project Information
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
