@@ -1,8 +1,8 @@
-// types/trustFund.types.ts
+﻿// types/trustFund.types.ts
 
 import { Id } from "@/convex/_generated/dataModel";
 
-export type TrustFundStatus = "not_available" | "not_yet_started" | "ongoing" | "completed" | "active" | "on_process";
+export type TrustFundStatus = "not_available" | "not_yet_started" | "ongoing" | "completed" | "active";
 
 export interface TrustFund {
   id: string;
