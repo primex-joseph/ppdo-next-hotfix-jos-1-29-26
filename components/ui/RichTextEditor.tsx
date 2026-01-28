@@ -9,7 +9,7 @@ import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { all, createLowlight } from "lowlight";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
     Bold, Italic, Strikethrough, Code, List, ListOrdered,
     Quote, Image as ImageIcon, Link as LinkIcon,
@@ -233,6 +233,13 @@ export default function RichTextEditor({
         },
         immediatelyRender: false,
     });
+
+    // Sync editor content when value prop changes externally
+    useEffect(() => {
+        if (editor && value !== editor.getHTML()) {
+            editor.commands.setContent(value);
+        }
+    }, [editor, value]);
 
     const setLink = useCallback(() => {
         if (!editor) return;
