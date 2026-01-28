@@ -32,7 +32,7 @@ export const create = mutation({
       submittedAt: Date.now(),
     });
 
-    return reportId;
+    return { reportId };
   },
 });
 
@@ -82,10 +82,24 @@ export const getById = query({
 
     const report = await ctx.db.get(id);
     if (!report) {
-      throw new Error("Bug report not found");
+      return null;
     }
 
-    return report;
+    let submitter = null;
+    let updater = null;
+
+    if (report.submittedBy) {
+      submitter = await ctx.db.get(report.submittedBy);
+    }
+    if (report.updatedBy) {
+      updater = await ctx.db.get(report.updatedBy);
+    }
+
+    return {
+      ...report,
+      submitter,
+      updater
+    };
   },
 });
 

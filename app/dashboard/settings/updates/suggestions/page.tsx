@@ -1,4 +1,4 @@
-// app/dashboard/settings/updates/bugs-report/page.tsx
+// app/dashboard/settings/updates/suggestions/page.tsx
 
 "use client";
 
@@ -6,7 +6,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
-import { Plus, AlertCircle, CheckCircle2, Clock, Search, Filter } from "lucide-react";
+import { Plus, AlertCircle, CheckCircle2, Clock, XCircle, Search, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -16,22 +16,22 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-export default function BugReportsPage() {
+export default function SuggestionsPage() {
   const router = useRouter();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  // Fetch all bug reports
-  const reports = useQuery(api.bugReports.getAll);
-  const createBugReport = useMutation(api.bugReports.create);
+  // Fetch all suggestions
+  const suggestions = useQuery(api.suggestions.getAll);
+  const createSuggestion = useMutation(api.suggestions.create);
 
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleCreateBugReport = async (e: React.FormEvent) => {
+  const handleCreateSuggestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim() || !description.trim()) {
       toast.error("Validation Error", {
@@ -42,23 +42,23 @@ export default function BugReportsPage() {
 
     setIsSubmitting(true);
     try {
-      const result = await createBugReport({ title, description });
-      console.log("✅ Bug report created:", result);
+      const result = await createSuggestion({ title, description });
+      console.log("✅ Suggestion created:", result);
 
-      toast.success("Bug Report Submitted", {
-        description: "Your bug report has been successfully submitted",
+      toast.success("Suggestion Submitted", {
+        description: "Your suggestion has been successfully submitted",
       });
       setIsCreateDialogOpen(false);
       setTitle("");
       setDescription("");
 
       // ✅ Use ID-based routing
-      console.log("🔗 Navigating to:", `/dashboard/settings/updates/bugs-report/${result.reportId}`);
-      router.push(`/dashboard/settings/updates/bugs-report/${result.reportId}`);
+      console.log("🔗 Navigating to:", `/dashboard/settings/updates/suggestions/${result.suggestionId}`);
+      router.push(`/dashboard/settings/updates/suggestions/${result.suggestionId}`);
     } catch (error) {
-      console.error("❌ Error creating bug report:", error);
+      console.error("❌ Error creating suggestion:", error);
       toast.error("Error", {
-        description: "Failed to submit bug report. Please try again.",
+        description: "Failed to submit suggestion. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -67,10 +67,12 @@ export default function BugReportsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "fixed":
+      case "acknowledged":
         return "bg-[#15803D]/10 text-[#15803D] border-[#15803D]/20";
-      case "not_fixed":
+      case "to_review":
         return "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800";
+      case "denied":
+        return "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800";
       default:
         return "bg-gray-50 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700";
     }
@@ -78,10 +80,12 @@ export default function BugReportsPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "fixed":
+      case "acknowledged":
         return <CheckCircle2 className="w-4 h-4" />;
-      case "not_fixed":
-        return <AlertCircle className="w-4 h-4" />;
+      case "to_review":
+        return <Clock className="w-4 h-4" />;
+      case "denied":
+        return <XCircle className="w-4 h-4" />;
       default:
         return <Clock className="w-4 h-4" />;
     }
@@ -89,29 +93,32 @@ export default function BugReportsPage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "fixed":
-        return "Fixed";
-      case "not_fixed":
-        return "Not Fixed Yet";
+      case "acknowledged":
+        return "Acknowledged";
+      case "to_review":
+        return "To Review";
+      case "denied":
+        return "Denied";
       default:
         return "Pending";
     }
   };
 
-  // Filter reports
-  const filteredReports = reports?.filter((report) => {
-    const matchesSearch = report.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      report.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || report.status === statusFilter;
+  // Filter suggestions
+  const filteredSuggestions = suggestions?.filter((suggestion) => {
+    const matchesSearch =
+      suggestion.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      suggestion.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = statusFilter === "all" || suggestion.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   // Debug logs
-  console.log("📋 Bug Reports Data:", reports);
-  console.log("🔍 Filtered Reports:", filteredReports);
+  console.log("💡 Suggestions Data:", suggestions);
+  console.log("🔍 Filtered Suggestions:", filteredSuggestions);
 
-  if (reports === undefined) {
-    return <BugReportsPageSkeleton />;
+  if (suggestions === undefined) {
+    return <SuggestionsPageSkeleton />;
   }
 
   return (
@@ -119,9 +126,9 @@ export default function BugReportsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Bug Reports</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Suggestions</h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Track and manage reported bugs
+            Share your ideas to improve the system
           </p>
         </div>
 
@@ -129,22 +136,22 @@ export default function BugReportsPage() {
           <DialogTrigger asChild>
             <Button className="gap-2 bg-[#15803D] hover:bg-[#15803D]/90 text-white">
               <Plus className="w-4 h-4" />
-              Report a Bug
+              Submit Suggestion
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>Report a Bug</DialogTitle>
+              <DialogTitle>Submit a Suggestion</DialogTitle>
               <DialogDescription>
-                Describe the bug you encountered. We'll review it and work on a fix.
+                Share your ideas on how we can improve the system. We value your feedback!
               </DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleCreateBugReport} className="space-y-4 mt-4">
+            <form onSubmit={handleCreateSuggestion} className="space-y-4 mt-4">
               <div className="space-y-2">
                 <Label htmlFor="title">Title *</Label>
                 <Input
                   id="title"
-                  placeholder="Brief description of the bug"
+                  placeholder="Brief summary of your suggestion"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   required
@@ -155,7 +162,7 @@ export default function BugReportsPage() {
                 <Label htmlFor="description">Description *</Label>
                 <Textarea
                   id="description"
-                  placeholder="Detailed description of the bug, steps to reproduce, expected vs actual behavior..."
+                  placeholder="Detailed description of your suggestion, why it would be helpful, and any implementation ideas..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   rows={6}
@@ -177,7 +184,7 @@ export default function BugReportsPage() {
                   disabled={isSubmitting}
                   className="bg-[#15803D] hover:bg-[#15803D]/90 text-white"
                 >
-                  {isSubmitting ? "Submitting..." : "Submit Bug Report"}
+                  {isSubmitting ? "Submitting..." : "Submit Suggestion"}
                 </Button>
               </div>
             </form>
@@ -190,7 +197,7 @@ export default function BugReportsPage() {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <Input
-            placeholder="Search bug reports..."
+            placeholder="Search suggestions..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -204,24 +211,25 @@ export default function BugReportsPage() {
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="fixed">Fixed</SelectItem>
-            <SelectItem value="not_fixed">Not Fixed Yet</SelectItem>
+            <SelectItem value="acknowledged">Acknowledged</SelectItem>
+            <SelectItem value="to_review">To Review</SelectItem>
+            <SelectItem value="denied">Denied</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Bug Reports List */}
+      {/* Suggestions List */}
       <div className="space-y-3">
-        {filteredReports && filteredReports.length === 0 ? (
+        {filteredSuggestions && filteredSuggestions.length === 0 ? (
           <div className="text-center py-12 bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800">
             <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              No bug reports found
+              No suggestions found
             </h3>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
               {searchQuery || statusFilter !== "all"
                 ? "Try adjusting your filters"
-                : "Be the first to report a bug"}
+                : "Be the first to share a suggestion"}
             </p>
             {!searchQuery && statusFilter === "all" && (
               <Button
@@ -229,20 +237,20 @@ export default function BugReportsPage() {
                 className="bg-[#15803D] hover:bg-[#15803D]/90 text-white"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Report a Bug
+                Submit Suggestion
               </Button>
             )}
           </div>
         ) : (
-          filteredReports?.map((report) => {
-            console.log("🔗 Report card:", { id: report._id, title: report.title });
+          filteredSuggestions?.map((suggestion) => {
+            console.log("🔗 Suggestion card:", { id: suggestion._id, title: suggestion.title });
             return (
               <div
-                key={report._id}
+                key={suggestion._id}
                 onClick={() => {
                   // ✅ Use ID-based routing
-                  console.log("🖱️ Clicking report:", report._id);
-                  router.push(`/dashboard/settings/updates/bugs-report/${report._id}`);
+                  console.log("🖱️ Clicking suggestion:", suggestion._id);
+                  router.push(`/dashboard/settings/updates/suggestions/${suggestion._id}`);
                 }}
                 className="bg-white dark:bg-zinc-900 rounded-lg border border-gray-200 dark:border-zinc-800 p-5 hover:shadow-md transition-all cursor-pointer group"
               >
@@ -250,30 +258,30 @@ export default function BugReportsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white group-hover:text-[#15803D] transition-colors">
-                        {report.title}
+                        {suggestion.title}
                       </h3>
                       <span
                         className={`flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${getStatusColor(
-                          report.status
+                          suggestion.status
                         )}`}
                       >
-                        {getStatusIcon(report.status)}
-                        {getStatusText(report.status)}
+                        {getStatusIcon(suggestion.status)}
+                        {getStatusText(suggestion.status)}
                       </span>
                     </div>
 
                     <div
                       className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-3"
                       dangerouslySetInnerHTML={{
-                        __html: report.description.substring(0, 200) + "...",
+                        __html: suggestion.description.substring(0, 200) + "...",
                       }}
                     />
 
                     <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
                       <span>
-                        Reported by{" "}
+                        Suggested by{" "}
                         {(() => {
-                          const submitter = report.submitter;
+                          const submitter = suggestion.submitter;
                           if (submitter?.firstName || submitter?.lastName) {
                             const parts = [
                               submitter.firstName,
@@ -290,7 +298,7 @@ export default function BugReportsPage() {
                       </span>
                       <span>•</span>
                       <span>
-                        {new Date(report.submittedAt).toLocaleDateString("en-US", {
+                        {new Date(suggestion.submittedAt).toLocaleDateString("en-US", {
                           month: "short",
                           day: "numeric",
                           year: "numeric",
@@ -308,7 +316,7 @@ export default function BugReportsPage() {
   );
 }
 
-function BugReportsPageSkeleton() {
+function SuggestionsPageSkeleton() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">

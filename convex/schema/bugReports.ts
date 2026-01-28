@@ -5,7 +5,7 @@ import { v } from "convex/values";
 
 export const bugReportsTables = {
   bugReports: defineTable({
-    title: v.optional(v.string()), // ✅ NEW: Bug title (optional for existing data)
+    title: v.optional(v.string()),
     description: v.string(),
     submittedBy: v.id("users"),
     status: v.union(v.literal("pending"), v.literal("fixed"), v.literal("not_fixed")),

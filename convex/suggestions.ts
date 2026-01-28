@@ -32,7 +32,7 @@ export const create = mutation({
       submittedAt: Date.now(),
     });
 
-    return suggestionId;
+    return { suggestionId };
   },
 });
 
@@ -115,10 +115,24 @@ export const getById = query({
 
     const suggestion = await ctx.db.get(id);
     if (!suggestion) {
-      throw new Error("Suggestion not found");
+      return null;
     }
 
-    return suggestion;
+    let submitter = null;
+    let updater = null;
+
+    if (suggestion.submittedBy) {
+      submitter = await ctx.db.get(suggestion.submittedBy);
+    }
+    if (suggestion.updatedBy) {
+      updater = await ctx.db.get(suggestion.updatedBy);
+    }
+
+    return {
+      ...suggestion,
+      submitter,
+      updater
+    };
   },
 });
 

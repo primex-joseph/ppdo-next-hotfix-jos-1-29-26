@@ -5,6 +5,10 @@
 import { useState } from "react";
 import { useSidebar } from "../../contexts/SidebarContext";
 import { useCurrentUser } from "@/app/hooks/useCurrentUser";
+import { useRouter, usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Bug, Loader2, Eye, EyeOff } from "lucide-react";
 import { AccountModal } from "../account/AccountModal";
 import { UserDropdown } from "./UserDropdown";
 import { NotificationsDropdown } from "./NotificationsDropdown";
@@ -18,11 +22,34 @@ interface HeaderProps {
 
 export function Header({ onSearchChange, searchQuery }: HeaderProps) {
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const { isMinimized, toggleMinimize } = useSidebar();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [showBugReport, setShowBugReport] = useState(true);
+
+  // Initialize state from local storage
+  useEffect(() => {
+    const stored = localStorage.getItem("showBugReport");
+    if (stored !== null) {
+      setShowBugReport(JSON.parse(stored));
+    }
+  }, []);
+
+  const toggleBugReport = () => {
+    const newState = !showBugReport;
+    setShowBugReport(newState);
+    localStorage.setItem("showBugReport", JSON.stringify(newState));
+  };
+
+  // Reset loading state when pathname changes
+  useEffect(() => {
+    setIsRedirecting(false);
+  }, [pathname]);
 
   // ✅ Use your existing useCurrentUser hook - FULLY DYNAMIC with image support!
   const { user, isLoading } = useCurrentUser();
-  
+
   // Extract user data with proper name handling
   const userName = user ? getDisplayName(user) : "User";
 
@@ -147,6 +174,36 @@ export function Header({ onSearchChange, searchQuery }: HeaderProps) {
                 >
                   {userName}
                 </span>
+              </div>
+
+              {/* Report Bug Button & Toggle */}
+              <div className="ml-4 flex items-center gap-2">
+                {showBugReport && (
+                  <Button
+                    variant="outline"
+                    className="rounded-full border-red-500 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 gap-2 h-8"
+                    onClick={() => {
+                      setIsRedirecting(true);
+                      router.push("/dashboard/settings/updates/bugs-report");
+                    }}
+                    disabled={isRedirecting}
+                  >
+                    {isRedirecting ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Bug className="h-3.5 w-3.5" />
+                    )}
+                    Report Concerns
+                  </Button>
+                )}
+
+                <button
+                  onClick={toggleBugReport}
+                  className="cursor-grab text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 transition-colors p-1 opacity-50 hover:opacity-100"
+                  title={showBugReport ? "Hide Bug Report Button" : "Show Bug Report Button"}
+                >
+                  {showBugReport ? <Eye size={16} /> : <EyeOff size={16} />}
+                </button>
               </div>
             </div>
 
