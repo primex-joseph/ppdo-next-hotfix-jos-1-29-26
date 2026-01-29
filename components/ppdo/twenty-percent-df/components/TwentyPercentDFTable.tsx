@@ -52,6 +52,7 @@ import {
 } from "../utils/printAdapters";
 import { BudgetTotals } from "@/lib/print-canvas/types";
 import { BudgetItem } from "@/app/dashboard/project/[year]/types";
+import { TwentyPercentDFBulkToggleDialog } from "./TwentyPercentDFBulkToggleDialog";
 
 export function TwentyPercentDFTable({
     items: projects,
@@ -82,7 +83,7 @@ export function TwentyPercentDFTable({
     const bulkMoveToTrash = useMutation(api.twentyPercentDF.bulkMoveToTrash);
     const bulkUpdateCategory = useMutation(api.twentyPercentDF.bulkUpdateCategory);
     const updateProject = useMutation(api.twentyPercentDF.update);
-    const toggleAutoCalculate = useMutation(api.twentyPercentDF.toggleAutoCalculate);
+    const toggleAutoCalculate = useMutation(api.twentyPercentDF.toggleAutoCalculateFinancials);
     const bulkToggleAutoCalculate = useMutation(api.twentyPercentDF.bulkToggleAutoCalculate);
 
     // ==================== STATE: MODALS ====================
@@ -602,7 +603,7 @@ export function TwentyPercentDFTable({
                             groupedProjects={groupedProjects}
                             hiddenColumns={hiddenColumns}
                             selectedIds={selectedIds}
-                            newlyAddedProjectId={newlyAddedProjectId}
+                            newlyAddedId={newlyAddedProjectId}
                             canManageBulkActions={canManageBulkActions}
                             totalVisibleColumns={totalVisibleColumns}
                             onSelectCategory={handleSelectCategory}
@@ -821,7 +822,7 @@ export function TwentyPercentDFTable({
                     totals={printTotals}
                     filterState={{
                         searchQuery,
-                        statusFilter,
+                        statusFilter: [],
                         yearFilter,
                         sortField: sortField as string | null,
                         sortDirection,

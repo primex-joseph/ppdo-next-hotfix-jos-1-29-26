@@ -29,14 +29,14 @@ export const list = query({
         if (args.budgetItemId) {
             results = await ctx.db
                 .query("twentyPercentDF")
-                .withIndex("budgetItemId", (q) => 
+                .withIndex("budgetItemId", (q) =>
                     q.eq("budgetItemId", args.budgetItemId)
                 )
                 .collect();
         } else if (args.categoryId) {
             results = await ctx.db
                 .query("twentyPercentDF")
-                .withIndex("categoryId", (q) => 
+                .withIndex("categoryId", (q) =>
                     q.eq("categoryId", args.categoryId)
                 )
                 .collect();
@@ -296,8 +296,8 @@ export const bulkMoveToTrash = mutation({
 
         const successCount = results.filter(r => r.success).length;
 
-        return { 
-            results, 
+        return {
+            results,
             total: args.ids.length,
             count: successCount,
         };
@@ -308,7 +308,7 @@ export const bulkMoveToTrash = mutation({
 // MUTATION: RESTORE FROM TRASH
 // ============================================================================
 
-export const restore = mutation({
+export const restoreFromTrash = mutation({
     args: {
         id: v.id("twentyPercentDF"),
     },
@@ -334,6 +334,38 @@ export const restore = mutation({
             action: "restored",
             twentyPercentDFId: args.id,
             previousValues: record,
+        });
+
+        return { success: true };
+    },
+});
+
+// ============================================================================
+// MUTATION: PERMANENT DELETE (Remove)
+// ============================================================================
+
+export const remove = mutation({
+    args: {
+        id: v.id("twentyPercentDF"),
+    },
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (!userId) throw new Error("Not authenticated");
+
+        const record = await ctx.db.get(args.id);
+        if (!record) throw new Error("Record not found");
+
+        // Ideally only deleted items should be permanently deleted, but 
+        // we can enforce that or just allow force delete.
+        // For trash bin logic, typically it's already in trash (isDeleted=true).
+
+        await ctx.db.delete(args.id);
+
+        await logTwentyPercentDFActivity(ctx, userId, {
+            action: "deleted", // or a specific "permanently_deleted" if supported
+            twentyPercentDFId: args.id,
+            previousValues: record,
+            reason: "Permanent deletion from trash",
         });
 
         return { success: true };
@@ -417,8 +449,8 @@ export const bulkUpdateCategory = mutation({
 
         const successCount = results.filter(r => r.success).length;
 
-        return { 
-            results, 
+        return {
+            results,
             total: args.ids.length,
             count: successCount,
         };
@@ -429,11 +461,11 @@ export const bulkUpdateCategory = mutation({
 // MUTATION: TOGGLE AUTO CALCULATE (Single)
 // ============================================================================
 
-export const toggleAutoCalculate = mutation({
+export const toggleAutoCalculateFinancials = mutation({
     args: {
         id: v.id("twentyPercentDF"),
         autoCalculate: v.boolean(),
-        reason: v.optional(v.string()),
+        reason: v.optional(v.string())
     },
     handler: async (ctx, args) => {
         const userId = await getAuthUserId(ctx);
@@ -523,8 +555,8 @@ export const bulkToggleAutoCalculate = mutation({
 
         const successCount = results.filter(r => r.success).length;
 
-        return { 
-            results, 
+        return {
+            results,
             total: args.ids.length,
             count: successCount,
         };
@@ -556,7 +588,7 @@ export const recalculateMetrics = mutation({
 // QUERY: GET TRASH ITEMS
 // ============================================================================
 
-export const getTrashItems = query({
+export const getTrash = query({
     args: {
         budgetItemId: v.optional(v.id("budgetItems")),
     },
@@ -569,7 +601,7 @@ export const getTrashItems = query({
         if (args.budgetItemId) {
             results = await ctx.db
                 .query("twentyPercentDF")
-                .withIndex("budgetItemId", (q) => 
+                .withIndex("budgetItemId", (q) =>
                     q.eq("budgetItemId", args.budgetItemId)
                 )
                 .collect();
@@ -598,5 +630,46 @@ export const internalRecalculateMetrics = internalMutation({
     handler: async (ctx, args) => {
         const result = await recalculateTwentyPercentDFMetrics(ctx, args.id, args.userId);
         return result;
+    },
+});
+
+/**
+ * Quick update status only (for generic FundsTable)
+ */
+export const updateStatus = mutation({
+    args: {
+        id: v.id("twentyPercentDF"),
+        status: v.union(
+            v.literal("ongoing"),
+            v.literal("completed"),
+            v.literal("delayed")
+        ),
+        reason: v.optional(v.string()),
+    },
+    handler: async (ctx, args) => {
+        const userId = await getAuthUserId(ctx);
+        if (userId === null) throw new Error("Not authenticated");
+
+        const existing = await ctx.db.get(args.id);
+        if (!existing) throw new Error("Record not found");
+
+        const now = Date.now();
+
+        await ctx.db.patch(args.id, {
+            status: args.status,
+            updatedAt: now,
+            updatedBy: userId,
+        });
+
+        // Log activity
+        await logTwentyPercentDFActivity(ctx, userId, {
+            action: "updated",
+            twentyPercentDFId: args.id,
+            previousValues: existing,
+            newValues: { ...existing, status: args.status, updatedAt: now, updatedBy: userId },
+            reason: args.reason || `Status changed to ${args.status}`
+        });
+
+        return args.id;
     },
 });

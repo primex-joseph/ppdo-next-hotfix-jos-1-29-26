@@ -2,11 +2,11 @@
 "use client";
 
 import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
-import { ProjectSortField, SortDirection } from "../../types";
+import { TwentyPercentDFSortField, SortDirection } from "../../types";
 
 interface SortIconProps {
-    field: ProjectSortField;
-    currentSortField: ProjectSortField | null;
+    field: TwentyPercentDFSortField;
+    currentSortField: TwentyPercentDFSortField | null;
     currentSortDirection: SortDirection;
 }
 

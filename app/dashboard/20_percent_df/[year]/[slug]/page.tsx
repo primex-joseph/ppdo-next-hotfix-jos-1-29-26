@@ -106,7 +106,7 @@ export default function TwentyPercentDFBreakdownPage({ params }: PageProps) {
     const createBreakdown = useMutation(api.twentyPercentDFBreakdowns.createBreakdown);
     const updateBreakdown = useMutation(api.twentyPercentDFBreakdowns.updateBreakdown);
     const deleteBreakdown = useMutation(api.twentyPercentDFBreakdowns.moveToTrash);
-    const toggleAutoCalculate = useMutation(api.twentyPercentDF.toggleAutoCalculate);
+    const toggleAutoCalculate = useMutation(api.twentyPercentDF.toggleAutoCalculateFinancials);
 
     // Handlers
     const handlePrint = () => window.print();

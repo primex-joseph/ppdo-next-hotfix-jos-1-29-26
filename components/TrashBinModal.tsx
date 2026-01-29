@@ -48,7 +48,8 @@ export function TrashBinModal({ isOpen, onClose, type }: TrashBinModalProps) {
           type === "specialEducationFund" ? api.specialEducationFunds.getTrash :
             type === "specialHealthFund" ? api.specialHealthFunds.getTrash :
               type === "twentyPercentDF" ? api.twentyPercentDF.getTrash :
-                api.govtProjects.getTrash
+                api.govtProjects.getTrash,
+    {}
   );
 
   // ✅ FIXED: Added twentyPercentDF mutations

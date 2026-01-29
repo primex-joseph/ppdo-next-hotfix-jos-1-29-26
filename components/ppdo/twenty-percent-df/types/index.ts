@@ -57,6 +57,8 @@ export type TwentyPercentDFSortField = keyof TwentyPercentDF;
 
 export type TwentyPercentDFSortState = SortState<TwentyPercentDFSortField>;
 
+export type ProjectSortField = TwentyPercentDFSortField;
+
 export type TwentyPercentDFContextMenuState = ContextMenuState<TwentyPercentDF>;
 
 export type SortDirection = "asc" | "desc" | null;
