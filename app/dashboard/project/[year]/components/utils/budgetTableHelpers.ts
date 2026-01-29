@@ -42,7 +42,7 @@ export function convertToPrintTotals(totals: BudgetTotals): PrintBudgetTotals {
     totalBudgetUtilized: totals.totalBudgetUtilized,
     projectCompleted: totals.projectCompleted,
     projectDelayed: totals.projectDelayed,
-    projectsOngoing: (totals as any).projectsOngoing || (totals as any).projectsOnTrack,
+    projectsOngoing: (totals as any).projectsOngoing,
   };
 }
 

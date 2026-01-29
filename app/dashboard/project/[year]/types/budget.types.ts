@@ -39,7 +39,7 @@ export interface BudgetItemFromDB {
   utilizationRate: number;
   projectCompleted: number;
   projectDelayed: number;
-  projectsOnTrack: number;
+  projectsOngoing: number;
   year?: number;
   status?: "completed" | "ongoing" | "delayed";
   isPinned?: boolean;
