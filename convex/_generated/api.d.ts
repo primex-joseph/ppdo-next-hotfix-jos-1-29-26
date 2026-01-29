@@ -116,6 +116,7 @@ import type * as schema_twentyPercentDFActivities from "../schema/twentyPercentD
 import type * as schema_twentyPercentDFBreakdowns from "../schema/twentyPercentDFBreakdowns.js";
 import type * as schema_twentyPercentDFSharedAccess from "../schema/twentyPercentDFSharedAccess.js";
 import type * as schema_users from "../schema/users.js";
+import type * as seedData from "../seedData.js";
 import type * as specialEducationFundAccess from "../specialEducationFundAccess.js";
 import type * as specialEducationFundActivities from "../specialEducationFundActivities.js";
 import type * as specialEducationFundBreakdownActivities from "../specialEducationFundBreakdownActivities.js";
@@ -137,6 +138,7 @@ import type * as twentyPercentDFActivities from "../twentyPercentDFActivities.js
 import type * as twentyPercentDFBreakdowns from "../twentyPercentDFBreakdowns.js";
 import type * as userManagement from "../userManagement.js";
 import type * as users from "../users.js";
+import type * as verifySeed from "../verifySeed.js";
 
 import type {
   ApiFromModules,
@@ -253,6 +255,7 @@ declare const fullApi: ApiFromModules<{
   "schema/twentyPercentDFBreakdowns": typeof schema_twentyPercentDFBreakdowns;
   "schema/twentyPercentDFSharedAccess": typeof schema_twentyPercentDFSharedAccess;
   "schema/users": typeof schema_users;
+  seedData: typeof seedData;
   specialEducationFundAccess: typeof specialEducationFundAccess;
   specialEducationFundActivities: typeof specialEducationFundActivities;
   specialEducationFundBreakdownActivities: typeof specialEducationFundBreakdownActivities;
@@ -274,6 +277,7 @@ declare const fullApi: ApiFromModules<{
   twentyPercentDFBreakdowns: typeof twentyPercentDFBreakdowns;
   userManagement: typeof userManagement;
   users: typeof users;
+  verifySeed: typeof verifySeed;
 }>;
 
 /**
