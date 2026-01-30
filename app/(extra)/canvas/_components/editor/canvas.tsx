@@ -3,8 +3,8 @@
 'use client';
 
 import React, { useRef, useState, useEffect } from 'react';
-import { Page, CanvasElement, ImageElement, HeaderFooter } from './types';
-import { getPageDimensions, HEADER_HEIGHT, FOOTER_HEIGHT } from './constants';
+import { Page, CanvasElement, ImageElement, HeaderFooter, MarginSettings } from './types';
+import { getPageDimensions, HEADER_HEIGHT, FOOTER_HEIGHT, POINTS_PER_INCH } from './constants';
 import TextElementComponent from './text-element';
 import ImageElementComponent from './image-element';
 import HeaderFooterSection from './header-footer-section';
@@ -32,6 +32,7 @@ interface CanvasProps {
   isEditorMode?: boolean;
   onSetDirty?: (dirty: boolean) => void;
   showMarginGuides?: boolean;
+  margins?: MarginSettings;
 }
 
 export default function Canvas({
@@ -53,6 +54,7 @@ export default function Canvas({
   isEditorMode = false,
   onSetDirty,
   showMarginGuides = false,
+  margins,
 }: CanvasProps) {
   console.group('📋 STEP 7: Canvas Component - Rendering');
   console.log('📄 Page data:', page);
@@ -504,12 +506,15 @@ export default function Canvas({
           />
         )}
 
-        {/* Marginal Guides (0.5 inch = 36pt) */}
+        {/* Marginal Guides */}
         {showMarginGuides && (
           <div
             className="absolute inset-0 pointer-events-none z-[100]"
             style={{
-              margin: '36pt',
+              marginTop: `${(margins?.top || 0.5) * POINTS_PER_INCH}pt`,
+              marginBottom: `${(margins?.bottom || 0.5) * POINTS_PER_INCH}pt`,
+              marginLeft: `${(margins?.left || 0.5) * POINTS_PER_INCH}pt`,
+              marginRight: `${(margins?.right || 0.5) * POINTS_PER_INCH}pt`,
               border: '1px dashed #3b82f6',
               opacity: 0.5,
             }}

@@ -39,7 +39,7 @@ export const STATIC_NAV_ITEMS: NavItem[] = [
         href: "/dashboard/20_percent_df",
         category: "Department",
         icon: <TrendingUp size={20} />,
-        isNew: true,
+        // isNew: true,
     },
     {
         name: "Trust Funds (Project Organs)",
@@ -52,14 +52,14 @@ export const STATIC_NAV_ITEMS: NavItem[] = [
         href: "/dashboard/special-education-funds",
         category: "Department",
         icon: <GraduationCap size={20} />,
-        isNew: true,
+        // isNew: true,
     },
     {
         name: "Special Health Funds",
         href: "/dashboard/special-health-funds",
         category: "Department",
         icon: <Heart size={20} />,
-        isNew: true,
+        // isNew: true,
     },
     {
         name: "Particulars",

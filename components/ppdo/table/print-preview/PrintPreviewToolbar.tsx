@@ -11,6 +11,7 @@ import { DocumentTitleEditor } from './DocumentTitleEditor';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ResponsiveMoreMenu } from "@/components/shared/table/ResponsiveMoreMenu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { MarginDropdown } from '@/app/(extra)/canvas/_components/editor/margin-dropdown';
 
 interface PrintPreviewToolbarProps {
   documentTitle: string;
@@ -30,6 +31,8 @@ interface PrintPreviewToolbarProps {
   onToggleMarginGuides?: () => void;
   pageOrientation?: 'portrait' | 'landscape';
   pageSize?: string;
+  currentMargin?: number;
+  onMarginChange?: (value: number) => void;
 }
 
 
@@ -51,6 +54,8 @@ export function PrintPreviewToolbar({
   onToggleMarginGuides,
   pageOrientation = 'portrait',
   pageSize = 'A4',
+  currentMargin,
+  onMarginChange,
 }: PrintPreviewToolbarProps) {
 
   return (
@@ -139,22 +144,12 @@ export function PrintPreviewToolbar({
 
           {/* Margin Toggle Button */}
           {onToggleMarginGuides && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={onToggleMarginGuides}
-                    variant="outline"
-                    size="sm"
-                    className={`gap-2 ${marginGuidesVisible ? 'bg-zinc-100 dark:bg-zinc-800' : ''}`}
-                  >
-                    <Square className="w-4 h-4" />
-                    <span className="hidden lg:inline">Margin</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Toggle Margin Guides</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            <MarginDropdown
+              marginGuidesVisible={marginGuidesVisible}
+              onToggleMarginGuides={onToggleMarginGuides}
+              currentMargin={currentMargin || 1.0}
+              onMarginChange={onMarginChange || (() => { })}
+            />
           )}
 
           {/* Apply Template Button - Only in editor mode */}

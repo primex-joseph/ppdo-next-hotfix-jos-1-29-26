@@ -74,6 +74,7 @@ export function PrintPreviewModal({
     updateTabStop,
     removeTabStop,
     toggleMarginGuides,
+    setUniformMargins,
   } = useRulerState();
 
   const [scrollLeft, setScrollLeft] = useState(0);
@@ -690,6 +691,8 @@ export function PrintPreviewModal({
           onToggleMarginGuides={toggleMarginGuides}
           pageOrientation={state.currentPage.orientation}
           pageSize={state.currentPage.size}
+          currentMargin={rulerState.margins.left}
+          onMarginChange={setUniformMargins}
         />
 
         {/* Inner Editor Toolbar (moved up for alignment) */}
@@ -718,6 +721,8 @@ export function PrintPreviewModal({
             onToggleRuler={toggleRulerVisibility}
             marginGuidesVisible={rulerState.showMarginGuides}
             onToggleMarginGuides={toggleMarginGuides}
+            currentMargin={rulerState.margins.left}
+            onMarginChange={setUniformMargins}
           />
         </div>
 
@@ -798,22 +803,20 @@ export function PrintPreviewModal({
             <div ref={canvasScrollRef} className="flex-1 overflow-y-auto overflow-x-auto flex items-start justify-center pt-4 pb-16 px-8" onScroll={(e) => { const target = e.target as HTMLDivElement; setScrollLeft(target.scrollLeft); setScrollTop(target.scrollTop); }}>
               <Canvas
                 page={{ ...state.currentPage, elements: visibleElements }}
-                selectedElementId={isEditorMode ? state.selectedElementId : null}
-                onSelectElement={isEditorMode ? state.setSelectedElementId : () => { }}
-                onUpdateElement={isEditorMode ? actions.updateElement : () => { }}
-                onDeleteElement={isEditorMode ? actions.deleteElement : () => { }}
-                isEditingElementId={isEditorMode ? state.isEditingElementId : null}
-                onEditingChange={isEditorMode ? state.setIsEditingElementId : () => { }}
+                selectedElementId={state.selectedElementId}
+                onSelectElement={state.setSelectedElementId}
+                onUpdateElement={(id, updates) => actions.updateElement(id, updates)}
+                onDeleteElement={actions.deleteElement}
                 header={state.header}
                 footer={state.footer}
                 pageNumber={state.currentPageIndex + 1}
                 totalPages={state.pages.length}
                 activeSection={state.activeSection}
-                onActiveSectionChange={isEditorMode ? state.setActiveSection : () => { }}
-                selectedGroupId={state.selectedGroupId}
+                onActiveSectionChange={state.setActiveSection}
                 isEditorMode={isEditorMode}
                 onSetDirty={state.setIsDirty}
                 showMarginGuides={rulerState.showMarginGuides}
+                margins={rulerState.margins}
               />
             </div>
 

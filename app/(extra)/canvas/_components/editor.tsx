@@ -61,6 +61,7 @@ export default function Editor({
     addTabStop,
     updateTabStop,
     removeTabStop,
+    setUniformMargins,
   } = useRulerState();
 
   const {
@@ -185,6 +186,8 @@ export default function Editor({
               onToggleRuler={toggleRulerVisibility}
               marginGuidesVisible={rulerState.showMarginGuides}
               onToggleMarginGuides={toggleMarginGuides}
+              currentMargin={rulerState.margins.left} // Use left margin as representative uniform margin
+              onMarginChange={setUniformMargins}
             />
           </div>
           {onClose && (
@@ -313,6 +316,7 @@ export default function Editor({
                 onActiveSectionChange={setActiveSection}
                 onImageDropped={handleImageSelect}
                 showMarginGuides={rulerState.showMarginGuides}
+                margins={rulerState.margins}
               />
             </div>
 

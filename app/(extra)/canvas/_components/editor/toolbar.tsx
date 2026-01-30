@@ -20,6 +20,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Bold, Italic, Underline, Plus, Printer, FileDown, X, Ruler, Square } from 'lucide-react';
+import { MarginDropdown } from './margin-dropdown';
 import { CanvasElement, Page, HeaderFooter } from './types';
 
 type ActiveSection = 'header' | 'page' | 'footer';
@@ -48,6 +49,8 @@ interface ToolbarProps {
   onToggleRuler?: () => void;
   marginGuidesVisible?: boolean;
   onToggleMarginGuides?: () => void;
+  currentMargin?: number;
+  onMarginChange?: (value: number) => void;
 }
 
 const FONT_FAMILIES = [
@@ -98,6 +101,8 @@ export default function Toolbar({
   onToggleRuler,
   marginGuidesVisible = false,
   onToggleMarginGuides,
+  currentMargin,
+  onMarginChange,
 }: ToolbarProps) {
   const isDisabled = !selectedElement || !onUpdateElement;
   const isTextElement = selectedElement?.type === 'text';
@@ -343,16 +348,12 @@ export default function Toolbar({
             {onToggleMarginGuides && (
               <>
                 <Separator orientation="vertical" className="h-5" />
-                <Button
-                  onClick={onToggleMarginGuides}
-                  size="sm"
-                  variant="outline"
-                  className={`gap-1.5 h-8 text-xs ${marginGuidesVisible ? 'bg-stone-200' : 'bg-white'}`}
-                  title="Toggle Margin Guides"
-                >
-                  <Square className="w-3.5 h-3.5" />
-                  Margin
-                </Button>
+                <MarginDropdown
+                  marginGuidesVisible={marginGuidesVisible}
+                  onToggleMarginGuides={onToggleMarginGuides}
+                  currentMargin={currentMargin || 1.0}
+                  onMarginChange={onMarginChange || (() => { })}
+                />
               </>
             )}
 

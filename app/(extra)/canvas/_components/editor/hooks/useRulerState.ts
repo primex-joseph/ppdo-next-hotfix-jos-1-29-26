@@ -106,6 +106,18 @@ export const useRulerState = () => {
     }));
   }, []);
 
+  const setUniformMargins = useCallback((margin: number) => {
+    setRulerState(prev => ({
+      ...prev,
+      margins: {
+        left: margin,
+        right: margin,
+        top: margin,
+        bottom: margin,
+      },
+    }));
+  }, []);
+
   const updateIndent = useCallback((type: keyof IndentSettings, value: number) => {
     setRulerState(prev => ({
       ...prev,
@@ -181,6 +193,7 @@ export const useRulerState = () => {
     setZoom,
     updateMargin,
     updateMargins,
+    setUniformMargins,
     updateIndent,
     updateIndents,
     addTabStop,
