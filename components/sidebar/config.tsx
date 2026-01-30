@@ -103,7 +103,7 @@ export const STATIC_NAV_ITEMS: NavItem[] = [
                     },
                     {
                         name: "Suggestions",
-                        href: "/dashboard/settings/suggestions",
+                        href: "/dashboard/settings/updates/suggestions",
                         badgeComponent: SuggestionsBadge,
                     },
                 ],

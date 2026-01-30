@@ -19,7 +19,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Bold, Italic, Underline, Plus, Printer, FileDown, X, Ruler } from 'lucide-react';
+import { Bold, Italic, Underline, Plus, Printer, FileDown, X, Ruler, Square } from 'lucide-react';
 import { CanvasElement, Page, HeaderFooter } from './types';
 
 type ActiveSection = 'header' | 'page' | 'footer';
@@ -46,6 +46,8 @@ interface ToolbarProps {
   isEditorMode?: boolean;
   rulerVisible?: boolean;
   onToggleRuler?: () => void;
+  marginGuidesVisible?: boolean;
+  onToggleMarginGuides?: () => void;
 }
 
 const FONT_FAMILIES = [
@@ -94,6 +96,8 @@ export default function Toolbar({
   isEditorMode = true,
   rulerVisible = false,
   onToggleRuler,
+  marginGuidesVisible = false,
+  onToggleMarginGuides,
 }: ToolbarProps) {
   const isDisabled = !selectedElement || !onUpdateElement;
   const isTextElement = selectedElement?.type === 'text';
@@ -103,7 +107,7 @@ export default function Toolbar({
 
   const handleFontFamilyChange = (value: string) => {
     loadGoogleFont(value);
-    
+
     if (onUpdateElement) {
       onUpdateElement({ fontFamily: value });
     }
@@ -173,13 +177,13 @@ export default function Toolbar({
 
   const handleBackgroundColorChange = (color: string) => {
     switch (activeSection) {
-      case 'header': 
+      case 'header':
         onHeaderBackgroundChange(color);
         break;
-      case 'footer': 
+      case 'footer':
         onFooterBackgroundChange(color);
         break;
-      default: 
+      default:
         onPageBackgroundChange(color);
         break;
     }
@@ -332,6 +336,22 @@ export default function Toolbar({
                 >
                   <Ruler className="w-3.5 h-3.5" />
                   Ruler
+                </Button>
+              </>
+            )}
+
+            {onToggleMarginGuides && (
+              <>
+                <Separator orientation="vertical" className="h-5" />
+                <Button
+                  onClick={onToggleMarginGuides}
+                  size="sm"
+                  variant="outline"
+                  className={`gap-1.5 h-8 text-xs ${marginGuidesVisible ? 'bg-stone-200' : 'bg-white'}`}
+                  title="Toggle Margin Guides"
+                >
+                  <Square className="w-3.5 h-3.5" />
+                  Margin
                 </Button>
               </>
             )}

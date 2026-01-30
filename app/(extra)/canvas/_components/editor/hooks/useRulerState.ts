@@ -7,6 +7,7 @@ import { RULER_STORAGE_KEY, DEFAULT_MARGINS } from '../constants';
 const DEFAULT_RULER_STATE: RulerState = {
   visible: false,
   showVertical: true,
+  showMarginGuides: false,
   unit: 'inches',
   margins: { ...DEFAULT_MARGINS },
   indents: {
@@ -18,6 +19,7 @@ const DEFAULT_RULER_STATE: RulerState = {
   tabStops: [],
   zoom: 1,
 };
+
 
 export const useRulerState = () => {
   const [rulerState, setRulerState] = useState<RulerState>(DEFAULT_RULER_STATE);
@@ -60,6 +62,13 @@ export const useRulerState = () => {
     setRulerState(prev => ({
       ...prev,
       showVertical: !prev.showVertical,
+    }));
+  }, []);
+
+  const toggleMarginGuides = useCallback(() => {
+    setRulerState(prev => ({
+      ...prev,
+      showMarginGuides: !prev.showMarginGuides,
     }));
   }, []);
 
@@ -158,14 +167,16 @@ export const useRulerState = () => {
       ...DEFAULT_RULER_STATE,
       visible: rulerState.visible, // Keep visibility state
       showVertical: rulerState.showVertical,
+      showMarginGuides: rulerState.showMarginGuides,
     });
-  }, [rulerState.visible, rulerState.showVertical]);
+  }, [rulerState.visible, rulerState.showVertical, rulerState.showMarginGuides]);
 
   return {
     rulerState,
     isHydrated,
     toggleRulerVisibility,
     toggleVerticalRuler,
+    toggleMarginGuides,
     setRulerUnit,
     setZoom,
     updateMargin,

@@ -32,14 +32,14 @@ export interface EditorProps {
   onClose?: () => void; // NEW PROP
 }
 
-export default function Editor({ 
-  enableUploadPanel = true, 
-  showPagePanel = true, 
+export default function Editor({
+  enableUploadPanel = true,
+  showPagePanel = true,
   variant = 'default',
-  onClose 
+  onClose
 }: EditorProps = {}) {
   const { isHydrated, savedPages, savedIndex, savedHeader, savedFooter } = useStorage();
-  
+
   const initialPages = savedPages || [createNewPage()];
   const initialIndex = savedIndex ?? 0;
   const initialHeader = savedHeader || { elements: [] };
@@ -55,6 +55,7 @@ export default function Editor({
   const {
     rulerState,
     toggleRulerVisibility,
+    toggleMarginGuides,
     updateMargin,
     updateIndent,
     addTabStop,
@@ -122,12 +123,15 @@ export default function Editor({
       // Calculate where the canvas is positioned (centered in scroll area)
       // Account for the scroll position and padding
       const padding = 32; // px-8 = 32px padding
-      const availableWidth = containerWidth - (padding * 2);
+
+      // We calculate the base offset (static centering)
+      // If the container is wider than canvas + padding, it centers
+      // Otherwise it sticks to the left (with padding)
       const canvasStartOffset = Math.max(padding, (containerWidth - canvasWidth) / 2);
 
-      setCanvasOffsetLeft(canvasStartOffset - scrollLeft);
+      setCanvasOffsetLeft(canvasStartOffset);
     }
-  }, [currentPage.size, currentPage.orientation, scrollLeft]);
+  }, [currentPage.size, currentPage.orientation]); // Removed scrollLeft dependency
 
   // Update canvas offset on scroll, resize, or page changes
   useEffect(() => {
@@ -179,6 +183,8 @@ export default function Editor({
               footer={footer}
               rulerVisible={rulerState.visible}
               onToggleRuler={toggleRulerVisibility}
+              marginGuidesVisible={rulerState.showMarginGuides}
+              onToggleMarginGuides={toggleMarginGuides}
             />
           </div>
           {onClose && (
@@ -211,15 +217,15 @@ export default function Editor({
           {enableUploadPanel && variant === 'default' && (
             <div className="w-64 flex-shrink-0 bg-stone-200" style={{ height: RULER_HEIGHT }} />
           )}
-          {/* Horizontal ruler - centered with canvas */}
+          {/* Horizontal ruler - use block/flex-start to allow manual positioning */}
           <div
             ref={canvasContainerRef}
-            className="flex-1 overflow-hidden flex justify-center"
+            className="flex-1 overflow-hidden flex justify-start"
             style={{ height: RULER_HEIGHT }}
           >
             <div
               style={{
-                marginLeft: Math.max(0, canvasOffsetLeft - (enableUploadPanel && variant === 'default' ? 0 : 0)),
+                marginLeft: Math.max(0, canvasOffsetLeft),
                 transform: `translateX(${-scrollLeft}px)`,
               }}
             >
@@ -235,6 +241,7 @@ export default function Editor({
               />
             </div>
           </div>
+
           {/* Right sidebar placeholder space */}
           {showPagePanel && variant === 'default' && (
             <div className="w-64 flex-shrink-0 bg-stone-200" style={{ height: RULER_HEIGHT }} />
@@ -305,6 +312,7 @@ export default function Editor({
                 activeSection={activeSection}
                 onActiveSectionChange={setActiveSection}
                 onImageDropped={handleImageSelect}
+                showMarginGuides={rulerState.showMarginGuides}
               />
             </div>
 

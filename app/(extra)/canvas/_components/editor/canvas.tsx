@@ -31,6 +31,7 @@ interface CanvasProps {
   selectedGroupId?: string | null;
   isEditorMode?: boolean;
   onSetDirty?: (dirty: boolean) => void;
+  showMarginGuides?: boolean;
 }
 
 export default function Canvas({
@@ -51,6 +52,7 @@ export default function Canvas({
   selectedGroupId = null,
   isEditorMode = false,
   onSetDirty,
+  showMarginGuides = false,
 }: CanvasProps) {
   console.group('📋 STEP 7: Canvas Component - Rendering');
   console.log('📄 Page data:', page);
@@ -62,7 +64,7 @@ export default function Canvas({
   console.log('📄 Footer elements:', footer?.elements?.length || 0);
   console.log('📄 Page number:', pageNumber);
   console.log('📄 Total pages:', totalPages);
-  
+
   if (!page) {
     console.error('❌ CRITICAL: Page prop is undefined!');
   }
@@ -72,7 +74,7 @@ export default function Canvas({
     console.log('✅ Page has', page.elements.length, 'elements to render');
     console.log('📄 First 3 elements:', page.elements.slice(0, 3));
   }
-  
+
   console.groupEnd();
   const canvasRef = useRef<HTMLDivElement>(null);
   const [draggedElementId, setDraggedElementId] = useState<string | null>(null);
@@ -99,7 +101,7 @@ export default function Canvas({
     e.stopPropagation();
 
     const element = page.elements.find((el) => el.id === elementId);
-    
+
     if (element?.locked || element?.visible === false) {
       return;
     }
@@ -416,9 +418,8 @@ export default function Canvas({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
-        className={`relative overflow-hidden transition-all ${
-          activeSection === 'page' ? 'ring-2 ring-blue-400 ring-inset' : ''
-        } ${isDragOverCanvas ? 'bg-blue-50 ring-2 ring-blue-500' : ''}`}
+        className={`relative overflow-hidden transition-all ${activeSection === 'page' ? 'ring-2 ring-blue-400 ring-inset' : ''
+          } ${isDragOverCanvas ? 'bg-blue-50 ring-2 ring-blue-500' : ''}`}
         style={{
           width: `${size.width}px`,
           height: `${bodyHeight}px`,
@@ -429,7 +430,7 @@ export default function Canvas({
           if (element.visible === false) {
             return null;
           }
-          
+
           if (element.type === 'text') {
             return (
               <TextElementComponent
@@ -500,6 +501,18 @@ export default function Canvas({
             isEditorMode={isEditorMode}
             pageSize={page.size}
             pageOrientation={page.orientation}
+          />
+        )}
+
+        {/* Marginal Guides (0.5 inch = 36pt) */}
+        {showMarginGuides && (
+          <div
+            className="absolute inset-0 pointer-events-none z-[100]"
+            style={{
+              margin: '36pt',
+              border: '1px dashed #3b82f6',
+              opacity: 0.5,
+            }}
           />
         )}
       </div>
