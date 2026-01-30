@@ -21,7 +21,7 @@ interface DepartmentBreakdownChartProps {
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4"];
 
 export function DepartmentBreakdownChart({ data, officeData = [] }: DepartmentBreakdownChartProps) {
-    const [activeTab, setActiveTab] = useState("department");
+    const [activeTab, setActiveTab] = useState("office");
 
     const currentData = activeTab === "department" ? data : officeData;
 
@@ -74,8 +74,8 @@ export function DepartmentBreakdownChart({ data, officeData = [] }: DepartmentBr
                 <div className="flex items-center space-x-2">
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-[200px]">
                         <TabsList className="grid w-full grid-cols-2 h-9 rounded-xl bg-zinc-100/80 dark:bg-zinc-800/80 p-1">
-                            <TabsTrigger value="department" className="text-xs font-bold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Department</TabsTrigger>
                             <TabsTrigger value="office" className="text-xs font-bold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Office</TabsTrigger>
+                            <TabsTrigger value="department" className="text-xs font-bold rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Department</TabsTrigger>
                         </TabsList>
                     </Tabs>
                 </div>
