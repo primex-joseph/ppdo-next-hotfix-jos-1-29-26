@@ -1,15 +1,14 @@
-import React from "react";
 import {
     LayoutDashboard,
     Gauge,
     FileEdit,
     Settings as SettingsIcon,
-    Calculator,
-    Vault,
+    Wallet,
+    LockKeyhole,
     Building2,
     FileText,
     GraduationCap,
-    Heart,
+    HeartPulse,
     TrendingUp,
 } from "lucide-react";
 import { NavItem } from "./types";
@@ -32,7 +31,7 @@ export const STATIC_NAV_ITEMS: NavItem[] = [
         name: "Projects (11 plans)",
         href: "/dashboard/project",
         category: "Department",
-        icon: <Calculator size={20} />,
+        icon: <Wallet size={20} />,
     },
     {
         name: "20% DF",
@@ -45,7 +44,7 @@ export const STATIC_NAV_ITEMS: NavItem[] = [
         name: "Trust Funds (Project Organs)",
         href: "/dashboard/trust-funds",
         category: "Department",
-        icon: <Vault size={20} />,
+        icon: <LockKeyhole size={20} />,
     },
     {
         name: "Special Education Funds",
@@ -58,7 +57,7 @@ export const STATIC_NAV_ITEMS: NavItem[] = [
         name: "Special Health Funds",
         href: "/dashboard/special-health-funds",
         category: "Department",
-        icon: <Heart size={20} />,
+        icon: <HeartPulse size={20} />,
         // isNew: true,
     },
     {
