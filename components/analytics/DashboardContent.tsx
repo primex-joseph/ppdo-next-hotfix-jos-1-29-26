@@ -8,6 +8,7 @@ import { KPICardsRow } from "@/components/ppdo/dashboard/summary/KPICardsRow";
 import { EnhancedBudgetChart } from "@/components/analytics/EnhancedBudgetChart";
 import { TimeSeriesChart } from "@/components/analytics/TimeSeriesChart";
 import { DepartmentBreakdownChart } from "@/components/analytics/DepartmentBreakdownChart";
+import { StatusDistributionChart } from "@/components/analytics/StatusDistributionChart";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
@@ -74,49 +75,13 @@ export function DashboardContent({ filters, year }: DashboardContentProps) {
 
             {/* Bottom Row: Department Breakdown & Categories */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <DepartmentBreakdownChart data={departmentBreakdown} />
+                <DepartmentBreakdownChart
+                    data={departmentBreakdown}
+                    officeData={analytics.officeBreakdown}
+                />
 
                 {/* Status Distribution (New Small Chart) */}
                 <StatusDistributionChart data={chartData.statusDistribution} />
-            </div>
-        </motion.div>
-    );
-}
-
-function StatusDistributionChart({ data }: { data: Record<string, number> }) {
-    const total = Object.values(data).reduce((acc, curr) => acc + curr, 0);
-
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800"
-        >
-            <h3 className="text-lg font-semibold mb-4">Project Status Distribution</h3>
-            <div className="space-y-4">
-                {Object.entries(data).map(([status, count]) => {
-                    const percentage = total > 0 ? (count / total) * 100 : 0;
-                    return (
-                        <div key={status} className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                                <span className="capitalize">{status}</span>
-                                <span className="font-medium">{count}</span>
-                            </div>
-                            <div className="h-2 w-full bg-zinc-100 dark:bg-zinc-800 rounded-full overflow-hidden">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${percentage}%` }}
-                                    className={cn(
-                                        "h-full rounded-full",
-                                        status === "completed" ? "bg-emerald-500" :
-                                            status === "ongoing" ? "bg-blue-500" :
-                                                status === "delayed" ? "bg-red-500" : "bg-zinc-400"
-                                    )}
-                                />
-                            </div>
-                        </div>
-                    );
-                })}
             </div>
         </motion.div>
     );

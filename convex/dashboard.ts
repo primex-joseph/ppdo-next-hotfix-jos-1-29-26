@@ -195,6 +195,9 @@ export const getDashboardAnalytics = query({
             allDepartments
         );
 
+        // Calculate breakdown by office (implementing agency)
+        const officeBreakdown = calculateOfficeBreakdown(allProjects);
+
         // Calculate time-series data
         const timeSeriesData = calculateTimeSeries(
             allProjects,
@@ -219,6 +222,7 @@ export const getDashboardAnalytics = query({
         return {
             metrics,
             departmentBreakdown,
+            officeBreakdown,
             timeSeriesData,
             recentActivities,
             chartData,
@@ -299,6 +303,44 @@ export const getDepartmentHierarchy = query({
         return hierarchy;
     }
 });
+
+function calculateOfficeBreakdown(projects: any[]) {
+    const officeMap = new Map<string, {
+        name: string;
+        allocated: number;
+        obligated: number;
+        utilized: number;
+        projectCount: number;
+    }>();
+
+    projects.forEach(p => {
+        if (p.implementingOffice) {
+            const office = p.implementingOffice;
+            if (!officeMap.has(office)) {
+                officeMap.set(office, {
+                    name: office,
+                    allocated: 0,
+                    obligated: 0,
+                    utilized: 0,
+                    projectCount: 0,
+                });
+            }
+            const entry = officeMap.get(office)!;
+            entry.allocated += p.totalBudgetAllocated || 0;
+            entry.obligated += p.obligatedBudget || 0;
+            entry.utilized += p.totalBudgetUtilized || 0;
+            entry.projectCount++;
+        }
+    });
+
+    return Array.from(officeMap.values())
+        .map(d => ({
+            ...d,
+            utilizationRate: d.allocated > 0 ? (d.utilized / d.allocated) * 100 : 0,
+        }))
+        .sort((a, b) => b.allocated - a.allocated)
+        .slice(0, 10);
+}
 
 /**
  * Time-Series Data Query
@@ -654,6 +696,7 @@ function calculateDepartmentBreakdown(budgetItems: any[], projects: any[], depar
         name: string;
         code: string;
         allocated: number;
+        obligated: number;
         utilized: number;
         projectCount: number;
     }>();
@@ -668,12 +711,14 @@ function calculateDepartmentBreakdown(budgetItems: any[], projects: any[], depar
                         name: dept.name,
                         code: dept.code,
                         allocated: 0,
+                        obligated: 0,
                         utilized: 0,
                         projectCount: 0,
                     });
                 }
                 const entry = deptMap.get(key)!;
                 entry.allocated += b.totalBudgetAllocated || 0;
+                entry.obligated += b.obligatedBudget || 0;
                 entry.utilized += b.totalBudgetUtilized || 0;
             }
         }

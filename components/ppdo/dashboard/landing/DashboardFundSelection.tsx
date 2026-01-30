@@ -42,7 +42,7 @@ export function DashboardFundSelection({ onSelectBudget, onBack }: DashboardFund
     const funds = [
         {
             id: "budget",
-            title: "Budget",
+            title: "Projects (11 plans)",
             description: "Manage and track annual fiscal budgets and allocations",
             icon: Wallet,
             color: "text-green-600 dark:text-green-400",
