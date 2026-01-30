@@ -326,7 +326,7 @@ export const getTimeSeriesData = query({
         if (!userId) throw new Error("Not authenticated");
 
         const fiscalYear = await ctx.db.get(args.fiscalYearId);
-        if (!fiscalYear) throw new Error("Fiscal year not found");
+        if (!fiscalYear) throw new Error("Year not found");
 
         // Fetch relevant data
         let projects = await ctx.db

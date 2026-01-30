@@ -53,7 +53,7 @@ export function PrintableDashboard({ filters }: { filters: DashboardFilters }) {
 
     return (
         <>
-            <div className="fixed bottom-6 right-6 flex gap-2 z-50">
+            <div className="hidden fixed bottom-6 right-6 flex gap-2 z-50">
                 <Button onClick={() => setShowPreview(true)}>
                     <Printer className="mr-2 h-4 w-4" />
                     Print Dashboard
@@ -110,7 +110,7 @@ function addCoverPage(doc: jsPDF, filters: DashboardFilters) {
 
     // Applied filters
     if (filters.fiscalYearId) {
-        doc.text(`Fiscal Year: ${filters.fiscalYearId}`, 20, 80);
+        doc.text(`Year: ${filters.fiscalYearId}`, 20, 80);
     }
 }
 
