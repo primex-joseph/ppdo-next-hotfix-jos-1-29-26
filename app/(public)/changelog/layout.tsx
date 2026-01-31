@@ -3,15 +3,15 @@
 "use client";
 
 
-import { Header } from "../../components/header/Header";
-import { Breadcrumbs } from "../../components/Breadcrumbs";
-import { TimeLocation } from "../../components/TimeLocation";
+import { Header } from "@/components/header/Header";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
+import { TimeLocation } from "@/components/TimeLocation";
 
-import { SearchProvider } from "../../contexts/SearchContext";
-import { SidebarProvider } from "../../contexts/SidebarContext";
-import { AccentColorProvider } from "../../contexts/AccentColorContext";
-import { BreadcrumbProvider } from "../../contexts/BreadcrumbContext";
-import { Sidebar } from "../../components/sidebar/Sidebar";
+import { SearchProvider } from "@/contexts/SearchContext";
+import { SidebarProvider } from "@/contexts/SidebarContext";
+import { AccentColorProvider } from "@/contexts/AccentColorContext";
+import { BreadcrumbProvider } from "@/contexts/BreadcrumbContext";
+import { Sidebar } from "@/components/sidebar/Sidebar";
 
 function ChangeLogContent({ children }: { children: React.ReactNode }) {
   return (
