@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { useCurrentUser } from "@/app/hooks/useCurrentUser";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Search, Clock, CheckCircle2, XCircle, AlertCircle, Key, RefreshCw, Copy, Eye, EyeOff } from "lucide-react";

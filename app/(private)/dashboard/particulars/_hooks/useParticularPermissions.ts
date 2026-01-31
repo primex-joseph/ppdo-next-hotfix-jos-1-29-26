@@ -1,6 +1,6 @@
 // app/dashboard/particulars/_hooks/useParticularPermissions.ts
 
-import { useCurrentUser } from "@/app/hooks/useCurrentUser";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 /**
  * Hook to check if user has permissions for Particular CRUD operations

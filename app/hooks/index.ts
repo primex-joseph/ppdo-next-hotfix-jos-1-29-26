@@ -1,31 +1,9 @@
 /**
- * Table Management Hooks Index
+ * @deprecated Import from '@/hooks' instead
+ * This compatibility layer will be removed in a future update.
  * 
- * Core hooks for standardized table functionality:
- * - useTableSearch: Search input with debouncing
- * - useTableSelection: Row selection with select-all
- * - useTableColumnVisibility: Column visibility with persistence
+ * Hooks have been moved to the project root 'hooks/' directory
+ * for better organization and separation from App Router code.
  */
 
-export {
-  useTableSearch,
-  type UseTableSearchOptions,
-  type UseTableSearchReturn,
-} from "./useTableSearch";
-
-export {
-  useTableSelection,
-  type UseTableSelectionOptions,
-  type UseTableSelectionReturn,
-} from "./useTableSelection";
-
-export {
-  useTableColumnVisibility,
-  type UseTableColumnVisibilityOptions,
-  type UseTableColumnVisibilityReturn,
-} from "./useTableColumnVisibility";
-
-// Re-export existing hooks for convenience
-export { useCurrentUser } from "./useCurrentUser";
-export { usePermissions } from "./usePermissions";
-export { useDebounce } from "./use-debounce";
+export * from "@/hooks";

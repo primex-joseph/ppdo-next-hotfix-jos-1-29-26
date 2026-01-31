@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, Loader2, Building2, KeyRound } from "lucide-react";
 import { Id } from "../../../../../convex/_generated/dataModel";
 import { formatDate, getInitials } from "@/lib/utils";
-import { useCurrentUser } from "@/app/hooks/useCurrentUser";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useAccentColor } from "../../../../../contexts/AccentColorContext";
 import { UserFilters } from "./components/UserFilters";
 import { UserRoleBadge } from "./components/UserRoleBadge";

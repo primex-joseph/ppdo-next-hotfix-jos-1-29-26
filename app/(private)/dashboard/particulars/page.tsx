@@ -10,7 +10,7 @@ import { toast } from "sonner";
 
 import { ConsolidatedParticularsList } from "./_components/ConsolidatedParticularsList";
 import { YearSelector } from "./_components/YearSelector";
-import { useCurrentUser } from "@/app/hooks/useCurrentUser";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useUrlState } from "./_hooks/useUrlState";
 import { UI_TIMING } from "./_constants/particularConstants";

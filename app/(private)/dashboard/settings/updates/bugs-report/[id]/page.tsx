@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
-import { useCurrentUser } from "@/app/hooks/useCurrentUser";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 export default function BugReportDetailsPage() {
     const params = useParams();

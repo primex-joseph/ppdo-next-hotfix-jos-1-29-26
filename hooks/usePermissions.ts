@@ -1,6 +1,6 @@
 // 3. hooks/usePermissions.ts
 import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "@/convex/_generated/api";
 
 export function usePermissions() {
   const permissions = useQuery(api.permissions.getUserPermissions);
