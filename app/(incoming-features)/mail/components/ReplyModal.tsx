@@ -1,23 +1,23 @@
 "use client";
 
-import { ComposeData } from "../types";
-import { useAccentColor } from "../../../contexts/AccentColorContext";
+import { Email, ComposeData } from "../types";
+import { useAccentColor } from "../../../../contexts/AccentColorContext";
 
-interface ComposeModalProps {
+interface ReplyModalProps {
+  replyToEmail: Email;
   composeData: ComposeData;
   onDataChange: (data: ComposeData) => void;
   onClose: () => void;
   onSend: () => void;
-  onSaveDraft: () => void;
 }
 
-export function ComposeModal({
+export function ReplyModal({
+  replyToEmail,
   composeData,
   onDataChange,
   onClose,
   onSend,
-  onSaveDraft,
-}: ComposeModalProps) {
+}: ReplyModalProps) {
   const { accentColorValue } = useAccentColor();
 
   return (
@@ -25,7 +25,7 @@ export function ComposeModal({
       <div className="bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="p-4 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            New Message
+            Reply
           </h2>
           <button
             onClick={onClose}
@@ -69,57 +69,6 @@ export function ComposeModal({
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = "";
               }}
-              placeholder="Recipient email"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-              CC (optional)
-            </label>
-            <input
-              type="email"
-              value={composeData.cc}
-              onChange={(e) =>
-                onDataChange({ ...composeData, cc: e.target.value })
-              }
-              className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 transition-all"
-              style={
-                {
-                  "--tw-ring-color": accentColorValue,
-                } as React.CSSProperties
-              }
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = accentColorValue;
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "";
-              }}
-              placeholder="CC email"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-              BCC (optional)
-            </label>
-            <input
-              type="email"
-              value={composeData.bcc}
-              onChange={(e) =>
-                onDataChange({ ...composeData, bcc: e.target.value })
-              }
-              className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 transition-all"
-              style={
-                {
-                  "--tw-ring-color": accentColorValue,
-                } as React.CSSProperties
-              }
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = accentColorValue;
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = "";
-              }}
-              placeholder="BCC email"
             />
           </div>
           <div>
@@ -144,7 +93,6 @@ export function ComposeModal({
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = "";
               }}
-              placeholder="Subject"
             />
           </div>
           <div>
@@ -169,23 +117,22 @@ export function ComposeModal({
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = "";
               }}
-              placeholder="Type your message here..."
             />
           </div>
         </div>
         <div className="p-4 border-t border-zinc-200 dark:border-zinc-800 flex items-center justify-end gap-2">
           <button
-            onClick={onSaveDraft}
+            onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800 text-zinc-700 dark:text-zinc-300"
           >
-            Save Draft
+            Cancel
           </button>
           <button
             onClick={onSend}
             className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:shadow-md text-white"
             style={{ backgroundColor: accentColorValue }}
           >
-            Send
+            Send Reply
           </button>
         </div>
       </div>

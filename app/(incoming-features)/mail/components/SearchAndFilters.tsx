@@ -1,7 +1,7 @@
 "use client";
 
 import { EmailFilter } from "../types";
-import { useAccentColor } from "../../../contexts/AccentColorContext";
+import { useAccentColor } from "../../../../contexts/AccentColorContext";
 
 interface SearchAndFiltersProps {
   searchQuery: string;
@@ -60,11 +60,10 @@ export function SearchAndFilters({
         <div className="flex gap-2">
           <button
             onClick={() => onFilterChange("all")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === "all"
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === "all"
                 ? "text-white"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            }`}
+              }`}
             style={
               filter === "all" ? { backgroundColor: accentColorValue } : {}
             }
@@ -73,11 +72,10 @@ export function SearchAndFilters({
           </button>
           <button
             onClick={() => onFilterChange("unread")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === "unread"
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === "unread"
                 ? "text-white"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            }`}
+              }`}
             style={
               filter === "unread" ? { backgroundColor: accentColorValue } : {}
             }
@@ -86,11 +84,10 @@ export function SearchAndFilters({
           </button>
           <button
             onClick={() => onFilterChange("starred")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === "starred"
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === "starred"
                 ? "text-white"
                 : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
-            }`}
+              }`}
             style={
               filter === "starred" ? { backgroundColor: accentColorValue } : {}
             }

@@ -1,7 +1,7 @@
 "use client";
 
 import { Email, EmailFolder } from "../types";
-import { useAccentColor } from "../../../contexts/AccentColorContext";
+import { useAccentColor } from "../../../../contexts/AccentColorContext";
 
 interface EmailDetailProps {
   email: Email;
@@ -36,11 +36,10 @@ export function EmailDetail({
                   className="shrink-0"
                 >
                   <svg
-                    className={`w-5 h-5 ${
-                      email.isStarred
+                    className={`w-5 h-5 ${email.isStarred
                         ? "fill-yellow-400 text-yellow-400"
                         : "text-zinc-400 dark:text-zinc-500"
-                    }`}
+                      }`}
                     fill={email.isStarred ? "currentColor" : "none"}
                     stroke="currentColor"
                     viewBox="0 0 24 24"
