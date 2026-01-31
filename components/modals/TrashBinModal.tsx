@@ -23,7 +23,7 @@ import {
   Search
 } from "lucide-react";
 import { toast } from "sonner";
-import { useAccentColor } from "../contexts/AccentColorContext";
+import { useAccentColor } from "@/contexts/AccentColorContext";
 
 // ✅ FIXED: Added twentyPercentDF to type union
 type EntityType = "budget" | "project" | "breakdown" | "trustFund" | "specialEducationFund" | "specialHealthFund" | "twentyPercentDF";

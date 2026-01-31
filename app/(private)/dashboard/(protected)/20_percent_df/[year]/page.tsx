@@ -6,7 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrashBinModal } from "@/components/TrashBinModal";
+import { TrashBinModal } from "@/components/modals";
 
 // 20% DF Components
 import { TwentyPercentDFTable } from "@/components/ppdo/twenty-percent-df/components/TwentyPercentDFTable";

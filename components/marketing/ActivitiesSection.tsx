@@ -64,7 +64,7 @@ const news = [
   },
 ];
 
-export default function PPDOActivities() {
+export default function ActivitiesSection() {
   return (
     <section
       className="bg-[#f8f8f8] py-20"

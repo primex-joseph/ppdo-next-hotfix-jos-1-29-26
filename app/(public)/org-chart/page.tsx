@@ -2,7 +2,7 @@
 
 import Header from "@/components/layout/Header";
 import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import { Footer } from "@/components/layout";
 import Image from "next/image";
 import FadeIn from "@/components/ui/FadeIn";
 

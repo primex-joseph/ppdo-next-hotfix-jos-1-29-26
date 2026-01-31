@@ -1,6 +1,6 @@
 "use client";
 
-export default function PPDOBanner() {
+export default function HeroBanner() {
   return (
     <section className="text-center py-14 px-6 bg-[#f8f8f8]">
 

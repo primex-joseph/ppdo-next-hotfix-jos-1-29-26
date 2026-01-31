@@ -8,8 +8,8 @@ import { useConvexAuth, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 
 import { Header } from "../../../components/header/Header";
-import { Breadcrumbs } from "../../../components/Breadcrumbs";
-import { TimeLocation } from "../../../components/TimeLocation";
+import { Breadcrumbs } from "@/components/navigation";
+import { TimeLocation } from "@/components/shared";
 import { SearchProvider } from "../../../contexts/SearchContext";
 import { SidebarProvider } from "../../../contexts/SidebarContext";
 import { AccentColorProvider } from "../../../contexts/AccentColorContext";

@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { useAccentColor } from "../contexts/AccentColorContext";
+import { useAccentColor } from "@/contexts/AccentColorContext";
 
 interface SpeedometerCardProps {
   title: string;

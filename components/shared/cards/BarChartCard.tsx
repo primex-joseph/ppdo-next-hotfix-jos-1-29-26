@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useAccentColor } from "../contexts/AccentColorContext";
+import { useAccentColor } from "@/contexts/AccentColorContext";
 
 interface BarDatum {
   label: string;

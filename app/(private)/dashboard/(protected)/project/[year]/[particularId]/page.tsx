@@ -6,7 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Expand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import AccessDeniedPage from "@/components/AccessDeniedPage";
-import { TrashBinModal } from "@/components/TrashBinModal";
+import { TrashBinModal } from "@/components/modals";
 
 // Import from reusable component library
 // Note: We use relative imports if we are inside the same feature folder structure, 

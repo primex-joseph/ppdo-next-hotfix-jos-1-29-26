@@ -22,4 +22,3 @@ export function SearchBar({ searchQuery, onSearchChange }: SearchBarProps) {
   );
 }
 
-

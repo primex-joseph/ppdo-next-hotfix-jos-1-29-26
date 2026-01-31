@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { ExtendedSystem } from "../data/systems";
+import { ExtendedSystem } from "@/data/systems";
 import { ProductHighlightCard } from "@/components/ui/product-card";
 
 interface SystemCardProps {

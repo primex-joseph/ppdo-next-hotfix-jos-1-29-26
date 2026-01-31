@@ -5,7 +5,7 @@
 import { use, useState, useMemo } from "react";
 import { useFundsData, useFundsMutations, FundsPageHeader, FundsStatistics, FundsTable, FundForm } from "@/components/ppdo/funds";
 import { api } from "@/convex/_generated/api";
-import { TrashBinModal } from "@/components/TrashBinModal";
+import { TrashBinModal } from "@/components/modals";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PageProps {

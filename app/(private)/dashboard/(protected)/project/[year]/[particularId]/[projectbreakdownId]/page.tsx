@@ -28,7 +28,7 @@ import {
 import { StatusChainCard } from "./_components/StatusChainCard";
 
 // Shared Components
-import { TrashBinModal } from "@/components/TrashBinModal";
+import { TrashBinModal } from "@/components/modals";
 import { Modal } from "@/components/ppdo/11_project_plan";
 import { ConfirmationModal } from "@/components/ppdo/11_project_plan";
 

@@ -7,7 +7,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Expand } from "lucide-react";
 import AccessDeniedPage from "@/components/AccessDeniedPage";
-import { TrashBinModal } from "@/components/TrashBinModal";
+import { TrashBinModal } from "@/components/modals";
 import {
   BudgetStatistics,
   BudgetTrackingTable,

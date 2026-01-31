@@ -3,7 +3,7 @@
 import Header from "@/components/layout/Header";
 import Navbar from "@/components/layout/Navbar";
 import Image from "next/image";
-import Footer from "@/components/layout/Footer";
+import { Footer } from "@/components/layout";
 import FadeIn from "@/components/ui/FadeIn";
 
 export default function DepartmentHeadPage() {

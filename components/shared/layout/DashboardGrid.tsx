@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { ExtendedSystem } from "../data/systems";
-import { SystemCard } from "./SystemCard";
+import { ExtendedSystem } from "@/data/systems";
+import { SystemCard } from "@/components/shared/layout/SystemCard";
 
 interface DashboardGridProps {
   systems: ExtendedSystem[];

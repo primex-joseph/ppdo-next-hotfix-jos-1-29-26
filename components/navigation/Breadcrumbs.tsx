@@ -4,8 +4,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAccentColor } from "../contexts/AccentColorContext";
-import { useBreadcrumb } from "../contexts/BreadcrumbContext";
+import { useAccentColor } from "@/contexts/AccentColorContext";
+import { useBreadcrumb } from "@/contexts/BreadcrumbContext";
 
 interface BreadcrumbItem {
   label: string;

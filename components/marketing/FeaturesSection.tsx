@@ -26,7 +26,7 @@ type Feature = {
   items: ModalItem[];
 };
 
-export default function PPDOFeatures() {
+export default function FeaturesSection() {
   const [activeFeature, setActiveFeature] = useState<Feature | null>(null);
 
   const features: Feature[] = [

@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { toast } from "sonner";
-import { ThemeToggle } from "../../../components/ThemeToggle";
+import { ThemeToggle } from "@/components/shared";
 
 interface LocationData {
   city: string;

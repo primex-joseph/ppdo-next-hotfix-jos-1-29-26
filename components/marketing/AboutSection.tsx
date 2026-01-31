@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 
-export default function PPDOAbout() {
+export default function AboutSection() {
   const [activeTab, setActiveTab] = useState<"mission" | "vision" | "quality">(
     "mission"
   );

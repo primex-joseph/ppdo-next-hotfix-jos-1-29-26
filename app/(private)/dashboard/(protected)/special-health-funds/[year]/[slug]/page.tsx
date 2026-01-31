@@ -24,7 +24,7 @@ import {
 } from "@/components/ppdo/breakdown";
 
 // Shared Components
-import { TrashBinModal } from "@/components/TrashBinModal";
+import { TrashBinModal } from "@/components/modals";
 import { Modal } from "@/components/ppdo/11_project_plan";
 import { ConfirmationModal } from "@/components/ppdo/11_project_plan";
 import { AutoCalcConfirmationModal } from "@/components/ppdo/breakdown/shared/AutoCalcConfirmationModal";

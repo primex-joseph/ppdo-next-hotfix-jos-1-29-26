@@ -7,12 +7,12 @@ import { api } from "@/convex/_generated/api";
 
 import Header from "@/components/layout/Header";
 import Navbar from "@/components/layout/Navbar";
-import PPDOBanner from "@/components/ppdo/PPDOBanner";
-import PPDOFeatures from "@/components/ppdo/PPDOFeatures";
+import HeroBanner from "@/components/marketing/HeroBanner";
+import FeaturesSection from "@/components/marketing/FeaturesSection";
 import GovernorMessage from "@/components/layout/GovernorMessage";
-import PPDOAbout from "@/components/ppdo/PPDOAbout";
-import PPDOActivities from "@/components/ppdo/PPDOActivities";
-import Footer from "@/components/layout/Footer";
+import AboutSection from "@/components/marketing/AboutSection";
+import ActivitiesSection from "@/components/marketing/ActivitiesSection";
+import { Footer } from "@/components/layout";
 import FadeIn from "@/components/ui/FadeIn";
 
 export default function Home() {
@@ -39,11 +39,11 @@ export default function Home() {
       </FadeIn>
 
       <FadeIn>
-        <PPDOBanner />
+        <HeroBanner />
       </FadeIn>
 
       <FadeIn delay={0.05}>
-        <PPDOFeatures />
+        <FeaturesSection />
       </FadeIn>
 
       <FadeIn delay={0.1}>
@@ -51,11 +51,11 @@ export default function Home() {
       </FadeIn>
 
       <FadeIn delay={0.15}>
-        <PPDOAbout />
+        <AboutSection />
       </FadeIn>
 
       <FadeIn delay={0.25}>
-        <PPDOActivities />
+        <ActivitiesSection />
       </FadeIn>
 
       <FadeIn>
