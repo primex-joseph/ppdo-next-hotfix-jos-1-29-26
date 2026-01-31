@@ -16,10 +16,19 @@ Built with **Next.js 16**, **Convex**, and **Tailwind CSS**. Designed for govern
 | [📊 Dashboard Docs](./app/dashboard/docs/README.md) | Main dashboard architecture, routing, modules |
 | [🧩 Components Docs](./components/ppdo/docs/README.md) | Reusable component library documentation |
 | [📁 Projects Module Docs](./app/dashboard/project/docs/README.md) | Detailed Projects module (Budget → Projects → Breakdowns → Details) |
+| [⚡ PowerShell Automation](./docs/POWERSHELL_AUTOMATION.md) | Automate deployment with push-staging command |
+| [🚀 Setup Guide](./docs/SETUP_GUIDE.md) | Development & production setup instructions |
 
 ---
 
 ## 📖 Full Documentation Index
+
+### General Documentation (`docs/`)
+
+| File | Topic |
+|------|-------|
+| [POWERSHELL_AUTOMATION.md](./docs/POWERSHELL_AUTOMATION.md) | PowerShell automation for deployment |
+| [SETUP_GUIDE.md](./docs/SETUP_GUIDE.md) | Development & production setup guide |
 
 ### Dashboard Documentation (`app/dashboard/docs/`)
 
