@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 
-type MigrationStep = "input" | "summary" | "result";
+type MigrationStep = "input" | "verification" | "summary" | "result";
 
 export type MigrationError = {
   projectId?: string;
@@ -26,6 +26,16 @@ export type MigrationResult = {
   migratedProjects: number;
   migratedBreakdowns: number;
   createdTwentyPercentDFItems: CreatedItem[];
+  sourceTotals: {
+    totalAllocated: number;
+    totalUtilized: number;
+    totalObligated: number;
+  };
+  targetTotals: {
+    totalAllocated: number;
+    totalUtilized: number;
+    totalObligated: number;
+  };
   errors: MigrationError[];
 };
 
@@ -42,6 +52,28 @@ export type PreviewData = {
   projectsCount: number;
   totalBreakdownsCount: number;
   breakdownsByProject: BreakdownByProject[];
+  sourceTotals: {
+    totalAllocated: number;
+    totalUtilized: number;
+    totalObligated: number;
+  };
+};
+
+export type VerificationData = {
+  sourceBudgetItem: { particulars: string; _id: string };
+  targetYear: number;
+  projectsCount: number;
+  totalBreakdownsCount: number;
+  sourceTotals: {
+    totalAllocated: number;
+    totalUtilized: number;
+    totalObligated: number;
+  };
+  targetTotals: {
+    totalAllocated: number;
+    totalUtilized: number;
+    totalObligated: number;
+  };
 };
 
 export function useMigration() {
@@ -58,6 +90,7 @@ export function useMigration() {
   // Loading and result states
   const [isLoading, setIsLoading] = useState(false);
   const [resultData, setResultData] = useState<MigrationResult | null>(null);
+  const [verificationData, setVerificationData] = useState<VerificationData | null>(null);
 
   // Fetch fiscal years for dropdown
   const fiscalYears = useQuery(api.fiscalYears.list, {}) ?? [];
@@ -93,8 +126,38 @@ export function useMigration() {
               0
             ),
           })) ?? [],
+        sourceTotals: rawPreviewData.sourceTotals ?? {
+          totalAllocated: 0,
+          totalUtilized: 0,
+          totalObligated: 0,
+        },
       }
     : null;
+
+  // Populate verification data when rawPreviewData is available
+  if (rawPreviewData && !verificationData) {
+    const newVerificationData: VerificationData = {
+      sourceBudgetItem: {
+        _id: rawPreviewData.sourceBudgetItem?._id ?? "",
+        particulars: rawPreviewData.sourceBudgetItem?.particulars ?? "",
+      },
+      targetYear: rawPreviewData.targetYear ?? targetYear ?? 0,
+      projectsCount: rawPreviewData.projectsCount ?? 0,
+      totalBreakdownsCount: rawPreviewData.totalBreakdownsCount ?? 0,
+      sourceTotals: rawPreviewData.sourceTotals ?? {
+        totalAllocated: 0,
+        totalUtilized: 0,
+        totalObligated: 0,
+      },
+      // Target totals are same as source (exact copy)
+      targetTotals: rawPreviewData.sourceTotals ?? {
+        totalAllocated: 0,
+        totalUtilized: 0,
+        totalObligated: 0,
+      },
+    };
+    setVerificationData(newVerificationData);
+  }
 
   // Convex mutation for migration
   const migrateMutation = useMutation(api.migrations.migrateBudgetToTwentyPercentDF);
@@ -103,6 +166,11 @@ export function useMigration() {
   const handleInputSubmit = (newSourceId: string, newTargetYear: number) => {
     setSourceId(newSourceId);
     setTargetYear(newTargetYear);
+    setStep("verification");
+  };
+
+  // Handler: Confirm verification step
+  const handleVerificationConfirm = () => {
     setStep("summary");
   };
 
@@ -130,6 +198,9 @@ export function useMigration() {
           particulars: item.particulars,
           implementingOffice: item.implementingOffice,
         })) ?? [],
+        // Add verification totals
+        sourceTotals: result.sourceTotals,
+        targetTotals: result.targetTotals,
         errors:
           result.errors?.map((e: any) => ({
             projectId: e.projectId,
@@ -156,6 +227,16 @@ export function useMigration() {
         migratedProjects: 0,
         migratedBreakdowns: 0,
         createdTwentyPercentDFItems: [],
+        sourceTotals: {
+          totalAllocated: 0,
+          totalUtilized: 0,
+          totalObligated: 0,
+        },
+        targetTotals: {
+          totalAllocated: 0,
+          totalUtilized: 0,
+          totalObligated: 0,
+        },
         errors: [{ error: String(error) }],
       });
     } finally {
@@ -167,6 +248,7 @@ export function useMigration() {
   const handleRetry = () => {
     setStep("input");
     setResultData(null);
+    setVerificationData(null);
   };
 
   // Handler: Close and reset
@@ -175,6 +257,7 @@ export function useMigration() {
     setSourceId("k57eavzkpm7yrjzsc3bp4302dx7z6ygj");
     setTargetYear(null);
     setResultData(null);
+    setVerificationData(null);
     setIsOpen(false);
   };
 
@@ -187,12 +270,14 @@ export function useMigration() {
     sourceId,
     targetYear,
     fiscalYears,
+    verificationData,
     previewData,
     resultData,
     isLoading,
 
     // Handlers
     handleInputSubmit,
+    handleVerificationConfirm,
     handleConfirm,
     handleRetry,
     handleClose,

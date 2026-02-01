@@ -117,6 +117,11 @@ export const getMigrationPreview = query({
     targetYear: number;
     projectsCount: number;
     totalBreakdownsCount: number;
+    sourceTotals: {
+      totalAllocated: number;
+      totalUtilized: number;
+      totalObligated: number;
+    };
     projectsWithBreakdowns: Array<{
       projectId: Id<"projects">;
       projectName: string;
@@ -160,6 +165,11 @@ export const getMigrationPreview = query({
         targetYear: args.targetYear,
         projectsCount: 0,
         totalBreakdownsCount: 0,
+        sourceTotals: {
+          totalAllocated: 0,
+          totalUtilized: 0,
+          totalObligated: 0,
+        },
         projectsWithBreakdowns: [],
         errors,
       };
@@ -214,12 +224,20 @@ export const getMigrationPreview = query({
       });
     }
 
+    // Calculate source totals for verification
+    const sourceTotals = {
+      totalAllocated: projects.reduce((sum, p) => sum + (p.totalBudgetAllocated || 0), 0),
+      totalUtilized: projects.reduce((sum, p) => sum + (p.totalBudgetUtilized || 0), 0),
+      totalObligated: projects.reduce((sum, p) => sum + (p.obligatedBudget || 0), 0),
+    };
+
     return {
       success: true,
       sourceBudgetItem,
       targetYear: args.targetYear,
       projectsCount: projects.length,
       totalBreakdownsCount,
+      sourceTotals,
       projectsWithBreakdowns,
       errors,
     };
@@ -236,6 +254,9 @@ export const getMigrationPreview = query({
  * 
  * For each project, creates a new twentyPercentDF item for the target year,
  * then migrates all breakdowns to link to the newly created items.
+ * 
+ * IMPORTANT: This migration copies EXACT values from source to target.
+ * Auto-calculation is DISABLED to preserve data integrity.
  */
 export const migrateBudgetToTwentyPercentDF = mutation({
   args: {
@@ -251,7 +272,20 @@ export const migrateBudgetToTwentyPercentDF = mutation({
       id: Id<"twentyPercentDF">;
       particulars: string;
       implementingOffice: string;
+      totalBudgetAllocated: number;
+      totalBudgetUtilized: number;
+      obligatedBudget?: number;
     }>;
+    sourceTotals: {
+      totalAllocated: number;
+      totalUtilized: number;
+      totalObligated: number;
+    };
+    targetTotals: {
+      totalAllocated: number;
+      totalUtilized: number;
+      totalObligated: number;
+    };
     errors: Array<{
       projectId?: string;
       projectName?: string;
@@ -274,6 +308,9 @@ export const migrateBudgetToTwentyPercentDF = mutation({
       id: Id<"twentyPercentDF">;
       particulars: string;
       implementingOffice: string;
+      totalBudgetAllocated: number;
+      totalBudgetUtilized: number;
+      obligatedBudget?: number;
     }> = [];
     
     let migratedProjects = 0;
@@ -318,6 +355,9 @@ export const migrateBudgetToTwentyPercentDF = mutation({
           id: newTwentyPercentDFId,
           particulars: project.particulars,
           implementingOffice: project.implementingOffice,
+          totalBudgetAllocated: project.totalBudgetAllocated,
+          totalBudgetUtilized: project.totalBudgetUtilized,
+          obligatedBudget: project.obligatedBudget,
         });
 
         // Log creation activity
@@ -329,8 +369,11 @@ export const migrateBudgetToTwentyPercentDF = mutation({
             implementingOffice: project.implementingOffice,
             year: args.targetYear,
             sourceProjectId: project._id,
+            totalBudgetAllocated: project.totalBudgetAllocated,
+            totalBudgetUtilized: project.totalBudgetUtilized,
+            obligatedBudget: project.obligatedBudget,
           },
-          reason: `Created from project during migration to year ${args.targetYear}`,
+          reason: `Created from project during migration to year ${args.targetYear} (EXACT COPY - auto-calculation disabled)`,
         });
       } catch (createError) {
         const errorMessage = createError instanceof Error ? createError.message : String(createError);
@@ -398,17 +441,9 @@ export const migrateBudgetToTwentyPercentDF = mutation({
           }
         }
 
-        // Recalculate metrics for the newly created twentyPercentDF item
-        try {
-          await recalculateTwentyPercentDFMetrics(ctx, targetTwentyPercentDFId, userId);
-        } catch (metricsError) {
-          const errorMessage = metricsError instanceof Error ? metricsError.message : String(metricsError);
-          errors.push({
-            projectId: project._id,
-            projectName: project.particulars,
-            error: `Failed to recalculate metrics: ${errorMessage}`,
-          });
-        }
+        // Note: We do NOT recalculate metrics for the newly created twentyPercentDF item
+        // because we want to preserve the EXACT values copied from the source project.
+        // Auto-calculation is disabled (autoCalculateBudgetUtilized: false).
 
         migratedProjects++;
       } catch (projectError) {
@@ -421,12 +456,28 @@ export const migrateBudgetToTwentyPercentDF = mutation({
       }
     }
 
+    // Calculate source totals for verification
+    const sourceTotals = {
+      totalAllocated: projects.reduce((sum, p) => sum + (p.totalBudgetAllocated || 0), 0),
+      totalUtilized: projects.reduce((sum, p) => sum + (p.totalBudgetUtilized || 0), 0),
+      totalObligated: projects.reduce((sum, p) => sum + (p.obligatedBudget || 0), 0),
+    };
+
+    // Calculate target totals for verification
+    const targetTotals = {
+      totalAllocated: createdTwentyPercentDFItems.reduce((sum, item) => sum + (item.totalBudgetAllocated || 0), 0),
+      totalUtilized: createdTwentyPercentDFItems.reduce((sum, item) => sum + (item.totalBudgetUtilized || 0), 0),
+      totalObligated: createdTwentyPercentDFItems.reduce((sum, item) => sum + (item.obligatedBudget || 0), 0),
+    };
+
     return {
       success: errors.length === 0,
       targetYear: args.targetYear,
       migratedProjects,
       migratedBreakdowns,
       createdTwentyPercentDFItems,
+      sourceTotals,
+      targetTotals,
       errors,
     };
   },
@@ -438,7 +489,9 @@ export const migrateBudgetToTwentyPercentDF = mutation({
 
 /**
  * Create a new twentyPercentDF item from a project
- * Copies all fields from the project and sets year to targetYear
+ * Copies ALL fields EXACTLY from the source project with NO auto-calculation.
+ * 
+ * CRITICAL: autoCalculateBudgetUtilized is set to FALSE to preserve exact values.
  */
 async function createTwentyPercentDFFromProject(
   ctx: any,
@@ -448,60 +501,60 @@ async function createTwentyPercentDFFromProject(
 ): Promise<Id<"twentyPercentDF">> {
   const now = Date.now();
 
-  // Copy all fields from project to twentyPercentDF
-  // Note: projectsOngoing is optional in projects but required in twentyPercentDF
-  const twentyPercentDFData = {
-    // Project identification
+  // Create twentyPercentDF with EXACT values from project
+  // IMPORTANT: autoCalculateBudgetUtilized is set to false to prevent recalculation
+  const newTwentyPercentDFId = await ctx.db.insert("twentyPercentDF", {
+    // Parent identification
     particulars: project.particulars,
     implementingOffice: project.implementingOffice,
     departmentId: project.departmentId,
     categoryId: project.categoryId,
-    // budgetItemId is intentionally left undefined to break link with old budget
-
-    // Financial data
+    
+    // Financial data - EXACT COPY (no calculation)
     totalBudgetAllocated: project.totalBudgetAllocated,
     obligatedBudget: project.obligatedBudget,
-    totalBudgetUtilized: project.totalBudgetUtilized,
+    totalBudgetUtilized: project.totalBudgetUtilized,  // EXACT COPY
     utilizationRate: project.utilizationRate,
-    autoCalculateBudgetUtilized: project.autoCalculateBudgetUtilized,
-
-    // Metrics
-    projectCompleted: project.projectCompleted,
-    projectDelayed: project.projectDelayed,
-    // projectsOngoing: use project's value or default to 0
+    
+    // DISABLE auto-calculation to preserve exact values
+    autoCalculateBudgetUtilized: false,
+    
+    // Metrics - EXACT COPY
+    projectCompleted: project.projectCompleted ?? 0,
+    projectDelayed: project.projectDelayed ?? 0,
     projectsOngoing: project.projectsOngoing ?? 0,
-
-    // Additional fields
+    
+    // Other fields - EXACT COPY
     remarks: project.remarks,
-    year: targetYear, // Set to target year
+    year: targetYear,  // This is the only new/modified field
     status: project.status,
     targetDateCompletion: project.targetDateCompletion,
     projectManagerId: project.projectManagerId,
-
+    
     // Pin functionality (reset for new record)
     isPinned: false,
     pinnedAt: undefined,
     pinnedBy: undefined,
-
+    
     // Trash system (reset for new record)
     isDeleted: false,
     deletedAt: undefined,
     deletedBy: undefined,
-
+    deletionReason: undefined,
+    
     // System fields
     createdBy: userId,
     createdAt: now,
     updatedAt: now,
     updatedBy: userId,
-  };
-
-  const newTwentyPercentDFId = await ctx.db.insert("twentyPercentDF", twentyPercentDFData);
+  });
 
   return newTwentyPercentDFId;
 }
 
 /**
  * Migrate a single govtProjectBreakdown to twentyPercentDFBreakdown
+ * Copies ALL fields EXACTLY from the source breakdown.
  */
 async function migrateBreakdown(
   ctx: any,
@@ -511,12 +564,12 @@ async function migrateBreakdown(
 ): Promise<Id<"twentyPercentDFBreakdowns">> {
   const now = Date.now();
 
-  // Map all fields from baseBreakdownSchema
+  // Map all fields from baseBreakdownSchema - EXACT COPY
   const newBreakdownData = {
     // Parent reference (target)
     twentyPercentDFId: targetTwentyPercentDFId,
 
-    // Core fields
+    // Core fields - EXACT COPY
     projectName: sourceBreakdown.projectName,
     implementingOffice: sourceBreakdown.implementingOffice,
     projectTitle: sourceBreakdown.projectTitle,
@@ -525,19 +578,19 @@ async function migrateBreakdown(
     district: sourceBreakdown.district,
     remarks: sourceBreakdown.remarks,
 
-    // Financial data
+    // Financial data - EXACT COPY
     allocatedBudget: sourceBreakdown.allocatedBudget,
     obligatedBudget: sourceBreakdown.obligatedBudget,
-    budgetUtilized: sourceBreakdown.budgetUtilized,
+    budgetUtilized: sourceBreakdown.budgetUtilized,  // CRITICAL - exact copy
     balance: sourceBreakdown.balance,
     utilizationRate: sourceBreakdown.utilizationRate,
     fundSource: sourceBreakdown.fundSource,
 
-    // Progress tracking
+    // Progress tracking - EXACT COPY
     projectAccomplishment: sourceBreakdown.projectAccomplishment,
     status: sourceBreakdown.status,
 
-    // Timeline
+    // Timeline - EXACT COPY
     reportDate: sourceBreakdown.reportDate,
     dateStarted: sourceBreakdown.dateStarted,
     targetDate: sourceBreakdown.targetDate,
