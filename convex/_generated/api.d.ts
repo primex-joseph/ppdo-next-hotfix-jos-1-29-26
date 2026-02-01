@@ -130,6 +130,7 @@ import type * as specialHealthFundBreakdowns from "../specialHealthFundBreakdown
 import type * as specialHealthFunds from "../specialHealthFunds.js";
 import type * as suggestions from "../suggestions.js";
 import type * as tableSettings from "../tableSettings.js";
+import type * as trash from "../trash.js";
 import type * as trustFundAccess from "../trustFundAccess.js";
 import type * as trustFundActivities from "../trustFundActivities.js";
 import type * as trustFundBreakdowns from "../trustFundBreakdowns.js";
@@ -270,6 +271,7 @@ declare const fullApi: ApiFromModules<{
   specialHealthFunds: typeof specialHealthFunds;
   suggestions: typeof suggestions;
   tableSettings: typeof tableSettings;
+  trash: typeof trash;
   trustFundAccess: typeof trustFundAccess;
   trustFundActivities: typeof trustFundActivities;
   trustFundBreakdowns: typeof trustFundBreakdowns;
