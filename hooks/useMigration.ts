@@ -95,10 +95,10 @@ export function useMigration() {
   // Fetch fiscal years for dropdown
   const fiscalYears = useQuery(api.fiscalYears.list, {}) ?? [];
 
-  // Convex query for preview data
+  // Convex query for preview data (fetch on verification OR summary step)
   const rawPreviewData = useQuery(
     api.migrations.getMigrationPreview,
-    step === "summary" && sourceId && targetYear
+    (step === "verification" || step === "summary") && sourceId && targetYear
       ? {
           sourceBudgetItemId: sourceId as Id<"budgetItems">,
           targetYear: targetYear,
