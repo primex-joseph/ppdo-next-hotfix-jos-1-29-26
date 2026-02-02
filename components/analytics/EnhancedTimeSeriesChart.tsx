@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LineChart,
@@ -149,12 +149,13 @@ export function EnhancedTimeSeriesChart({
   // State for selected metrics (multi-select) - default to budget only
   const [selectedMetrics, setSelectedMetrics] = useState<string[]>(['budget']);
   const [activeView, setActiveView] = useState<ViewTab>('monthly');
-  const [budgetView, setBudgetView] = useState<BudgetView>('obligated');
+  const [budgetView, setBudgetView] = useState<BudgetView>('utilized');
   const [selectedPeriod, setSelectedPeriod] = useState<TimeSeriesPoint | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   
   // Tooltip lock state
   const [lockedTooltip, setLockedTooltip] = useState<{ point: TimeSeriesPoint; visible: boolean } | null>(null);
+  const pendingTooltipPoint = useRef<TimeSeriesPoint | null>(null);
 
   // Fallback data if not provided
   const safeData = data || {
@@ -258,8 +259,17 @@ export function EnhancedTimeSeriesChart({
     }));
   }, [safeData, activeView]);
 
+  // Handle tooltip locking via useEffect to avoid setState during render
+  useEffect(() => {
+    if (pendingTooltipPoint.current && !lockedTooltip) {
+      setLockedTooltip({ point: pendingTooltipPoint.current, visible: true });
+      pendingTooltipPoint.current = null;
+    }
+  }, [lockedTooltip]);
+
   // Custom tooltip component
   const CustomTooltip = ({ active, payload }: any) => {
+    // Show locked tooltip if exists
     if (lockedTooltip?.visible) {
       return (
         <div className="relative" style={{ zIndex: 9999, position: 'relative', pointerEvents: 'auto' }}>
@@ -273,12 +283,14 @@ export function EnhancedTimeSeriesChart({
       );
     }
     
+    // Queue tooltip to be locked (don't setState during render)
     if (active && payload && payload.length > 0) {
       const point = payload[0].payload._raw as TimeSeriesPoint;
-      if (!lockedTooltip) {
-        setLockedTooltip({ point, visible: true });
+      if (!lockedTooltip && !pendingTooltipPoint.current) {
+        pendingTooltipPoint.current = point;
       }
       
+      // Return tooltip without locking (will lock via useEffect)
       return (
         <div className="relative" style={{ zIndex: 9999, position: 'relative', pointerEvents: 'auto' }}>
           <RichTooltip
@@ -527,16 +539,6 @@ export function EnhancedTimeSeriesChart({
                 className="flex gap-4"
               >
                 <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="obligated" id="obligated" />
-                  <Label 
-                    htmlFor="obligated" 
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <span className="w-3 h-3 rounded-full bg-[#8b5cf6]" />
-                    <span className="text-sm">Obligated Budget</span>
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
                   <RadioGroupItem value="utilized" id="utilized" />
                   <Label 
                     htmlFor="utilized" 
@@ -544,6 +546,16 @@ export function EnhancedTimeSeriesChart({
                   >
                     <span className="w-3 h-3 rounded-full bg-[#10b981]" />
                     <span className="text-sm">Utilized Budget</span>
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="obligated" id="obligated" />
+                  <Label 
+                    htmlFor="obligated" 
+                    className="flex items-center gap-2 cursor-pointer"
+                  >
+                    <span className="w-3 h-3 rounded-full bg-[#8b5cf6]" />
+                    <span className="text-sm">Obligated Budget</span>
                   </Label>
                 </div>
               </RadioGroup>
