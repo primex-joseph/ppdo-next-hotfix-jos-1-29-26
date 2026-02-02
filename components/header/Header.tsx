@@ -10,9 +10,9 @@ import { UserDropdown } from "./UserDropdown";
 import { NotificationsDropdown } from "./NotificationsDropdown";
 import { EmailDropdown } from "./EmailDropdown";
 import { getDisplayName } from "@/lib/utils";
-// import domToImage from "dom-to-image-more"; 
-// import { ConcernModal } from "./ConcernModal";
-// import { ScreenshotZoom } from "./ScreenshotZoom";
+import domToImage from "dom-to-image-more";
+import { ConcernModal } from "./ConcernModal";
+import { ScreenshotZoom } from "./ScreenshotZoom";
 // import { MigrationContainer } from "@/components/migration/MigrationContainer";
 
 interface HeaderProps {
@@ -200,7 +200,7 @@ export function Header({ onSearchChange, searchQuery }: HeaderProps) {
               </div>
 
               {/* Report Bug Button & Toggle */}
-              <div className="hidden ml-4 flex items-center gap-2">
+              <div className="ml-4 flex items-center gap-2">
                 {showBugReport && (
                   <Button
                     variant="outline"
@@ -260,20 +260,20 @@ export function Header({ onSearchChange, searchQuery }: HeaderProps) {
       )}
 
       {/* Screenshot Zoom Animation */}
-      {/* <ScreenshotZoom
+      <ScreenshotZoom
         screenshotUrl={screenshotUrl}
         onAnimationComplete={handleAnimationComplete}
-      /> */}
+      />
 
       {/* Concern Modal */}
-      {/* <ConcernModal
+      <ConcernModal
         open={showConcernModal}
         onOpenChange={(open) => {
           setShowConcernModal(open);
           if (!open) setScreenshotUrl(null); // Clear screenshot when closed
         }}
         screenshot={screenshotUrl}
-      /> */}
+      />
     </>
   );
 }
