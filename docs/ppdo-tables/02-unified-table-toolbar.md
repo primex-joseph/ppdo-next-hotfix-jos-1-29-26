@@ -8,13 +8,15 @@ The `TableToolbar` is the core, unified toolbar component used across all PPDO t
 
 ## Features
 
-- **Search filtering** with expanding animation
+- **Search filtering** with expanding animation (configurable)
 - **Column visibility** toggling
 - **Selection management** with count display
-- **Bulk actions** (pluggable)
+- **Bulk actions** (pluggable array-based + custom component slot)
+- **Kanban view support** (status/field visibility menus)
 - **Export/Print** capabilities
 - **Admin sharing** features
 - **Responsive design** (desktop/mobile layouts)
+- **Feature toggles** (show/hide specific features)
 
 ## Props Interface
 
@@ -111,6 +113,50 @@ interface TableToolbarProps {
 
   /** Array of custom bulk actions */
   bulkActions?: BulkAction[];
+
+  /** Custom bulk actions component slot (e.g., ProjectBulkActions) */
+  bulkActionsComponent?: React.ReactNode;
+
+  // ═══════════════════════════════════════════════════════════
+  // KANBAN VIEW SUPPORT (Optional)
+  // ═══════════════════════════════════════════════════════════
+
+  /** Visible status IDs for Kanban view filtering */
+  visibleStatuses?: Set<string>;
+
+  /** Callback when user toggles status visibility */
+  onToggleStatus?: (statusId: string, isChecked: boolean) => void;
+
+  /** Visible field IDs for Kanban card display */
+  visibleFields?: Set<string>;
+
+  /** Callback when user toggles field visibility */
+  onToggleField?: (fieldId: string, isChecked: boolean) => void;
+
+  /** Available kanban fields configuration */
+  kanbanFields?: KanbanFieldConfig[];
+
+  // ═══════════════════════════════════════════════════════════
+  // FEATURE TOGGLES (Optional, defaults to true)
+  // ═══════════════════════════════════════════════════════════
+
+  /** Show/hide column visibility menu (default: true) */
+  showColumnVisibility?: boolean;
+
+  /** Show/hide export dropdown (default: true) */
+  showExport?: boolean;
+
+  /** Show/hide share button (default: true) */
+  showShare?: boolean;
+
+  /** Show/hide print preview in export menu (default: true) */
+  showPrintPreview?: boolean;
+
+  /** Show/hide direct print in export menu (default: true) */
+  showDirectPrint?: boolean;
+
+  /** Enable animated search expansion (default: true) */
+  animatedSearch?: boolean;
 
   // ═══════════════════════════════════════════════════════════
   // ADVANCED FEATURES (Optional)

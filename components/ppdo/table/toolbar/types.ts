@@ -1,6 +1,6 @@
 /**
  * Unified Table Toolbar Types
- * Supports all table types: Budget, Projects, Funds, and future tables
+ * Supports all table types: Budget, Projects, Funds, TrustFunds, 20%DF and future tables
  */
 
 import React from "react";
@@ -32,6 +32,14 @@ export interface ColumnVisibilityMenuProps {
   onToggleColumn: (columnId: string, isChecked: boolean) => void;
   onShowAll: () => void;
   onHideAll: () => void;
+}
+
+/**
+ * Kanban field configuration for field visibility menu
+ */
+export interface KanbanFieldConfig {
+  id: string;
+  label: string;
 }
 
 /**
@@ -130,6 +138,54 @@ export interface TableToolbarProps {
 
   /** Array of custom bulk actions */
   bulkActions?: BulkAction[];
+
+  /**
+   * Custom bulk actions component slot
+   * Use this for complex domain-specific bulk actions (e.g., ProjectBulkActions, TwentyPercentDFBulkActions)
+   * This component will be rendered in the bulk actions area when items are selected
+   */
+  bulkActionsComponent?: React.ReactNode;
+
+  // ═══════════════════════════════════════════════════════════
+  // KANBAN VIEW SUPPORT (Optional)
+  // ═══════════════════════════════════════════════════════════
+
+  /** Visible status IDs for Kanban view filtering */
+  visibleStatuses?: Set<string>;
+
+  /** Callback when user toggles status visibility in Kanban view */
+  onToggleStatus?: (statusId: string, isChecked: boolean) => void;
+
+  /** Visible field IDs for Kanban card display */
+  visibleFields?: Set<string>;
+
+  /** Callback when user toggles field visibility on Kanban cards */
+  onToggleField?: (fieldId: string, isChecked: boolean) => void;
+
+  /** Available kanban fields configuration for the field visibility menu */
+  kanbanFields?: KanbanFieldConfig[];
+
+  // ═══════════════════════════════════════════════════════════
+  // FEATURE TOGGLES (Optional, defaults to true)
+  // ═══════════════════════════════════════════════════════════
+
+  /** Show/hide column visibility menu (default: true) */
+  showColumnVisibility?: boolean;
+
+  /** Show/hide export dropdown (default: true) */
+  showExport?: boolean;
+
+  /** Show/hide share button even if admin (default: true) */
+  showShare?: boolean;
+
+  /** Show/hide print preview in export menu (default: true) */
+  showPrintPreview?: boolean;
+
+  /** Show/hide direct print in export menu (default: true) */
+  showDirectPrint?: boolean;
+
+  /** Enable animated search expansion with Framer Motion (default: true) */
+  animatedSearch?: boolean;
 
   // ═══════════════════════════════════════════════════════════
   // ADVANCED FEATURES (Optional)

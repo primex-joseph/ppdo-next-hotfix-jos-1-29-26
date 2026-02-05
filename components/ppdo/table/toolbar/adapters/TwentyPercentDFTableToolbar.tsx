@@ -1,17 +1,17 @@
 "use client";
 
 /**
- * ProjectsTableToolbar Adapter
+ * TwentyPercentDFTableToolbar Adapter
  *
  * BACKWARD COMPATIBILITY WRAPPER
  *
  * This component wraps the unified TableToolbar to maintain backward compatibility
- * with existing ProjectsTableToolbar imports. No breaking changes.
+ * with existing TwentyPercentDFTableToolbar imports. No breaking changes.
  *
  * Old code continues to work:
  * ```tsx
- * import { ProjectsTableToolbar } from "@/components/ppdo/table/toolbar";
- * <ProjectsTableToolbar {...props} />
+ * import { TwentyPercentDFTableToolbar } from "@/components/ppdo/table/toolbar";
+ * <TwentyPercentDFTableToolbar {...props} />
  * ```
  *
  * The props interface is unchanged. Internally, it uses the new TableToolbar.
@@ -21,11 +21,11 @@ import React from "react";
 import { Calculator } from "lucide-react";
 import { TableToolbar } from "../TableToolbar";
 import { BulkAction } from "../types";
-import { AVAILABLE_COLUMNS } from "@/components/ppdo/projects/constants";
-import { ProjectBulkActions } from "@/components/ppdo/projects/components/ProjectsTable/ProjectBulkActions";
+import { AVAILABLE_COLUMNS } from "@/components/ppdo/twenty-percent-df/constants";
+import { TwentyPercentDFBulkActions } from "@/components/ppdo/twenty-percent-df/components/TwentyPercentDFTable/TwentyPercentDFBulkActions";
 import { Id } from "@/convex/_generated/dataModel";
 
-export interface ProjectsTableToolbarProps {
+export interface TwentyPercentDFTableToolbarProps {
   // Search
   searchQuery: string;
   onSearchChange: (query: string) => void;
@@ -73,7 +73,7 @@ export interface ProjectsTableToolbarProps {
   accentColor: string;
 }
 
-export function ProjectsTableToolbar({
+export function TwentyPercentDFTableToolbar({
   searchQuery,
   onSearchChange,
   onSearchFocus,
@@ -99,7 +99,7 @@ export function ProjectsTableToolbar({
   onAddProject,
   expandButton,
   accentColor,
-}: ProjectsTableToolbarProps) {
+}: TwentyPercentDFTableToolbarProps) {
   // Convert old props to new bulkActions format
   const bulkActions: BulkAction[] = [];
 
@@ -115,7 +115,7 @@ export function ProjectsTableToolbar({
 
   // Create the bulk actions component for category changes
   const bulkActionsComponent = canManageBulkActions && selectedCount > 0 ? (
-    <ProjectBulkActions
+    <TwentyPercentDFBulkActions
       selectedCount={selectedCount}
       onCategoryChange={onBulkCategoryChange}
     />
@@ -125,7 +125,7 @@ export function ProjectsTableToolbar({
     <TableToolbar
       title="Projects"
       searchPlaceholder="Search projects..."
-      addButtonLabel="Add Project"
+      addButtonLabel="Add"
       searchQuery={searchQuery}
       onSearchChange={onSearchChange}
       onSearchFocus={onSearchFocus}
