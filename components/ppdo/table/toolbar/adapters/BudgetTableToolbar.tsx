@@ -60,6 +60,14 @@ export interface BudgetTableToolbarProps {
   // UI State
   expandButton?: React.ReactNode;
   accentColor: string;
+
+  // Kanban View Support (optional)
+  visibleStatuses?: Set<string>;
+  onToggleStatus?: (statusId: string, isChecked: boolean) => void;
+  visibleFields?: Set<string>;
+  onToggleField?: (fieldId: string, isChecked: boolean) => void;
+  showColumnToggle?: boolean;
+  showExport?: boolean;
 }
 
 export function BudgetTableToolbar({
@@ -84,6 +92,13 @@ export function BudgetTableToolbar({
   hasPrintDraft,
   expandButton,
   accentColor,
+  // Kanban View Support
+  visibleStatuses,
+  onToggleStatus,
+  visibleFields,
+  onToggleField,
+  showColumnToggle = true,
+  showExport = true,
 }: BudgetTableToolbarProps) {
   // Convert old props to new bulkActions format
   const bulkActions: BulkAction[] = [];
@@ -125,6 +140,13 @@ export function BudgetTableToolbar({
       accentColor={accentColor}
       bulkActions={bulkActions.length > 0 ? bulkActions : undefined}
       columns={BUDGET_TABLE_COLUMNS.map(col => ({ key: col.key, label: col.label }))}
+      // Kanban View Support
+      showColumnVisibility={showColumnToggle}
+      showExport={showExport}
+      visibleStatuses={visibleStatuses}
+      onToggleStatus={onToggleStatus}
+      visibleFields={visibleFields}
+      onToggleField={onToggleField}
     />
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ColumnWidths, ResizableColumn } from "../types";
-import { MIN_COLUMN_WIDTH } from "../constants";
+import { MIN_COLUMN_WIDTH, DEFAULT_COLUMN_WIDTHS } from "../constants";
 
 export const useColumnResize = (columnWidths: ColumnWidths, setColumnWidths: (widths: ColumnWidths) => void) => {
     const [isResizing, setIsResizing] = useState(false);
@@ -16,7 +16,7 @@ export const useColumnResize = (columnWidths: ColumnWidths, setColumnWidths: (wi
         setIsResizing(true);
         setResizingColumn(column);
         resizeStartX.current = e.clientX;
-        resizeStartWidth.current = columnWidths[column];
+        resizeStartWidth.current = columnWidths[column] ?? DEFAULT_COLUMN_WIDTHS[column as keyof typeof DEFAULT_COLUMN_WIDTHS] ?? MIN_COLUMN_WIDTH;
     };
 
     useEffect(() => {

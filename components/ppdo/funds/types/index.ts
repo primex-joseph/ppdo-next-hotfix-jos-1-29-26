@@ -75,8 +75,9 @@ export interface ContextMenuState {
 }
 
 export interface ColumnWidths {
-    projectTitle: number;
-    remarks: number;
+    projectTitle?: number;
+    remarks?: number;
+    [key: string]: number | undefined;
 }
 
 /**

@@ -3,7 +3,7 @@
 "use client";
 
 import { TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { BaseFund } from "../../types";
+import { BaseFund, ColumnWidths } from "../../types";
 import { FundsTableRow } from "./FundsTableRow";
 import { FundsTableTotalRow } from "./FundsTableTotalRow";
 
@@ -13,7 +13,7 @@ interface FundsTableBodyProps<T extends BaseFund> {
     isAdmin: boolean;
     selected: string[];
     hiddenColumns: Set<string>;
-    columnWidths: { projectTitle: number; remarks: number };
+    columnWidths: ColumnWidths;
     totals: {
         received: number;
         obligatedPR: number;

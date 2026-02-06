@@ -1,11 +1,15 @@
 
 "use client";
 
-import { Filter } from "lucide-react";
+import { Filter, GripVertical } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProjectSortField, SortDirection } from "../../types";
-import { AVAILABLE_COLUMNS } from "../../constants";
+import { AVAILABLE_COLUMNS, DEFAULT_COLUMN_WIDTHS } from "../../constants";
 import { SortIcon } from "./SortIcon";
+
+interface ColumnWidths {
+    [key: string]: number | undefined;
+}
 
 interface ProjectsTableHeaderProps {
     hiddenColumns: Set<string>;
@@ -18,6 +22,10 @@ interface ProjectsTableHeaderProps {
     onSelectAll: (checked: boolean) => void;
     onFilterClick?: (column: string) => void;
     activeFilterColumn?: string | null;
+    // Column resizing props (optional for backward compatibility)
+    columnWidths?: ColumnWidths;
+    onResizeStart?: (column: string, e: React.MouseEvent) => void;
+    canEditLayout?: boolean;
 }
 
 /**
@@ -34,7 +42,14 @@ export function ProjectsTableHeader({
     onSelectAll,
     onFilterClick,
     activeFilterColumn,
+    columnWidths,
+    onResizeStart,
+    canEditLayout = false,
 }: ProjectsTableHeaderProps) {
+    const getColumnWidth = (columnId: string) => {
+        if (!columnWidths) return undefined;
+        return columnWidths[columnId] ?? DEFAULT_COLUMN_WIDTHS[columnId as keyof typeof DEFAULT_COLUMN_WIDTHS];
+    };
 
     const renderHeaderCell = (column: typeof AVAILABLE_COLUMNS[0]) => {
         const isSortable = column.sortable;
@@ -99,6 +114,9 @@ export function ProjectsTableHeader({
                 {AVAILABLE_COLUMNS.map((column) => {
                     if (hiddenColumns.has(column.id)) return null;
 
+                    const width = getColumnWidth(column.id);
+                    const isResizable = column.id === 'particulars' || column.id === 'implementingOffice';
+
                     return (
                         <th
                             key={column.id}
@@ -106,8 +124,20 @@ export function ProjectsTableHeader({
                                     column.align === 'center' ? 'text-center' :
                                         'text-left'
                                 }`}
+                            style={width ? { width: `${width}px`, minWidth: `${width}px` } : undefined}
                         >
-                            {renderHeaderCell(column)}
+                            <div className="relative flex items-center gap-2">
+                                {renderHeaderCell(column)}
+                                {isResizable && canEditLayout && onResizeStart && (
+                                    <button
+                                        className="absolute right-0 cursor-col-resize text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 p-0.5"
+                                        onMouseDown={(e) => onResizeStart(column.id, e)}
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <GripVertical className="h-3 w-3" />
+                                    </button>
+                                )}
+                            </div>
                         </th>
                     );
                 })}

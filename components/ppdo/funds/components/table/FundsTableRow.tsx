@@ -22,7 +22,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BaseFund } from "../../types";
+import { BaseFund, ColumnWidths } from "../../types";
 import {
     formatCurrency,
     formatDate,
@@ -33,7 +33,7 @@ import {
     calculateUtilizationRate,
     createFundSlug,
 } from "../../utils";
-import { STATUS_COLUMN_WIDTH } from "../../constants";
+import { STATUS_COLUMN_WIDTH, DEFAULT_COLUMN_WIDTHS } from "../../constants";
 
 interface StatusCellProps {
     status?: string;
@@ -134,7 +134,7 @@ interface FundsTableRowProps<T extends BaseFund> {
     isAdmin: boolean;
     isSelected: boolean;
     hiddenColumns: Set<string>;
-    columnWidths: { projectTitle: number; remarks: number };
+    columnWidths: ColumnWidths;
     onToggleSelection: () => void;
     onContextMenu: (e: React.MouseEvent) => void;
     onStatusChange: (newStatus: string) => void;
@@ -230,7 +230,7 @@ export function FundsTableRow<T extends BaseFund>({
                             <Pin className="w-3.5 h-3.5 text-amber-600 dark:text-amber-500 shrink-0" />
                         )}
                         <span className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate" title={item.projectTitle}>
-                            {truncateText(item.projectTitle, Math.floor(columnWidths.projectTitle / 8))}
+                            {truncateText(item.projectTitle, Math.floor((columnWidths.projectTitle ?? DEFAULT_COLUMN_WIDTHS.projectTitle) / 8))}
                         </span>
                         {item.autoCalculateFinancials && (
                             <div className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 shrink-0" title="Auto-calculate enabled">
@@ -308,7 +308,7 @@ export function FundsTableRow<T extends BaseFund>({
             {isColumnVisible("remarks") && (
                 <TableCell className="px-4 sm:px-6 py-4">
                     <span className="text-sm text-zinc-600 dark:text-zinc-400 truncate block" title={item.remarks || ""}>
-                        {item.remarks ? truncateText(item.remarks, Math.floor(columnWidths.remarks / 8)) : "—"}
+                        {item.remarks ? truncateText(item.remarks, Math.floor((columnWidths.remarks ?? DEFAULT_COLUMN_WIDTHS.remarks) / 8)) : "—"}
                     </span>
                 </TableCell>
             )}

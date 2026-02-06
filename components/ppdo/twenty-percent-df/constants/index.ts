@@ -43,6 +43,18 @@ export const AVAILABLE_COLUMNS: TableColumn[] = [
     { id: "remarks", label: "Remarks", align: "left" },
 ];
 
+// ============================================================================
+// COLUMN WIDTH SETTINGS (for dynamic resizing)
+// ============================================================================
+
+export const DEFAULT_COLUMN_WIDTHS = {
+    particulars: 260,
+    implementingOffice: 200,
+    remarks: 200,
+} as const;
+
+export const MIN_COLUMN_WIDTH = 100;
+
 /**
  * Default category colors
  */

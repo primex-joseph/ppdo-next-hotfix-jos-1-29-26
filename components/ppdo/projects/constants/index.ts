@@ -73,3 +73,14 @@ export const EXPORT = {
     CSV_FILENAME_PREFIX: "projects_export",
     DATE_FORMAT: "YYYY-MM-DD",
 } as const;
+
+// ============================================================================
+// COLUMN WIDTH SETTINGS (for dynamic resizing)
+// ============================================================================
+
+export const DEFAULT_COLUMN_WIDTHS = {
+    particulars: 260,
+    implementingOffice: 200,
+} as const;
+
+export const MIN_COLUMN_WIDTH = 100;

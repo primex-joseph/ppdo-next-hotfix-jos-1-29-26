@@ -22,8 +22,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutGrid, Table as TableIcon } from "lucide-react";
 import { FundsKanban } from "./FundsKanban";
 import { exportToCSV, calculateTotals, formatTimestamp } from "../utils";
-import { useColumnWidths, useColumnResize, useTableSort, useTableFilter, useTableSelection, useFundsPrintDraft, FundsPrintAdapter } from "../";
-import { AVAILABLE_COLUMNS } from "../constants";
+import { useTableSort, useTableFilter, useTableSelection, useFundsPrintDraft, FundsPrintAdapter } from "../";
+import { AVAILABLE_COLUMNS, DEFAULT_COLUMN_WIDTHS } from "../constants";
+import { useGenericTableSettings } from "@/components/ppdo/shared/hooks";
 export function FundsTable<T extends BaseFund>({
     data,
     onAdd,
@@ -121,9 +122,33 @@ export function FundsTable<T extends BaseFund>({
         setVisibleFields(newVisible);
     };
 
-    // Custom Hooks
-    const { columnWidths, setColumnWidths } = useColumnWidths();
-    const { handleResizeStart } = useColumnResize(columnWidths, setColumnWidths);
+    // Table identifier for Convex persistence
+    const tableIdentifier = fundType === 'trust'
+        ? 'trustFundsTable'
+        : fundType === 'specialEducation'
+            ? 'specialEducationFundsTable'
+            : fundType === 'specialHealth'
+                ? 'specialHealthFundsTable'
+                : 'twentyPercentDFTable';
+
+    // Custom Hooks - using Convex-based persistence
+    const {
+        columnWidths,
+        getColumnWidth,
+        startResizeColumn,
+        canEditLayout,
+    } = useGenericTableSettings({
+        tableIdentifier,
+        defaultColumnWidths: DEFAULT_COLUMN_WIDTHS,
+        minColumnWidth: 150,
+    });
+
+    // Resize handler wrapper for compatibility with existing components
+    const handleResizeStart = (column: string, e: React.MouseEvent) => {
+        const currentWidth = getColumnWidth(column, DEFAULT_COLUMN_WIDTHS[column as keyof typeof DEFAULT_COLUMN_WIDTHS] || 150);
+        startResizeColumn(e, column, currentWidth);
+    };
+
     const { sortField, sortDirection, handleSort } = useTableSort();
     const filteredAndSortedData = useTableFilter(data, searchQuery, sortField, sortDirection);
     const { selected, allSelected, toggleAll, toggleOne, clearSelection } = useTableSelection(filteredAndSortedData);

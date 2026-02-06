@@ -1,13 +1,15 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useAccentColor } from "@/contexts/AccentColorContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LayoutGrid, Table as TableIcon } from "lucide-react";
 
 // UI Components
 import { Modal } from "./Modal";
@@ -26,7 +28,8 @@ import { ProjectsTableBody } from "./ProjectsTable/ProjectsTableBody";
 import { ProjectsTableFooter } from "./ProjectsTable/ProjectsTableFooter";
 import { ProjectContextMenu } from "./ProjectsTable/ProjectContextMenu";
 import { ProjectBulkToggleDialog } from "./ProjectBulkToggleDialog";
-import { PrintPreviewModal } from "@/components/ppdo/table/print-preview/PrintPreviewModal"; // Using absolute path
+import { PrintPreviewModal } from "@/components/ppdo/table/print-preview/PrintPreviewModal";
+import { ProjectsKanban } from "./ProjectsKanban";
 
 // Types, Constants, and Utils
 import {
@@ -36,13 +39,14 @@ import {
     ProjectSortField,
     ProjectContextMenuState,
 } from "../types";
-import { AVAILABLE_COLUMNS } from "../constants";
+import { AVAILABLE_COLUMNS, DEFAULT_COLUMN_WIDTHS } from "../constants";
 import {
     groupProjectsByCategory,
     calculateProjectTotals,
     createProjectSlug,
     getParticularFullName,
 } from "../utils";
+import { useGenericTableSettings } from "@/components/ppdo/shared/hooks";
 import {
     applyFilters,
     createProjectFilterConfig,
@@ -88,6 +92,7 @@ export function ProjectsTable({
     const updateProject = useMutation(api.projects.update);
     const toggleAutoCalculate = useMutation(api.projects.toggleAutoCalculate);
     const bulkToggleAutoCalculate = useMutation(api.projects.bulkToggleAutoCalculate);
+    const updateProjectStatus = useMutation(api.projects.updateStatus);
 
     // ==================== STATE: MODALS ====================
     const [showAddModal, setShowAddModal] = useState(false);
@@ -102,6 +107,16 @@ export function ProjectsTable({
     const [showBulkToggleDialog, setShowBulkToggleDialog] = useState(false);
     const [isBulkToggling, setIsBulkToggling] = useState(false);
     const [showPrintPreview, setShowPrintPreview] = useState(false);
+
+    // ==================== STATE: KANBAN VIEW ====================
+    const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
+    const [showViewToggle, setShowViewToggle] = useState(false);
+    const [visibleStatuses, setVisibleStatuses] = useState<Set<string>>(
+        new Set(['delayed', 'ongoing', 'completed'])
+    );
+    const [visibleFields, setVisibleFields] = useState<Set<string>>(
+        new Set(['totalBudgetAllocated', 'totalBudgetUtilized', 'balance', 'utilizationRate'])
+    );
 
     // ==================== STATE: DATA ====================
     const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -123,6 +138,24 @@ export function ProjectsTable({
     // ==================== STATE: UI ====================
     const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
     const [contextMenu, setContextMenu] = useState<ProjectContextMenuState | null>(null);
+
+    // ==================== COLUMN WIDTH MANAGEMENT (Convex persistence) ====================
+    const {
+        columnWidths,
+        getColumnWidth,
+        startResizeColumn,
+        canEditLayout,
+    } = useGenericTableSettings({
+        tableIdentifier: "projectsTable",
+        defaultColumnWidths: DEFAULT_COLUMN_WIDTHS,
+        minColumnWidth: 100,
+    });
+
+    // Resize handler for table header
+    const handleResizeStart = useCallback((column: string, e: React.MouseEvent) => {
+        const currentWidth = getColumnWidth(column, DEFAULT_COLUMN_WIDTHS[column as keyof typeof DEFAULT_COLUMN_WIDTHS] || 150);
+        startResizeColumn(e, column, currentWidth);
+    }, [getColumnWidth, startResizeColumn]);
     const [logSheetOpen, setLogSheetOpen] = useState(false);
     const [selectedLogProject, setSelectedLogProject] = useState<Project | null>(null);
     const [trashTargetItems, setTrashTargetItems] = useState<Project[]>([]);
@@ -684,93 +717,226 @@ export function ProjectsTable({
         setExpandedRemarks(newExpanded);
     };
 
+    // ==================== KANBAN VIEW HANDLERS ====================
+
+    // Keyboard shortcut to toggle view toggle visibility (Ctrl+Shift+V)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.shiftKey && e.key === "V") {
+                e.preventDefault();
+                setShowViewToggle((prev) => !prev);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => window.removeEventListener("keydown", handleKeyDown);
+    }, []);
+
+    // Handle Kanban status change via drag-drop
+    const handleKanbanStatusChange = useCallback(async (itemId: string, newStatus: string) => {
+        const validStatuses = ["completed", "ongoing", "delayed"] as const;
+        if (validStatuses.includes(newStatus as typeof validStatuses[number])) {
+            try {
+                await updateProjectStatus({
+                    id: itemId as Id<"projects">,
+                    status: newStatus as "completed" | "ongoing" | "delayed",
+                });
+            } catch (error) {
+                console.error("Failed to update project status:", error);
+                toast.error("Failed to update project status");
+            }
+        }
+    }, [updateProjectStatus]);
+
+    // Kanban view log handler
+    const handleKanbanViewLog = useCallback((item: Project) => {
+        setSelectedLogProject(item);
+        setLogSheetOpen(true);
+    }, []);
+
+    // Kanban edit handler
+    const handleKanbanEdit = useCallback((item: Project) => {
+        setSelectedProject(item);
+        setShowEditModal(true);
+    }, []);
+
+    // Kanban delete handler
+    const handleKanbanDelete = useCallback((item: Project) => {
+        setTrashTargetItems([item]);
+        setIsBulkTrash(false);
+        setShowTrashConfirmModal(true);
+    }, []);
+
+    // Kanban pin handler
+    const handleKanbanPin = useCallback(async (item: Project) => {
+        try {
+            await togglePinProject({ id: item.id as Id<"projects"> });
+        } catch (error) {
+            toast.error("Failed to toggle pin");
+        }
+    }, [togglePinProject]);
+
+    // Toggle status visibility
+    const handleToggleStatus = useCallback((statusId: string, isChecked: boolean) => {
+        setVisibleStatuses(prev => {
+            const newSet = new Set(prev);
+            if (isChecked) {
+                newSet.add(statusId);
+            } else {
+                newSet.delete(statusId);
+            }
+            return newSet;
+        });
+    }, []);
+
+    // Toggle field visibility
+    const handleToggleField = useCallback((fieldId: string, isChecked: boolean) => {
+        setVisibleFields(prev => {
+            const newSet = new Set(prev);
+            if (isChecked) {
+                newSet.add(fieldId);
+            } else {
+                newSet.delete(fieldId);
+            }
+            return newSet;
+        });
+    }, []);
+
     return (
         <>
-            <div className="print-area bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-visible transition-all duration-300 shadow-sm">
+            {/* Main Container with Tabs */}
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "table" | "kanban")} className="w-full">
+                <div className="print-area bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-visible transition-all duration-300 shadow-sm">
 
-                {/* Toolbar */}
-                <ProjectsTableToolbar
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    onSearchFocus={handleSearchFocus}
-                    searchInputRef={searchInputRef}
-                    selectedCount={selectedIds.size}
-                    onClearSelection={() => setSelectedIds(new Set())}
-                    canManageBulkActions={canManageBulkActions}
-                    onBulkCategoryChange={handleBulkCategoryChange}
-                    hiddenColumns={hiddenColumns}
-                    onToggleColumn={handleToggleColumn}
-                    onShowAllColumns={handleShowAllColumns}
-                    onHideAllColumns={handleHideAllColumns}
-                    onExportCSV={handleExportCSV}
-                    onOpenPrintPreview={handleOpenPrintPreview}
-                    onOpenTrash={onOpenTrash}
-                    onBulkTrash={handleBulkTrashClick}
-                    isAdmin={canManageBulkActions}
-                    pendingRequestsCount={pendingParticularRequests}
-                    onOpenShare={() => setShowShareModal(true)}
-                    onBulkToggleAutoCalculate={handleOpenBulkToggleDialog}
-                    onAddProject={onAdd ? () => setShowAddModal(true) : undefined}
-                    expandButton={expandButton}
-                    accentColor={accentColorValue}
-                />
+                    {/* Toolbar */}
+                    <ProjectsTableToolbar
+                        searchQuery={searchQuery}
+                        onSearchChange={setSearchQuery}
+                        onSearchFocus={handleSearchFocus}
+                        searchInputRef={searchInputRef}
+                        selectedCount={selectedIds.size}
+                        onClearSelection={() => setSelectedIds(new Set())}
+                        canManageBulkActions={canManageBulkActions}
+                        onBulkCategoryChange={handleBulkCategoryChange}
+                        hiddenColumns={hiddenColumns}
+                        onToggleColumn={handleToggleColumn}
+                        onShowAllColumns={handleShowAllColumns}
+                        onHideAllColumns={handleHideAllColumns}
+                        onExportCSV={handleExportCSV}
+                        onOpenPrintPreview={handleOpenPrintPreview}
+                        onOpenTrash={onOpenTrash}
+                        onBulkTrash={handleBulkTrashClick}
+                        isAdmin={canManageBulkActions}
+                        pendingRequestsCount={pendingParticularRequests}
+                        onOpenShare={() => setShowShareModal(true)}
+                        onBulkToggleAutoCalculate={handleOpenBulkToggleDialog}
+                        onAddProject={onAdd ? () => setShowAddModal(true) : undefined}
+                        expandButton={expandButton}
+                        accentColor={accentColorValue}
+                        // Kanban View Support
+                        visibleStatuses={visibleStatuses}
+                        onToggleStatus={handleToggleStatus}
+                        visibleFields={visibleFields}
+                        onToggleField={handleToggleField}
+                        showColumnToggle={viewMode === "table"}
+                        showExport={viewMode === "table"}
+                    />
 
-                {/* 🆕 Category Filter - YouTube Style */}
-                <ProjectCategoryFilter
-                    categories={categoriesForFilter}
-                    selectedCategoryIds={categoryFilter}
-                    onSelectionChange={handleCategoryFilterChange}
-                    accentColor={accentColorValue}
-                />
+                    {/* View Toggle (Ctrl+Shift+V to show/hide) */}
+                    {showViewToggle && (
+                        <div className="flex items-center justify-center py-2 border-b border-zinc-200 dark:border-zinc-800">
+                            <TabsList className="bg-zinc-100 dark:bg-zinc-800">
+                                <TabsTrigger value="table" className="gap-2">
+                                    <TableIcon className="w-4 h-4" />
+                                    Table
+                                </TabsTrigger>
+                                <TabsTrigger value="kanban" className="gap-2">
+                                    <LayoutGrid className="w-4 h-4" />
+                                    Kanban
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
+                    )}
 
-                {/* Table */}
-                <div className="overflow-x-auto max-h-[600px] relative">
-                    <table className="w-full">
-
-                        {/* Header */}
-                        <ProjectsTableHeader
-                            hiddenColumns={hiddenColumns}
-                            sortField={sortField}
-                            sortDirection={sortDirection}
-                            onSort={handleSort}
-                            canManageBulkActions={canManageBulkActions}
-                            isAllSelected={isAllSelected}
-                            isIndeterminate={isIndeterminate}
-                            onSelectAll={handleSelectAll}
-                            onFilterClick={setActiveFilterColumn}
-                            activeFilterColumn={activeFilterColumn}
-                        />
-
-                        {/* Body */}
-                        <ProjectsTableBody
-                            groupedProjects={groupedProjects}
-                            hiddenColumns={hiddenColumns}
-                            selectedIds={selectedIds}
-                            newlyAddedProjectId={newlyAddedProjectId}
-                            canManageBulkActions={canManageBulkActions}
-                            totalVisibleColumns={totalVisibleColumns}
-                            onSelectCategory={handleSelectCategory}
-                            onSelectRow={handleSelectRow}
-                            onRowClick={handleRowClick}
-                            onContextMenu={handleContextMenu}
+                    {/* 🆕 Category Filter - YouTube Style (only in table view) */}
+                    {viewMode === "table" && (
+                        <ProjectCategoryFilter
+                            categories={categoriesForFilter}
+                            selectedCategoryIds={categoryFilter}
+                            onSelectionChange={handleCategoryFilterChange}
                             accentColor={accentColorValue}
-                            expandedRemarks={expandedRemarks}
-                            onToggleRemarks={handleToggleRemarks} // 🆕 Pass down the toggle handler
                         />
+                    )}
 
-                        {/* Footer */}
-                        <tfoot>
-                            <ProjectsTableFooter
-                                totals={totals}
-                                hiddenColumns={hiddenColumns}
-                                canManageBulkActions={canManageBulkActions}
-                                accentColor={accentColorValue}
-                            />
-                        </tfoot>
+                    {/* Table View */}
+                    <TabsContent value="table" className="mt-0">
+                        <div className="overflow-x-auto max-h-[600px] relative">
+                            <table className="w-full">
 
-                    </table>
+                                {/* Header */}
+                                <ProjectsTableHeader
+                                    hiddenColumns={hiddenColumns}
+                                    sortField={sortField}
+                                    sortDirection={sortDirection}
+                                    onSort={handleSort}
+                                    canManageBulkActions={canManageBulkActions}
+                                    isAllSelected={isAllSelected}
+                                    isIndeterminate={isIndeterminate}
+                                    onSelectAll={handleSelectAll}
+                                    onFilterClick={setActiveFilterColumn}
+                                    activeFilterColumn={activeFilterColumn}
+                                    columnWidths={columnWidths}
+                                    onResizeStart={handleResizeStart}
+                                    canEditLayout={canEditLayout}
+                                />
+
+                                {/* Body */}
+                                <ProjectsTableBody
+                                    groupedProjects={groupedProjects}
+                                    hiddenColumns={hiddenColumns}
+                                    selectedIds={selectedIds}
+                                    newlyAddedProjectId={newlyAddedProjectId}
+                                    canManageBulkActions={canManageBulkActions}
+                                    totalVisibleColumns={totalVisibleColumns}
+                                    onSelectCategory={handleSelectCategory}
+                                    onSelectRow={handleSelectRow}
+                                    onRowClick={handleRowClick}
+                                    onContextMenu={handleContextMenu}
+                                    accentColor={accentColorValue}
+                                    expandedRemarks={expandedRemarks}
+                                    onToggleRemarks={handleToggleRemarks}
+                                />
+
+                                {/* Footer */}
+                                <tfoot>
+                                    <ProjectsTableFooter
+                                        totals={totals}
+                                        hiddenColumns={hiddenColumns}
+                                        canManageBulkActions={canManageBulkActions}
+                                        accentColor={accentColorValue}
+                                    />
+                                </tfoot>
+
+                            </table>
+                        </div>
+                    </TabsContent>
+
+                    {/* Kanban View */}
+                    <TabsContent value="kanban" className="mt-0">
+                        <ProjectsKanban
+                            data={filteredAndSortedProjects}
+                            isAdmin={canManageBulkActions}
+                            onViewLog={handleKanbanViewLog}
+                            onEdit={onEdit ? handleKanbanEdit : undefined}
+                            onDelete={onDelete ? handleKanbanDelete : undefined}
+                            onPin={handleKanbanPin}
+                            visibleStatuses={visibleStatuses}
+                            visibleFields={visibleFields}
+                            onStatusChange={handleKanbanStatusChange}
+                        />
+                    </TabsContent>
                 </div>
-            </div>
+            </Tabs>
 
             {/* Context Menu */}
             <ProjectContextMenu

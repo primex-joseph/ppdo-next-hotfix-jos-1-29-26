@@ -71,6 +71,14 @@ export interface ProjectsTableToolbarProps {
   expandButton?: React.ReactNode;
 
   accentColor: string;
+
+  // Kanban View Support (optional)
+  visibleStatuses?: Set<string>;
+  onToggleStatus?: (statusId: string, isChecked: boolean) => void;
+  visibleFields?: Set<string>;
+  onToggleField?: (fieldId: string, isChecked: boolean) => void;
+  showColumnToggle?: boolean;
+  showExport?: boolean;
 }
 
 export function ProjectsTableToolbar({
@@ -99,6 +107,13 @@ export function ProjectsTableToolbar({
   onAddProject,
   expandButton,
   accentColor,
+  // Kanban View Support
+  visibleStatuses,
+  onToggleStatus,
+  visibleFields,
+  onToggleField,
+  showColumnToggle = true,
+  showExport = true,
 }: ProjectsTableToolbarProps) {
   // Convert old props to new bulkActions format
   const bulkActions: BulkAction[] = [];
@@ -151,13 +166,18 @@ export function ProjectsTableToolbar({
       bulkActions={bulkActions.length > 0 ? bulkActions : undefined}
       bulkActionsComponent={bulkActionsComponent}
       columns={AVAILABLE_COLUMNS.map(col => ({ key: col.id, label: col.label }))}
-      // Enable all features
-      showColumnVisibility={true}
-      showExport={true}
+      // Enable all features (with Kanban override support)
+      showColumnVisibility={showColumnToggle}
+      showExport={showExport}
       showShare={true}
       showPrintPreview={true}
       showDirectPrint={true}
       animatedSearch={true}
+      // Kanban View Support
+      visibleStatuses={visibleStatuses}
+      onToggleStatus={onToggleStatus}
+      visibleFields={visibleFields}
+      onToggleField={onToggleField}
     />
   );
 }

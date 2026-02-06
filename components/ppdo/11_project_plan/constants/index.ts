@@ -110,6 +110,16 @@ export const BUDGET_TABLE_COLUMNS = [
   },
 ] as const;
 
+// ============================================================================
+// COLUMN WIDTH SETTINGS (for dynamic resizing)
+// ============================================================================
+
+export const DEFAULT_COLUMN_WIDTHS = {
+  particular: 260,
+} as const;
+
+export const MIN_COLUMN_WIDTH = 100;
+
 export const ANIMATION = {
   NEW_ITEM_HIGHLIGHT_DURATION: 2000,
   SCROLL_DELAY: 100,

@@ -34,7 +34,8 @@ import {
     TwentyPercentDFSortField,
     TwentyPercentDFContextMenuState,
 } from "../types";
-import { AVAILABLE_COLUMNS } from "../constants";
+import { AVAILABLE_COLUMNS, DEFAULT_COLUMN_WIDTHS } from "../constants";
+import { useGenericTableSettings } from "@/components/ppdo/shared/hooks";
 import {
     groupTwentyPercentDFByCategory,
     calculateTwentyPercentDFTotals,
@@ -53,6 +54,11 @@ import {
 import { BudgetTotals } from "@/lib/print-canvas/types";
 import { BudgetItem } from "@/components/ppdo/11_project_plan/types";
 import { TwentyPercentDFBulkToggleDialog } from "./TwentyPercentDFBulkToggleDialog";
+import { TwentyPercentDFKanban } from "./TwentyPercentDFKanban";
+
+// Tabs for view switching
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LayoutGrid, Table as TableIcon } from "lucide-react";
 
 export function TwentyPercentDFTable({
     items: projects,
@@ -85,6 +91,7 @@ export function TwentyPercentDFTable({
     const updateProject = useMutation(api.twentyPercentDF.update);
     const toggleAutoCalculate = useMutation(api.twentyPercentDF.toggleAutoCalculateFinancials);
     const bulkToggleAutoCalculate = useMutation(api.twentyPercentDF.bulkToggleAutoCalculate);
+    const updateStatus = useMutation(api.twentyPercentDF.updateStatus);
 
     // ==================== STATE: MODALS ====================
     const [showAddModal, setShowAddModal] = useState(false);
@@ -98,6 +105,17 @@ export function TwentyPercentDFTable({
     const [showBulkToggleDialog, setShowBulkToggleDialog] = useState(false);
     const [isBulkToggling, setIsBulkToggling] = useState(false);
     const [showPrintPreview, setShowPrintPreview] = useState(false);
+
+    // ==================== STATE: KANBAN VIEW ====================
+    const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
+    const [showViewToggle, setShowViewToggle] = useState(false);
+    const [visibleStatuses, setVisibleStatuses] = useState<Set<string>>(
+        new Set(['delayed', 'ongoing', 'completed'])
+    );
+    const [visibleFields, setVisibleFields] = useState<Set<string>>(
+        new Set(['totalBudgetAllocated', 'totalBudgetUtilized', 'balance', 'utilizationRate'])
+    );
+    const [updatingStatusIds, setUpdatingStatusIds] = useState<Set<string>>(new Set());
 
     // ==================== STATE: DATA ====================
     const [selectedProject, setSelectedProject] = useState<TwentyPercentDF | null>(null);
@@ -121,6 +139,24 @@ export function TwentyPercentDFTable({
     const [selectedLogProject, setSelectedLogProject] = useState<TwentyPercentDF | null>(null);
     const [expandedRemarks, setExpandedRemarks] = useState<Set<string>>(new Set());
     const [isTogglingAutoCalculate, setIsTogglingAutoCalculate] = useState(false);
+
+    // ==================== COLUMN WIDTH MANAGEMENT ====================
+    const {
+        columnWidths,
+        getColumnWidth,
+        startResizeColumn,
+        canEditLayout,
+    } = useGenericTableSettings({
+        tableIdentifier: "twentyPercentDFTable",
+        defaultColumnWidths: DEFAULT_COLUMN_WIDTHS,
+        minColumnWidth: 100,
+    });
+
+    // Resize handler for table header
+    const handleResizeStart = useCallback((column: string, e: React.MouseEvent) => {
+        const currentWidth = getColumnWidth(column, DEFAULT_COLUMN_WIDTHS[column as keyof typeof DEFAULT_COLUMN_WIDTHS] || 150);
+        startResizeColumn(e, column, currentWidth);
+    }, [getColumnWidth, startResizeColumn]);
 
     // ==================== COMPUTED VALUES ====================
     const canManageBulkActions = useMemo(() => {
@@ -264,6 +300,99 @@ export function TwentyPercentDFTable({
             updateURL("year", yearFilter.map(String));
         }
     }, [yearFilter, searchParams, updateURL]);
+
+    // ==================== KANBAN VIEW HANDLERS ====================
+
+    // Keyboard shortcut to toggle view tabs visibility (Ctrl+Shift+V)
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.ctrlKey && e.shiftKey && (e.key === 'v' || e.key === 'V')) {
+                e.preventDefault();
+                const newValue = !showViewToggle;
+                setShowViewToggle(newValue);
+                if (newValue) {
+                    toast.info("View toggle controls visible");
+                } else {
+                    toast.info("View toggle controls hidden");
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showViewToggle]);
+
+    const handleToggleStatus = (statusId: string, isChecked: boolean) => {
+        const newVisible = new Set(visibleStatuses);
+        if (isChecked) {
+            newVisible.add(statusId);
+        } else {
+            newVisible.delete(statusId);
+        }
+        setVisibleStatuses(newVisible);
+    };
+
+    const handleToggleField = (fieldId: string, isChecked: boolean) => {
+        const newVisible = new Set(visibleFields);
+        if (isChecked) {
+            newVisible.add(fieldId);
+        } else {
+            newVisible.delete(fieldId);
+        }
+        setVisibleFields(newVisible);
+    };
+
+    const handleKanbanStatusChange = async (itemId: string, newStatus: string) => {
+        // Validate status is one of the allowed values
+        const validStatuses = ["completed", "ongoing", "delayed"] as const;
+        if (!validStatuses.includes(newStatus as typeof validStatuses[number])) {
+            toast.error(`Invalid status: ${newStatus}`);
+            return;
+        }
+
+        setUpdatingStatusIds(prev => new Set(prev).add(itemId));
+        try {
+            await updateStatus({
+                id: itemId as Id<"twentyPercentDF">,
+                status: newStatus as "completed" | "ongoing" | "delayed",
+                reason: "Status updated via Kanban drag"
+            });
+            toast.success("Status updated successfully");
+        } catch (error) {
+            toast.error("Failed to update status");
+            console.error(error);
+        } finally {
+            setUpdatingStatusIds(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(itemId);
+                return newSet;
+            });
+        }
+    };
+
+    const handleKanbanViewLog = (item: TwentyPercentDF) => {
+        setSelectedLogProject(item);
+        setLogSheetOpen(true);
+    };
+
+    const handleKanbanEdit = (item: TwentyPercentDF) => {
+        setSelectedProject(item);
+        setShowEditModal(true);
+    };
+
+    const handleKanbanDelete = (item: TwentyPercentDF) => {
+        setSelectedProject(item);
+        setShowDeleteModal(true);
+    };
+
+    const handleKanbanPin = async (item: TwentyPercentDF) => {
+        try {
+            await togglePinProject({ id: item.id as Id<"twentyPercentDF"> });
+            toast.success(item.isPinned ? "Unpinned" : "Pinned to top");
+        } catch {
+            toast.error("Failed to toggle pin");
+        }
+    };
 
     const handleCategoryFilterChange = (categoryIds: string[]) => {
         setCategoryFilter(categoryIds);
@@ -550,82 +679,155 @@ export function TwentyPercentDFTable({
 
     return (
         <>
-            <div className="print-area bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-visible transition-all duration-300 shadow-sm">
-                <TwentyPercentDFTableToolbar
-                    searchQuery={searchQuery}
-                    onSearchChange={setSearchQuery}
-                    onSearchFocus={handleSearchFocus}
-                    searchInputRef={searchInputRef}
-                    selectedCount={selectedIds.size}
-                    onClearSelection={() => setSelectedIds(new Set())}
-                    canManageBulkActions={canManageBulkActions}
-                    onBulkCategoryChange={handleBulkCategoryChange}
-                    hiddenColumns={hiddenColumns}
-                    onToggleColumn={handleToggleColumn}
-                    onShowAllColumns={handleShowAllColumns}
-                    onHideAllColumns={handleHideAllColumns}
-                    onExportCSV={handleExportCSV}
-                    onOpenPrintPreview={handleOpenPrintPreview}
-                    onOpenTrash={onOpenTrash}
-                    onBulkTrash={handleBulkTrash}
-                    isAdmin={canManageBulkActions}
-                    pendingRequestsCount={pendingParticularRequests}
-                    onOpenShare={() => setShowShareModal(true)}
-                    onBulkToggleAutoCalculate={handleOpenBulkToggleDialog}
-                    onAddProject={onAdd ? () => setShowAddModal(true) : undefined}
-                    expandButton={expandButton}
-                    accentColor={accentColorValue}
-                />
-
-                <TwentyPercentDFCategoryFilter
-                    categories={categoriesForFilter}
-                    selectedCategoryIds={categoryFilter}
-                    onSelectionChange={handleCategoryFilterChange}
-                    accentColor={accentColorValue}
-                />
-
-                <div className="overflow-x-auto max-h-[600px] relative">
-                    <table className="w-full">
-                        <TwentyPercentDFTableHeader
-                            hiddenColumns={hiddenColumns}
-                            sortField={sortField}
-                            sortDirection={sortDirection}
-                            onSort={handleSort}
-                            canManageBulkActions={canManageBulkActions}
-                            isAllSelected={isAllSelected}
-                            isIndeterminate={isIndeterminate}
-                            onSelectAll={handleSelectAll}
-                            onFilterClick={setActiveFilterColumn}
-                            activeFilterColumn={activeFilterColumn}
-                        />
-
-                        <TwentyPercentDFTableBody
-                            groupedProjects={groupedProjects}
-                            hiddenColumns={hiddenColumns}
-                            selectedIds={selectedIds}
-                            newlyAddedId={newlyAddedProjectId}
-                            canManageBulkActions={canManageBulkActions}
-                            totalVisibleColumns={totalVisibleColumns}
-                            onSelectCategory={handleSelectCategory}
-                            onSelectRow={handleSelectRow}
-                            onRowClick={handleRowClick}
-                            onContextMenu={handleContextMenu}
-                            accentColor={accentColorValue}
-                            expandedRemarks={expandedRemarks}
-                            onToggleRemarks={handleToggleRemarks}
-                        />
-
-                        <tfoot>
-                            <TwentyPercentDFTableFooter
-                                totals={totals}
-                                hiddenColumns={hiddenColumns}
-                                canManageBulkActions={canManageBulkActions}
-                                accentColor={accentColorValue}
-                            />
-                        </tfoot>
-                    </table>
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "table" | "kanban")} className="w-full">
+                {/* View Toggle - Only visible when triggered by Ctrl+Shift+V */}
+                <div className="flex justify-end mb-4 h-10">
+                    {showViewToggle && (
+                        <TabsList className="animate-in fade-in slide-in-from-right-4 duration-300">
+                            <TabsTrigger value="table" className="gap-2">
+                                <TableIcon className="w-4 h-4" />
+                                Table View
+                            </TabsTrigger>
+                            <TabsTrigger value="kanban" className="gap-2">
+                                <LayoutGrid className="w-4 h-4" />
+                                Kanban View
+                            </TabsTrigger>
+                        </TabsList>
+                    )}
                 </div>
-            </div>
+
+                <TabsContent value="table" className="mt-0">
+                    <div className="print-area bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-visible transition-all duration-300 shadow-sm">
+                        <TwentyPercentDFTableToolbar
+                            searchQuery={searchQuery}
+                            onSearchChange={setSearchQuery}
+                            onSearchFocus={handleSearchFocus}
+                            searchInputRef={searchInputRef}
+                            selectedCount={selectedIds.size}
+                            onClearSelection={() => setSelectedIds(new Set())}
+                            canManageBulkActions={canManageBulkActions}
+                            onBulkCategoryChange={handleBulkCategoryChange}
+                            hiddenColumns={hiddenColumns}
+                            onToggleColumn={handleToggleColumn}
+                            onShowAllColumns={handleShowAllColumns}
+                            onHideAllColumns={handleHideAllColumns}
+                            onExportCSV={handleExportCSV}
+                            onOpenPrintPreview={handleOpenPrintPreview}
+                            onOpenTrash={onOpenTrash}
+                            onBulkTrash={handleBulkTrash}
+                            isAdmin={canManageBulkActions}
+                            pendingRequestsCount={pendingParticularRequests}
+                            onOpenShare={() => setShowShareModal(true)}
+                            onBulkToggleAutoCalculate={handleOpenBulkToggleDialog}
+                            onAddProject={onAdd ? () => setShowAddModal(true) : undefined}
+                            expandButton={expandButton}
+                            accentColor={accentColorValue}
+                        />
+
+                        <TwentyPercentDFCategoryFilter
+                            categories={categoriesForFilter}
+                            selectedCategoryIds={categoryFilter}
+                            onSelectionChange={handleCategoryFilterChange}
+                            accentColor={accentColorValue}
+                        />
+
+                        <div className="overflow-x-auto max-h-[600px] relative">
+                            <table className="w-full">
+                                <TwentyPercentDFTableHeader
+                                    hiddenColumns={hiddenColumns}
+                                    sortField={sortField}
+                                    sortDirection={sortDirection}
+                                    onSort={handleSort}
+                                    canManageBulkActions={canManageBulkActions}
+                                    isAllSelected={isAllSelected}
+                                    isIndeterminate={isIndeterminate}
+                                    onSelectAll={handleSelectAll}
+                                    onFilterClick={setActiveFilterColumn}
+                                    activeFilterColumn={activeFilterColumn}
+                                    columnWidths={columnWidths}
+                                    onResizeStart={handleResizeStart}
+                                    canEditLayout={canEditLayout}
+                                />
+
+                                <TwentyPercentDFTableBody
+                                    groupedProjects={groupedProjects}
+                                    hiddenColumns={hiddenColumns}
+                                    selectedIds={selectedIds}
+                                    newlyAddedId={newlyAddedProjectId}
+                                    canManageBulkActions={canManageBulkActions}
+                                    totalVisibleColumns={totalVisibleColumns}
+                                    onSelectCategory={handleSelectCategory}
+                                    onSelectRow={handleSelectRow}
+                                    onRowClick={handleRowClick}
+                                    onContextMenu={handleContextMenu}
+                                    accentColor={accentColorValue}
+                                    expandedRemarks={expandedRemarks}
+                                    onToggleRemarks={handleToggleRemarks}
+                                />
+
+                                <tfoot>
+                                    <TwentyPercentDFTableFooter
+                                        totals={totals}
+                                        hiddenColumns={hiddenColumns}
+                                        canManageBulkActions={canManageBulkActions}
+                                        accentColor={accentColorValue}
+                                    />
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="kanban" className="mt-0">
+                    <div className="print-area bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-visible transition-all duration-300 shadow-sm p-4">
+                        <TwentyPercentDFTableToolbar
+                            searchQuery={searchQuery}
+                            onSearchChange={setSearchQuery}
+                            onSearchFocus={handleSearchFocus}
+                            searchInputRef={searchInputRef}
+                            selectedCount={0}
+                            onClearSelection={() => {}}
+                            canManageBulkActions={canManageBulkActions}
+                            onBulkCategoryChange={handleBulkCategoryChange}
+                            hiddenColumns={hiddenColumns}
+                            onToggleColumn={handleToggleColumn}
+                            onShowAllColumns={handleShowAllColumns}
+                            onHideAllColumns={handleHideAllColumns}
+                            onExportCSV={handleExportCSV}
+                            onOpenPrintPreview={handleOpenPrintPreview}
+                            onOpenTrash={onOpenTrash}
+                            onBulkTrash={handleBulkTrash}
+                            isAdmin={canManageBulkActions}
+                            pendingRequestsCount={pendingParticularRequests}
+                            onOpenShare={() => setShowShareModal(true)}
+                            onBulkToggleAutoCalculate={handleOpenBulkToggleDialog}
+                            onAddProject={onAdd ? () => setShowAddModal(true) : undefined}
+                            expandButton={expandButton}
+                            accentColor={accentColorValue}
+                            // Kanban-specific props
+                            visibleStatuses={visibleStatuses}
+                            onToggleStatus={handleToggleStatus}
+                            visibleFields={visibleFields}
+                            onToggleField={handleToggleField}
+                            showColumnToggle={false}
+                            showExport={false}
+                        />
+
+                        <TwentyPercentDFKanban
+                            data={filteredAndSortedProjects}
+                            isAdmin={canManageBulkActions}
+                            onViewLog={handleKanbanViewLog}
+                            onEdit={onEdit ? handleKanbanEdit : undefined}
+                            onDelete={onDelete ? handleKanbanDelete : undefined}
+                            onPin={handleKanbanPin}
+                            visibleStatuses={visibleStatuses}
+                            visibleFields={visibleFields}
+                            year={budgetItemYear || new Date().getFullYear()}
+                            onStatusChange={handleKanbanStatusChange}
+                        />
+                    </div>
+                </TabsContent>
+            </Tabs>
 
             <TwentyPercentDFContextMenu
                 contextMenu={contextMenu}

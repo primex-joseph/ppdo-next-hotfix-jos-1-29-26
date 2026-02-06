@@ -7,15 +7,16 @@ import { GripVertical } from "lucide-react";
 import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SortField, STATUS_COLUMN_WIDTH } from "../../";
+import { ColumnWidths } from "../../types";
 
 interface FundsTableHeaderProps {
     isAdmin: boolean;
     hiddenColumns: Set<string>;
-    columnWidths: { projectTitle: number; remarks: number };
+    columnWidths: ColumnWidths;
     allSelected: boolean;
     onToggleAll: () => void;
     onSort: (field: SortField) => void;
-    onResizeStart: (column: 'projectTitle' | 'remarks', e: React.MouseEvent) => void;
+    onResizeStart: (column: string, e: React.MouseEvent) => void;
 }
 
 export function FundsTableHeader({

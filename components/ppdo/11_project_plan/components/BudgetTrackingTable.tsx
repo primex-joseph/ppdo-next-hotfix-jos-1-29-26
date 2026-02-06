@@ -2,11 +2,13 @@
 
 "use client";
 
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useAccentColor } from "@/contexts/AccentColorContext";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LayoutGrid, Table as TableIcon } from "lucide-react";
 
 // Components
 import { Modal } from "./BudgetModal";
@@ -22,6 +24,8 @@ import { BudgetContextMenu } from "../table/BudgetContextMenu";
 import { BudgetBulkToggleDialog } from "./BudgetBulkToggleDialog";
 import { PrintPreviewModal } from "@/components/ppdo/table/print-preview/PrintPreviewModal";
 import { TrashBinModal, TrashConfirmationModal } from "@/components/modals";
+import { BudgetItemKanban } from "./BudgetItemKanban";
+import { Id } from "@/convex/_generated/dataModel";
 
 // Hooks
 import { useBudgetTableState } from "../hooks/useBudgetTableState";
@@ -38,9 +42,10 @@ import { convertToPrintTotals, getVisibleColumns, formatTimestamp } from "../uti
 
 // Types
 
-import { BUDGET_TABLE_COLUMNS } from "@/components/ppdo/11_project_plan/constants";
+import { BUDGET_TABLE_COLUMNS, DEFAULT_COLUMN_WIDTHS } from "@/components/ppdo/11_project_plan/constants";
 import { BudgetItem } from "@/types/types";
 import { BudgetTrackingTableProps } from "../types";
+import { useGenericTableSettings } from "@/components/ppdo/shared/hooks";
 
 /**
  * Main BudgetTrackingTable component - Refactored with custom hooks
@@ -67,6 +72,43 @@ export function BudgetTrackingTable({
   const isAdmin =
     accessCheck?.user?.role === "admin" ||
     accessCheck?.user?.role === "super_admin";
+
+  // ============================================================================
+  // KANBAN VIEW STATE
+  // ============================================================================
+
+  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
+  const [showViewToggle, setShowViewToggle] = useState(false);
+  const [visibleStatuses, setVisibleStatuses] = useState<Set<string>>(
+    new Set(['delayed', 'ongoing', 'completed'])
+  );
+  const [visibleFields, setVisibleFields] = useState<Set<string>>(
+    new Set(['totalBudgetAllocated', 'totalBudgetUtilized', 'balance', 'utilizationRate'])
+  );
+
+  // Mutation for Kanban drag-drop status changes
+  const updateBudgetItemStatus = useMutation(api.budgetItems.updateStatus);
+
+  // ============================================================================
+  // COLUMN WIDTH MANAGEMENT (Convex persistence)
+  // ============================================================================
+
+  const {
+    columnWidths,
+    getColumnWidth,
+    startResizeColumn,
+    canEditLayout,
+  } = useGenericTableSettings({
+    tableIdentifier: "budgetItemsTable",
+    defaultColumnWidths: DEFAULT_COLUMN_WIDTHS,
+    minColumnWidth: 100,
+  });
+
+  // Resize handler for table header
+  const handleResizeStart = useCallback((column: string, e: React.MouseEvent) => {
+    const currentWidth = getColumnWidth(column, DEFAULT_COLUMN_WIDTHS[column as keyof typeof DEFAULT_COLUMN_WIDTHS] || 150);
+    startResizeColumn(e, column, currentWidth);
+  }, [getColumnWidth, startResizeColumn]);
 
   // ============================================================================
   // TRASH CONFIRMATION STATE
@@ -321,6 +363,96 @@ export function BudgetTrackingTable({
   };
 
   // ============================================================================
+  // KANBAN VIEW HANDLERS
+  // ============================================================================
+
+  // Keyboard shortcut to toggle view toggle visibility (Ctrl+Shift+V)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === "V") {
+        e.preventDefault();
+        setShowViewToggle((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Handle Kanban status change via drag-drop
+  const handleKanbanStatusChange = useCallback(async (itemId: string, newStatus: string) => {
+    const validStatuses = ["completed", "ongoing", "delayed"] as const;
+    if (validStatuses.includes(newStatus as typeof validStatuses[number])) {
+      try {
+        await updateBudgetItemStatus({
+          id: itemId as Id<"budgetItems">,
+          status: newStatus as "completed" | "ongoing" | "delayed",
+        });
+      } catch (error) {
+        console.error("Failed to update budget item status:", error);
+      }
+    }
+  }, [updateBudgetItemStatus]);
+
+  // Get the original BudgetItem from card data for Kanban actions
+  const getOriginalItem = useCallback((itemId: string) => {
+    return budgetItems.find(item => item.id === itemId);
+  }, [budgetItems]);
+
+  // Kanban view log handler
+  const handleKanbanViewLog = useCallback((item: BudgetItem) => {
+    // Navigate to the project's particular page for detailed view
+    const slug = item.particular
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "");
+    window.location.href = `/dashboard/project/${year}/${slug}?view=kanban`;
+  }, [year]);
+
+  // Kanban edit handler
+  const handleKanbanEdit = useCallback((item: BudgetItem) => {
+    setSelectedItem(item);
+    setShowEditModal(true);
+  }, [setSelectedItem, setShowEditModal]);
+
+  // Kanban delete handler
+  const handleKanbanDelete = useCallback((item: BudgetItem) => {
+    handleShowTrashConfirmation([item], false);
+  }, [handleShowTrashConfirmation]);
+
+  // Kanban pin handler
+  const handleKanbanPin = useCallback((item: BudgetItem) => {
+    handlePin(item);
+  }, [handlePin]);
+
+  // Toggle status visibility
+  const handleToggleStatus = useCallback((statusId: string, isChecked: boolean) => {
+    setVisibleStatuses(prev => {
+      const newSet = new Set(prev);
+      if (isChecked) {
+        newSet.add(statusId);
+      } else {
+        newSet.delete(statusId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Toggle field visibility
+  const handleToggleField = useCallback((fieldId: string, isChecked: boolean) => {
+    setVisibleFields(prev => {
+      const newSet = new Set(prev);
+      if (isChecked) {
+        newSet.add(fieldId);
+      } else {
+        newSet.delete(fieldId);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // ============================================================================
   // BUILD PREVIEW DATA FOR MODAL
   // ============================================================================
   
@@ -379,99 +511,145 @@ export function BudgetTrackingTable({
 
   return (
     <>
-      {/* Main Table Container */}
-      <div className="print-area bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
+      {/* Main Table Container with Tabs */}
+      <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "table" | "kanban")} className="w-full">
+        <div className="print-area bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-800 overflow-hidden">
 
-        {/* Toolbar */}
-        <BudgetTableToolbar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchInputRef={searchInputRef}
-          selectedCount={selectedIds.size}
-          onClearSelection={() => setSelectedIds(new Set())}
-          hiddenColumns={hiddenColumns}
-          onToggleColumn={handleToggleColumn}
-          onShowAllColumns={handleShowAllColumns}
-          onHideAllColumns={() => setShowHideAllWarning(true)}
-          onExportCSV={handleExportCSV}
-          onOpenPrintPreview={handleOpenPrintPreview}
-          hasPrintDraft={hasDraft}
-          isAdmin={isAdmin}
-          pendingRequestsCount={pendingRequestsCount}
-          onOpenShare={() => setShowShareModal(true)}
-          onOpenTrash={onOpenTrash || (() => setShowTrashModal(true))}
-          onBulkTrash={handleBulkTrash}
-          onBulkToggleAutoCalculate={handleOpenBulkToggleDialog}
-          onAddNew={onAdd ? () => setShowAddModal(true) : undefined}
-          expandButton={expandButton}
-          accentColor={accentColorValue}
-        />
+          {/* Toolbar */}
+          <BudgetTableToolbar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchInputRef={searchInputRef}
+            selectedCount={selectedIds.size}
+            onClearSelection={() => setSelectedIds(new Set())}
+            hiddenColumns={hiddenColumns}
+            onToggleColumn={handleToggleColumn}
+            onShowAllColumns={handleShowAllColumns}
+            onHideAllColumns={() => setShowHideAllWarning(true)}
+            onExportCSV={handleExportCSV}
+            onOpenPrintPreview={handleOpenPrintPreview}
+            hasPrintDraft={hasDraft}
+            isAdmin={isAdmin}
+            pendingRequestsCount={pendingRequestsCount}
+            onOpenShare={() => setShowShareModal(true)}
+            onOpenTrash={onOpenTrash || (() => setShowTrashModal(true))}
+            onBulkTrash={handleBulkTrash}
+            onBulkToggleAutoCalculate={handleOpenBulkToggleDialog}
+            onAddNew={onAdd ? () => setShowAddModal(true) : undefined}
+            expandButton={expandButton}
+            accentColor={accentColorValue}
+            // Kanban View Support
+            visibleStatuses={visibleStatuses}
+            onToggleStatus={handleToggleStatus}
+            visibleFields={visibleFields}
+            onToggleField={handleToggleField}
+            showColumnToggle={viewMode === "table"}
+            showExport={viewMode === "table"}
+          />
 
-        {/* Print Header (hidden on screen, visible in print) */}
-        <div className="hidden print-only p-4 border-b border-zinc-900">
-          <h2 className="text-xl font-bold text-zinc-900 mb-2">
-            Budget Tracking
-          </h2>
-          <p className="text-sm text-zinc-700">
-            Generated on:{" "}
-            {new Date().toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        </div>
+          {/* View Toggle (Ctrl+Shift+V to show/hide) */}
+          {showViewToggle && (
+            <div className="flex items-center justify-center py-2 border-b border-zinc-200 dark:border-zinc-800">
+              <TabsList className="bg-zinc-100 dark:bg-zinc-800">
+                <TabsTrigger value="table" className="gap-2">
+                  <TableIcon className="w-4 h-4" />
+                  Table
+                </TabsTrigger>
+                <TabsTrigger value="kanban" className="gap-2">
+                  <LayoutGrid className="w-4 h-4" />
+                  Kanban
+                </TabsTrigger>
+              </TabsList>
+            </div>
+          )}
 
-        {/* Table */}
-        <div className="overflow-x-auto max-h-[600px] overflow-y-auto relative">
-          <table className="w-full">
-            <BudgetTableHeader
+          {/* Print Header (hidden on screen, visible in print) */}
+          <div className="hidden print-only p-4 border-b border-zinc-900">
+            <h2 className="text-xl font-bold text-zinc-900 mb-2">
+              Budget Tracking
+            </h2>
+            <p className="text-sm text-zinc-700">
+              Generated on:{" "}
+              {new Date().toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </p>
+          </div>
+
+          {/* Table View */}
+          <TabsContent value="table" className="mt-0">
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto relative">
+              <table className="w-full">
+                <BudgetTableHeader
+                  isAdmin={isAdmin}
+                  isAllSelected={isAllSelected}
+                  isIndeterminate={isIndeterminate}
+                  sortField={sortField}
+                  sortDirection={sortDirection}
+                  yearFilter={yearFilter}
+                  statusFilter={statusFilter}
+                  uniqueYears={uniqueYears}
+                  uniqueStatuses={uniqueStatuses}
+                  showHeaderSkeleton={showHeaderSkeleton}
+                  hiddenColumns={hiddenColumns}
+                  onSelectAll={handleSelectAll}
+                  onSort={handleSort}
+                  onToggleYearFilter={toggleYearFilter}
+                  onToggleStatusFilter={toggleStatusFilter}
+                  columnWidths={columnWidths}
+                  onResizeStart={handleResizeStart}
+                  canEditLayout={canEditLayout}
+                />
+                <tbody>
+                  {filteredAndSortedItems.length === 0 ? (
+                    <BudgetTableEmptyState />
+                  ) : (
+                    <>
+                      {filteredAndSortedItems.map((item) => (
+                        <BudgetTableRow
+                          key={item.id}
+                          item={item}
+                          isAdmin={isAdmin}
+                          isSelected={selectedIds.has(item.id)}
+                          hiddenColumns={hiddenColumns}
+                          onContextMenu={handleContextMenu}
+                          onClick={handleRowClick}
+                          onSelectRow={handleSelectRow}
+                        />
+                      ))}
+                      <BudgetTableTotalsRow
+                        totals={totals}
+                        totalUtilizationRate={totalUtilizationRate}
+                        hiddenColumns={hiddenColumns}
+                      />
+                    </>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </TabsContent>
+
+          {/* Kanban View */}
+          <TabsContent value="kanban" className="mt-0">
+            <BudgetItemKanban
+              data={filteredAndSortedItems}
               isAdmin={isAdmin}
-              isAllSelected={isAllSelected}
-              isIndeterminate={isIndeterminate}
-              sortField={sortField}
-              sortDirection={sortDirection}
-              yearFilter={yearFilter}
-              statusFilter={statusFilter}
-              uniqueYears={uniqueYears}
-              uniqueStatuses={uniqueStatuses}
-              showHeaderSkeleton={showHeaderSkeleton}
-              hiddenColumns={hiddenColumns}
-              onSelectAll={handleSelectAll}
-              onSort={handleSort}
-              onToggleYearFilter={toggleYearFilter}
-              onToggleStatusFilter={toggleStatusFilter}
+              onViewLog={handleKanbanViewLog}
+              onEdit={onEdit ? handleKanbanEdit : undefined}
+              onDelete={onDelete ? handleKanbanDelete : undefined}
+              onPin={handleKanbanPin}
+              visibleStatuses={visibleStatuses}
+              visibleFields={visibleFields}
+              year={year}
+              onStatusChange={handleKanbanStatusChange}
             />
-            <tbody>
-              {filteredAndSortedItems.length === 0 ? (
-                <BudgetTableEmptyState />
-              ) : (
-                <>
-                  {filteredAndSortedItems.map((item) => (
-                    <BudgetTableRow
-                      key={item.id}
-                      item={item}
-                      isAdmin={isAdmin}
-                      isSelected={selectedIds.has(item.id)}
-                      hiddenColumns={hiddenColumns}
-                      onContextMenu={handleContextMenu}
-                      onClick={handleRowClick}
-                      onSelectRow={handleSelectRow}
-                    />
-                  ))}
-                  <BudgetTableTotalsRow
-                    totals={totals}
-                    totalUtilizationRate={totalUtilizationRate}
-                    hiddenColumns={hiddenColumns}
-                  />
-                </>
-              )}
-            </tbody>
-          </table>
+          </TabsContent>
         </div>
-      </div>
+      </Tabs>
 
       {/* Context Menu */}
       {contextMenu && (

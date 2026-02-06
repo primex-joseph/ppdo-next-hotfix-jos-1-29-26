@@ -2,7 +2,7 @@
 
 "use client";
 
-import { ArrowUpDown, ArrowUp, ArrowDown, Filter } from "lucide-react";
+import { ArrowUpDown, ArrowUp, ArrowDown, Filter, GripVertical } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -13,6 +13,11 @@ import {
   DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { SortDirection, SortField } from "@/components/ppdo/11_project_plan/types";
+import { DEFAULT_COLUMN_WIDTHS } from "@/components/ppdo/11_project_plan/constants";
+
+interface ColumnWidths {
+  [key: string]: number | undefined;
+}
 
 interface BudgetTableHeaderProps {
   isAdmin: boolean;
@@ -30,6 +35,10 @@ interface BudgetTableHeaderProps {
   onSort: (field: SortField) => void;
   onToggleYearFilter: (year: number) => void;
   onToggleStatusFilter: (status: string) => void;
+  // Column resizing props (optional for backward compatibility)
+  columnWidths?: ColumnWidths;
+  onResizeStart?: (column: string, e: React.MouseEvent) => void;
+  canEditLayout?: boolean;
 }
 
 export function BudgetTableHeader({
@@ -48,12 +57,20 @@ export function BudgetTableHeader({
   onSort,
   onToggleYearFilter,
   onToggleStatusFilter,
+  columnWidths,
+  onResizeStart,
+  canEditLayout = false,
 }: BudgetTableHeaderProps) {
   const SortIcon = ({ field }: { field: SortField }) => {
     if (sortField !== field)
       return <ArrowUpDown className="w-3.5 h-3.5 opacity-50" />;
     if (sortDirection === "asc") return <ArrowUp className="w-3.5 h-3.5" />;
     return <ArrowDown className="w-3.5 h-3.5" />;
+  };
+
+  const getColumnWidth = (columnId: string) => {
+    if (!columnWidths) return undefined;
+    return columnWidths[columnId] ?? DEFAULT_COLUMN_WIDTHS[columnId as keyof typeof DEFAULT_COLUMN_WIDTHS];
   };
 
   return (
@@ -72,16 +89,30 @@ export function BudgetTableHeader({
 
         {/* Particulars */}
         {!hiddenColumns.has("particular") && (
-          <th className="px-4 sm:px-6 py-4 text-left sticky top-0 bg-zinc-50 dark:bg-zinc-950 z-10">
-            <button
-              onClick={() => onSort("particular")}
-              className="group flex items-center gap-2 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-            >
-              <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
-                Particulars
-              </span>
-              <SortIcon field="particular" />
-            </button>
+          <th
+            className="px-4 sm:px-6 py-4 text-left sticky top-0 bg-zinc-50 dark:bg-zinc-950 z-10"
+            style={getColumnWidth("particular") ? { width: `${getColumnWidth("particular")}px`, minWidth: `${getColumnWidth("particular")}px` } : undefined}
+          >
+            <div className="relative flex items-center gap-2">
+              <button
+                onClick={() => onSort("particular")}
+                className="group flex items-center gap-2 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+              >
+                <span className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 uppercase tracking-wide">
+                  Particulars
+                </span>
+                <SortIcon field="particular" />
+              </button>
+              {canEditLayout && onResizeStart && (
+                <button
+                  className="absolute right-0 cursor-col-resize text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 p-0.5"
+                  onMouseDown={(e) => onResizeStart("particular", e)}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <GripVertical className="h-3 w-3" />
+                </button>
+              )}
+            </div>
           </th>
         )}
 
