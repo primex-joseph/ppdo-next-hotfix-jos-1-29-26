@@ -4,7 +4,7 @@
 
 import { use, useState, useMemo } from "react";
 import { useQuery } from "convex/react";
-import { useFundsData, useFundsMutations, FundsPageHeader, FundsStatistics, FundsTable, FundForm, FundsExpandModal, FundsShareModal } from "@/components/ppdo/funds";
+import { useFundsData, useFundsMutations, FundsPageHeader, FundsStatistics, FundsTable, FundForm, FundsExpandModal, FundsShareModal } from "@/components/ppdo/odpp/table-pages/funds";
 import { api } from "@/convex/_generated/api";
 import { TrashBinModal } from "@/components/modals";
 import { Skeleton } from "@/components/ui/skeleton";

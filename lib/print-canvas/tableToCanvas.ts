@@ -9,7 +9,7 @@ import {
   ColumnDefinition,
   BudgetTotals
 } from './types';
-import { BudgetItem } from "@/components/ppdo/11_project_plan/types";
+import { BudgetItem } from "@/components/ppdo/odpp/table-pages/11_project_plan/types";
 import {
   wrapText,
   calculateWrappedRow,

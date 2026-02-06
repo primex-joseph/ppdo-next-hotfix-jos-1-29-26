@@ -35,7 +35,7 @@ import {
   AccessRequest, 
   UserWithAccessInfo 
 } from "@/types/access.types";
-import { UserFromList } from "@/components/ppdo/11_project_plan/types";
+import { UserFromList } from "@/components/ppdo/odpp/table-pages/11_project_plan/types";
 
 // ============================================================================
 // TYPES

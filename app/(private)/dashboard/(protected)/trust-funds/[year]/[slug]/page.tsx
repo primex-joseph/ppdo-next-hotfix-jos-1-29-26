@@ -30,11 +30,11 @@ import {
   BreakdownForm,
   Breakdown,
   BreakdownStatistics,
-} from "@/components/ppdo/breakdown";
+} from "@/components/ppdo/odpp/table-pages/breakdown";
 
 // Shared Components
 import { TrashBinModal } from "@/components/modals";
-import { Modal } from "@/components/ppdo/11_project_plan";
+import { Modal } from "@/components/ppdo/odpp/table-pages/11_project_plan";
 import { TrashConfirmationModal } from "@/components/modals/TrashConfirmationModal";
 
 // Shared Hooks

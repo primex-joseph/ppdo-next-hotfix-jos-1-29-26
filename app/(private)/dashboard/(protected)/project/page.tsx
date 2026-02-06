@@ -6,7 +6,7 @@ import { TrendingUp, Package, FolderTree } from "lucide-react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import AccessDeniedPage from "@/components/AccessDeniedPage";
-import { useBudgetAccess } from "@/components/ppdo/11_project_plan";
+import { useBudgetAccess } from "@/components/ppdo/odpp/table-pages/11_project_plan";
 import { LoadingState } from "@/components/ppdo/LoadingState";
 import { useAccentColor } from "@/contexts/AccentColorContext";
 import { FiscalYearModal } from "@/components/ppdo/fiscal-years";

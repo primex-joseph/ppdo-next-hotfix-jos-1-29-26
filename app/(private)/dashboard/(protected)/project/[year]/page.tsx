@@ -16,10 +16,10 @@ import {
   useBudgetData,
   useBudgetMutations,
   YearBudgetPageHeader,
-} from "@/components/ppdo/11_project_plan";
+} from "@/components/ppdo/odpp/table-pages/11_project_plan";
 import { LoadingState } from "@/components/ppdo/LoadingState";
 import { Button } from "@/components/ui/button";
-import { BudgetItem } from "@/components/ppdo/11_project_plan/types";
+import { BudgetItem } from "@/components/ppdo/odpp/table-pages/11_project_plan/types";
 
 interface PageProps {
   params: Promise<{ year: string }>;

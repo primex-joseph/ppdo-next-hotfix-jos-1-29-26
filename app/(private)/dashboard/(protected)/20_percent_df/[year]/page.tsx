@@ -9,12 +9,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TrashBinModal } from "@/components/modals";
 
 // 20% DF Components
-import { TwentyPercentDFTable } from "@/components/ppdo/twenty-percent-df/components/TwentyPercentDFTable";
-import { TwentyPercentDFStatistics } from "@/components/ppdo/twenty-percent-df/components/TwentyPercentDFStatistics";
+import { TwentyPercentDFTable } from "@/components/ppdo/odpp/table-pages/twenty-percent-df/components/TwentyPercentDFTable";
+import { TwentyPercentDFStatistics } from "@/components/ppdo/odpp/table-pages/twenty-percent-df/components/TwentyPercentDFStatistics";
 import { TwentyPercentDFYearHeader } from "./components/TwentyPercentDFYearHeader";
 
 // Types
-import { TwentyPercentDF } from "@/components/ppdo/twenty-percent-df/types";
+import { TwentyPercentDF } from "@/components/ppdo/odpp/table-pages/twenty-percent-df/types";
 
 interface PageProps {
     params: Promise<{ year: string }>;

@@ -23,7 +23,7 @@ import {
   useParticularAccess,
   getParticularFullName,
   calculateProjectStats
-} from "@/components/ppdo/projects";
+} from "@/components/ppdo/odpp/table-pages/projects";
 
 export default function ParticularProjectsPage() {
   const params = useParams();
