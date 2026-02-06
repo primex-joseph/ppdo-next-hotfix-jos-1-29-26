@@ -28,6 +28,7 @@ export function TableToolbarColumnVisibility({
   onToggleColumn,
   onShowAll,
   onHideAll,
+  triggerLabel = "Columns",
 }: ColumnVisibilityMenuProps) {
   // Use provided columns or fallback to hiddenColumns keys (backward compat)
   const displayColumns = columns || Array.from(hiddenColumns).map(key => ({
@@ -40,7 +41,7 @@ export function TableToolbarColumnVisibility({
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="sm" className="gap-2">
           <Eye className="w-4 h-4" />
-          <span className="hidden sm:inline">Columns</span>
+          <span className="hidden sm:inline">{triggerLabel}</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">

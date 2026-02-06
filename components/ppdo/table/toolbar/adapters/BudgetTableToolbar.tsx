@@ -68,6 +68,8 @@ export interface BudgetTableToolbarProps {
   onToggleField?: (fieldId: string, isChecked: boolean) => void;
   showColumnToggle?: boolean;
   showExport?: boolean;
+  columns?: { key: string; label: string }[];
+  columnsLabel?: string;
 }
 
 export function BudgetTableToolbar({
@@ -99,6 +101,8 @@ export function BudgetTableToolbar({
   onToggleField,
   showColumnToggle = true,
   showExport = true,
+  columns,
+  columnsLabel,
 }: BudgetTableToolbarProps) {
   // Convert old props to new bulkActions format
   const bulkActions: BulkAction[] = [];
@@ -139,7 +143,8 @@ export function BudgetTableToolbar({
       expandButton={expandButton}
       accentColor={accentColor}
       bulkActions={bulkActions.length > 0 ? bulkActions : undefined}
-      columns={BUDGET_TABLE_COLUMNS.map(col => ({ key: col.key, label: col.label }))}
+      columns={columns || BUDGET_TABLE_COLUMNS.map(col => ({ key: col.key, label: col.label }))}
+      columnTriggerLabel={columnsLabel}
       // Kanban View Support
       showColumnVisibility={showColumnToggle}
       showExport={showExport}

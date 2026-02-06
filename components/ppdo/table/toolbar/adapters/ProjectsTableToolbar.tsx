@@ -79,6 +79,8 @@ export interface ProjectsTableToolbarProps {
   onToggleField?: (fieldId: string, isChecked: boolean) => void;
   showColumnToggle?: boolean;
   showExport?: boolean;
+  columns?: { key: string; label: string }[];
+  columnsLabel?: string;
 }
 
 export function ProjectsTableToolbar({
@@ -114,6 +116,8 @@ export function ProjectsTableToolbar({
   onToggleField,
   showColumnToggle = true,
   showExport = true,
+  columns,
+  columnsLabel,
 }: ProjectsTableToolbarProps) {
   // Convert old props to new bulkActions format
   const bulkActions: BulkAction[] = [];
@@ -165,7 +169,8 @@ export function ProjectsTableToolbar({
       accentColor={accentColor}
       bulkActions={bulkActions.length > 0 ? bulkActions : undefined}
       bulkActionsComponent={bulkActionsComponent}
-      columns={AVAILABLE_COLUMNS.map(col => ({ key: col.id, label: col.label }))}
+      columns={columns || AVAILABLE_COLUMNS.map(col => ({ key: col.id, label: col.label }))}
+      columnTriggerLabel={columnsLabel}
       // Enable all features (with Kanban override support)
       showColumnVisibility={showColumnToggle}
       showExport={showExport}

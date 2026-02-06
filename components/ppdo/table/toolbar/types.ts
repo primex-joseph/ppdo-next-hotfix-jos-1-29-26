@@ -32,6 +32,7 @@ export interface ColumnVisibilityMenuProps {
   onToggleColumn: (columnId: string, isChecked: boolean) => void;
   onShowAll: () => void;
   onHideAll: () => void;
+  triggerLabel?: string;
 }
 
 /**
@@ -199,6 +200,9 @@ export interface TableToolbarProps {
 
   /** Custom column visibility menu component */
   columnVisibilityComponent?: React.ComponentType<ColumnVisibilityMenuProps>;
+
+  /** Label for the column visibility trigger button (default: "Columns") */
+  columnTriggerLabel?: string;
 
   /** Add new item button handler */
   onAddNew?: () => void;

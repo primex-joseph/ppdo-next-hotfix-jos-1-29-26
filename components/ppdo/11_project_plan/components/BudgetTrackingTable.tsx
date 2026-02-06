@@ -23,6 +23,7 @@ import { BudgetResizableTable } from "./BudgetResizableTable";
 import { TrashBinModal, TrashConfirmationModal } from "@/components/modals";
 import { BudgetItemKanban } from "./BudgetItemKanban";
 import { Id } from "@/convex/_generated/dataModel";
+import { TOGGLEABLE_FIELDS } from "@/components/ppdo/shared/kanban/KanbanFieldVisibilityMenu";
 
 // Hooks
 import { useBudgetTableState } from "../hooks/useBudgetTableState";
@@ -434,6 +435,14 @@ export function BudgetTrackingTable({
     });
   }, []);
 
+  const handleShowAllFields = useCallback(() => {
+    setVisibleFields(new Set(TOGGLEABLE_FIELDS.map(f => f.id)));
+  }, []);
+
+  const handleHideAllFields = useCallback(() => {
+    setVisibleFields(new Set());
+  }, []);
+
   // ============================================================================
   // BUILD PREVIEW DATA FOR MODAL
   // ============================================================================
@@ -504,10 +513,27 @@ export function BudgetTrackingTable({
             searchInputRef={searchInputRef}
             selectedCount={selectedIds.size}
             onClearSelection={() => setSelectedIds(new Set())}
-            hiddenColumns={hiddenColumns}
-            onToggleColumn={handleToggleColumn}
-            onShowAllColumns={handleShowAllColumns}
-            onHideAllColumns={() => setShowHideAllWarning(true)}
+
+            // Unified Column/Field Visibility
+            columnsLabel={viewMode === 'kanban' ? "Fields" : "Columns"}
+            columns={viewMode === 'table'
+              ? undefined // Use default from BudgetTableToolbar
+              : TOGGLEABLE_FIELDS.map(f => ({ key: f.id, label: f.label }))
+            }
+            hiddenColumns={viewMode === 'table'
+              ? hiddenColumns
+              : new Set(TOGGLEABLE_FIELDS.filter(f => !visibleFields.has(f.id)).map(f => f.id))
+            }
+            onToggleColumn={viewMode === 'table'
+              ? handleToggleColumn
+              : (id, checked) => handleToggleField(id, !checked) // Invert checked because menu logic assumes "hidden columns" but we track "visible fields"
+            }
+            onShowAllColumns={viewMode === 'table' ? handleShowAllColumns : handleShowAllFields}
+            onHideAllColumns={viewMode === 'table'
+              ? () => setShowHideAllWarning(true)
+              : handleHideAllFields
+            }
+
             onExportCSV={handleExportCSV}
             onOpenPrintPreview={handleOpenPrintPreview}
             hasPrintDraft={hasDraft}
@@ -521,11 +547,11 @@ export function BudgetTrackingTable({
             expandButton={expandButton}
             accentColor={accentColorValue}
             // Kanban View Support
-            visibleStatuses={visibleStatuses}
-            onToggleStatus={handleToggleStatus}
-            visibleFields={visibleFields}
-            onToggleField={handleToggleField}
-            showColumnToggle={viewMode === "table"}
+            visibleStatuses={viewMode === 'kanban' ? visibleStatuses : undefined}
+            onToggleStatus={viewMode === 'kanban' ? handleToggleStatus : undefined}
+            visibleFields={undefined} // Hide the separate Fields toolbar
+            onToggleField={undefined}
+            showColumnToggle={true} // Always show the unified menu
             showExport={viewMode === "table"}
           />
 

@@ -38,6 +38,7 @@ import {
     ProjectContextMenuState,
 } from "../types";
 import { AVAILABLE_COLUMNS, DEFAULT_COLUMN_WIDTHS } from "../constants";
+import { TOGGLEABLE_FIELDS } from "@/components/ppdo/shared/kanban/KanbanFieldVisibilityMenu";
 import {
     groupProjectsByCategory,
     calculateProjectTotals,
@@ -800,6 +801,16 @@ export function ProjectsTable({
         });
     }, []);
 
+    // ... (handlers)
+
+    const handleShowAllFields = useCallback(() => {
+        setVisibleFields(new Set(TOGGLEABLE_FIELDS.map(f => f.id)));
+    }, []);
+
+    const handleHideAllFields = useCallback(() => {
+        setVisibleFields(new Set());
+    }, []);
+
     return (
         <>
             {/* Main Container with Tabs */}
@@ -816,10 +827,24 @@ export function ProjectsTable({
                         onClearSelection={() => setSelectedIds(new Set())}
                         canManageBulkActions={canManageBulkActions}
                         onBulkCategoryChange={handleBulkCategoryChange}
-                        hiddenColumns={hiddenColumns}
-                        onToggleColumn={handleToggleColumn}
-                        onShowAllColumns={handleShowAllColumns}
-                        onHideAllColumns={handleHideAllColumns}
+
+                        // Unified Column/Field Visibility
+                        columnsLabel={viewMode === 'kanban' ? "Fields" : "Columns"}
+                        columns={viewMode === 'table'
+                            ? undefined // Use default from ProjectsTableToolbar
+                            : TOGGLEABLE_FIELDS.map(f => ({ key: f.id, label: f.label }))
+                        }
+                        hiddenColumns={viewMode === 'table'
+                            ? hiddenColumns
+                            : new Set(TOGGLEABLE_FIELDS.filter(f => !visibleFields.has(f.id)).map(f => f.id))
+                        }
+                        onToggleColumn={viewMode === 'table'
+                            ? handleToggleColumn
+                            : (id, checked) => handleToggleField(id, !checked)
+                        }
+                        onShowAllColumns={viewMode === 'table' ? handleShowAllColumns : handleShowAllFields}
+                        onHideAllColumns={viewMode === 'table' ? handleHideAllColumns : handleHideAllFields}
+
                         onExportCSV={handleExportCSV}
                         onOpenPrintPreview={handleOpenPrintPreview}
                         onOpenTrash={onOpenTrash}
@@ -832,11 +857,11 @@ export function ProjectsTable({
                         expandButton={expandButton}
                         accentColor={accentColorValue}
                         // Kanban View Support
-                        visibleStatuses={visibleStatuses}
-                        onToggleStatus={handleToggleStatus}
-                        visibleFields={visibleFields}
-                        onToggleField={handleToggleField}
-                        showColumnToggle={viewMode === "table"}
+                        visibleStatuses={viewMode === 'kanban' ? visibleStatuses : undefined}
+                        onToggleStatus={viewMode === 'kanban' ? handleToggleStatus : undefined}
+                        visibleFields={undefined} // Hide the separate Fields toolbar
+                        onToggleField={undefined}
+                        showColumnToggle={true} // Always show unified menu
                         showExport={viewMode === "table"}
                     />
 

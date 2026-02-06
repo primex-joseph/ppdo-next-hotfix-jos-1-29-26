@@ -140,6 +140,7 @@ export function TableToolbar({
   onAddNew,
   expandButton,
   columns,
+  columnTriggerLabel,
 }: TableToolbarProps) {
   // Render the column visibility menu component
   const ColumnVisibilityMenuComponent =
@@ -314,6 +315,7 @@ export function TableToolbar({
                     onToggleColumn={onToggleColumn}
                     onShowAll={onShowAllColumns}
                     onHideAll={onHideAllColumns}
+                    triggerLabel={columnTriggerLabel}
                   />
                 )}
 
