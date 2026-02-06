@@ -48,6 +48,7 @@ import { twentyPercentDFTables } from "./schema/twentyPercentDF";
 import { twentyPercentDFBreakdownTables } from "./schema/twentyPercentDFBreakdowns";
 import { twentyPercentDFActivityTables } from "./schema/twentyPercentDFActivities";
 import { twentyPercentDFSharedAccessTables } from "./schema/twentyPercentDFSharedAccess";
+import { breakdownSharedAccessTables } from "./schema/breakdownSharedAccess";
 
 export default defineSchema({
   ...authTables,
@@ -97,4 +98,5 @@ export default defineSchema({
   ...twentyPercentDFBreakdownTables,
   ...twentyPercentDFActivityTables,
   ...twentyPercentDFSharedAccessTables,
+  ...breakdownSharedAccessTables,
 });

@@ -11,8 +11,9 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import { Trash2, Printer, Plus, LayoutGrid, Table2, FileSpreadsheet, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAccentColor } from "@/contexts/AccentColorContext";
@@ -70,6 +71,9 @@ import { exportToCSV, createBreakdownExportConfig } from "@/services";
 // Import print adapter
 import { BreakdownPrintAdapter } from "../lib/print-adapters/BreakdownPrintAdapter";
 
+// Import share modal
+import { BreakdownShareModal } from "../components/BreakdownShareModal";
+
 export function BreakdownHistoryTable({
   breakdowns,
   onPrint,
@@ -113,6 +117,23 @@ export function BreakdownHistoryTable({
   const currentUser = useQuery(api.users.current, {});
   const isAdmin = currentUser?.role === "admin" || currentUser?.role === "super_admin";
   const pendingRequestsCount = useQuery(api.accessRequests.getPendingCount);
+  const breakdownPendingCount = useQuery(api.breakdownSharedAccess.getPendingCount);
+
+  // Bulk trash mutations based on entity type
+  const bulkMoveToTrashProject = useMutation(api.govtProjects.bulkMoveToTrash);
+  const bulkMoveToTrashTrustFund = useMutation(api.trustFundBreakdowns.bulkMoveToTrash);
+  const bulkMoveToTrashSEF = useMutation(api.specialEducationFundBreakdowns.bulkMoveToTrash);
+  const bulkMoveToTrashSHF = useMutation(api.specialHealthFundBreakdowns.bulkMoveToTrash);
+  const bulkMoveToTrash20DF = useMutation(api.twentyPercentDFBreakdowns.bulkMoveToTrash);
+
+  // Determine entity ID for share modal
+  const shareEntityId = useMemo(() => {
+    if (entityType === "trustfund" || entityType === "specialeducationfund" || 
+        entityType === "specialhealthfund" || entityType === "twentyPercentDF") {
+      return navigationParams?.slug || (params as any).slug as string;
+    }
+    return navigationParams?.projectbreakdownId || (params as any).projectbreakdownId as string;
+  }, [entityType, navigationParams, params]);
 
   // Keyboard shortcut to toggle view tabs visibility
   useEffect(() => {
@@ -379,10 +400,47 @@ export function BreakdownHistoryTable({
      BULK TRASH HANDLER
   ======================= */
 
-  const handleBulkTrash = useCallback(() => {
+  const handleBulkTrash = useCallback(async () => {
     if (selectedIds.size === 0) return;
-    toast.info(`Selected ${selectedIds.size} items for trash`);
-  }, [selectedIds]);
+
+    const ids = Array.from(selectedIds) as Id<"govtProjectBreakdowns">[] | 
+      Id<"trustFundBreakdowns">[] | Id<"specialEducationFundBreakdowns">[] |
+      Id<"specialHealthFundBreakdowns">[] | Id<"twentyPercentDFBreakdowns">[];
+
+    try {
+      let result;
+      switch (entityType) {
+        case "trustfund":
+          result = await bulkMoveToTrashTrustFund({ ids: ids as Id<"trustFundBreakdowns">[] });
+          break;
+        case "specialeducationfund":
+          result = await bulkMoveToTrashSEF({ ids: ids as Id<"specialEducationFundBreakdowns">[] });
+          break;
+        case "specialhealthfund":
+          result = await bulkMoveToTrashSHF({ ids: ids as Id<"specialHealthFundBreakdowns">[] });
+          break;
+        case "twentyPercentDF":
+          result = await bulkMoveToTrash20DF({ ids: ids as Id<"twentyPercentDFBreakdowns">[] });
+          break;
+        default:
+          result = await bulkMoveToTrashProject({ ids: ids as Id<"govtProjectBreakdowns">[] });
+      }
+
+      if (result.success > 0) {
+        toast.success(`Moved ${result.success} items to trash`);
+      }
+      if (result.failed > 0) {
+        toast.error(`Failed to move ${result.failed} items`);
+      }
+
+      // Clear selection after operation
+      setSelectedIds(new Set());
+    } catch (error) {
+      toast.error("Failed to move items to trash");
+      console.error(error);
+    }
+  }, [selectedIds, entityType, bulkMoveToTrashProject, bulkMoveToTrashTrustFund, 
+      bulkMoveToTrashSEF, bulkMoveToTrashSHF, bulkMoveToTrash20DF]);
 
   /* =======================
      RENDER
@@ -718,26 +776,15 @@ export function BreakdownHistoryTable({
         />
       )}
 
-      {/* SHARE MODAL PLACEHOLDER */}
-      {/* TODO: Implement breakdown-specific share modal */}
-      {/* This would require backend support for breakdown-level access control */}
-      {showShareModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 max-w-md w-full">
-            <h2 className="text-lg font-semibold mb-4">Share Breakdown</h2>
-            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
-              Share functionality for breakdowns is coming soon. This will allow you to share access to specific breakdown records with other users.
-            </p>
-            <div className="flex justify-end">
-              <button
-                onClick={() => setShowShareModal(false)}
-                className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* SHARE MODAL */}
+      {showShareModal && shareEntityId && (
+        <BreakdownShareModal
+          isOpen={showShareModal}
+          onClose={() => setShowShareModal(false)}
+          entityId={shareEntityId}
+          entityType={entityType}
+          entityName={entityName || "Breakdown"}
+        />
       )}
     </Tabs>
   );

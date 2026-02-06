@@ -13,7 +13,7 @@ export type AccessLevel = "viewer" | "editor" | "admin";
  * Generic _id type to support all shared access table types
  */
 export interface UserWithAccessInfo {
-  _id: Id<"budgetSharedAccess"> | Id<"budgetParticularSharedAccess"> | Id<"trustFundSharedAccess"> | Id<"specialEducationFundSharedAccess"> | Id<"specialHealthFundSharedAccess">;
+  _id: Id<"budgetSharedAccess"> | Id<"budgetParticularSharedAccess"> | Id<"trustFundSharedAccess"> | Id<"specialEducationFundSharedAccess"> | Id<"specialHealthFundSharedAccess"> | Id<"breakdownSharedAccess">;
   userId: Id<"users">;
   userName: string;
   userEmail: string;

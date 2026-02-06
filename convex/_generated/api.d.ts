@@ -11,6 +11,7 @@
 import type * as accessRequests from "../accessRequests.js";
 import type * as auth from "../auth.js";
 import type * as blockedManagement from "../blockedManagement.js";
+import type * as breakdownSharedAccess from "../breakdownSharedAccess.js";
 import type * as budgetAccess from "../budgetAccess.js";
 import type * as budgetItemActivities from "../budgetItemActivities.js";
 import type * as budgetItems from "../budgetItems.js";
@@ -76,6 +77,7 @@ import type * as schema_accessRequests from "../schema/accessRequests.js";
 import type * as schema_aggregations from "../schema/aggregations.js";
 import type * as schema_audit from "../schema/audit.js";
 import type * as schema_auth from "../schema/auth.js";
+import type * as schema_breakdownSharedAccess from "../schema/breakdownSharedAccess.js";
 import type * as schema_budgetItemActivities from "../schema/budgetItemActivities.js";
 import type * as schema_budgetParticularSharedAccess from "../schema/budgetParticularSharedAccess.js";
 import type * as schema_budgetParticulars from "../schema/budgetParticulars.js";
@@ -157,6 +159,7 @@ declare const fullApi: ApiFromModules<{
   accessRequests: typeof accessRequests;
   auth: typeof auth;
   blockedManagement: typeof blockedManagement;
+  breakdownSharedAccess: typeof breakdownSharedAccess;
   budgetAccess: typeof budgetAccess;
   budgetItemActivities: typeof budgetItemActivities;
   budgetItems: typeof budgetItems;
@@ -222,6 +225,7 @@ declare const fullApi: ApiFromModules<{
   "schema/aggregations": typeof schema_aggregations;
   "schema/audit": typeof schema_audit;
   "schema/auth": typeof schema_auth;
+  "schema/breakdownSharedAccess": typeof schema_breakdownSharedAccess;
   "schema/budgetItemActivities": typeof schema_budgetItemActivities;
   "schema/budgetParticularSharedAccess": typeof schema_budgetParticularSharedAccess;
   "schema/budgetParticulars": typeof schema_budgetParticulars;
