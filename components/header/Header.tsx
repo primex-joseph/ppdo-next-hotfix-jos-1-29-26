@@ -3,6 +3,8 @@ import { useSidebar } from "../../contexts/SidebarContext";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { Bug, Loader2, Eye, EyeOff } from "lucide-react";
 import { AccountModal } from "../account/AccountModal";
@@ -22,6 +24,7 @@ interface HeaderProps {
 
 export function Header({ onSearchChange, searchQuery }: HeaderProps) {
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const [accountModalTab, setAccountModalTab] = useState<"profile" | "security">("profile");
   const { isMinimized, toggleMinimize } = useSidebar();
   const router = useRouter();
   const pathname = usePathname();
@@ -38,6 +41,19 @@ export function Header({ onSearchChange, searchQuery }: HeaderProps) {
     if (stored !== null) {
       setShowBugReport(JSON.parse(stored));
     }
+  }, []);
+
+  // Listen for open-account-settings event from PIN reminder
+  useEffect(() => {
+    const handleOpenAccountSettings = (e: CustomEvent<{ tab?: "profile" | "security" }>) => {
+      setAccountModalTab(e.detail?.tab || "profile");
+      setShowAccountModal(true);
+    };
+
+    window.addEventListener("open-account-settings", handleOpenAccountSettings as EventListener);
+    return () => {
+      window.removeEventListener("open-account-settings", handleOpenAccountSettings as EventListener);
+    };
   }, []);
 
   const toggleBugReport = () => {
@@ -254,7 +270,10 @@ export function Header({ onSearchChange, searchQuery }: HeaderProps) {
       {showAccountModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="w-full max-w-5xl">
-            <AccountModal onClose={() => setShowAccountModal(false)} />
+            <AccountModal 
+              onClose={() => setShowAccountModal(false)} 
+              initialTab={accountModalTab}
+            />
           </div>
         </div>
       )}

@@ -4,3 +4,4 @@ export { TrashBinModal } from "./TrashBinModal";
 export { TrashConfirmationModal } from "./TrashConfirmationModal";
 export { RestoreConfirmationModal } from "./RestoreConfirmationModal";
 export { PinCodeModal } from "./PinCodeModal";
+export { PinReminderModal } from "./PinReminderModal";
