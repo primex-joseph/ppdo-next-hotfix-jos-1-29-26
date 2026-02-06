@@ -52,9 +52,10 @@ export default function YearSpecialHealthFundsPage({ params }: PageProps) {
         if (yearFilteredFunds.length === 0) {
             return {
                 yearStatistics: {
-                    totalReceived: 0,
+                    totalAllocated: 0,
                     totalUtilized: 0,
-                    totalBalance: 0,
+                    totalObligated: 0,
+                    averageUtilizationRate: 0,
                     totalProjects: 0,
                 },
                 statusCounts: {
@@ -70,9 +71,9 @@ export default function YearSpecialHealthFundsPage({ params }: PageProps) {
 
         const stats = yearFilteredFunds.reduce(
             (acc, fund) => {
-                acc.totalReceived += fund.received;
+                acc.totalAllocated += fund.received;
                 acc.totalUtilized += fund.utilized;
-                acc.totalBalance += fund.balance;
+                acc.totalObligated += fund.obligatedPR || 0;
 
                 // Handle all status types including 'active'
                 const status = fund.status || 'not_available';
@@ -103,9 +104,9 @@ export default function YearSpecialHealthFundsPage({ params }: PageProps) {
                 return acc;
             },
             {
-                totalReceived: 0,
+                totalAllocated: 0,
                 totalUtilized: 0,
-                totalBalance: 0,
+                totalObligated: 0,
                 counts: {
                     active: 0,
                     not_yet_started: 0,
@@ -117,11 +118,16 @@ export default function YearSpecialHealthFundsPage({ params }: PageProps) {
             }
         );
 
+        const averageUtilizationRate = yearFilteredFunds.length > 0
+            ? yearFilteredFunds.reduce((sum, f) => sum + (f.utilizationRate || 0), 0) / yearFilteredFunds.length
+            : 0;
+
         return {
             yearStatistics: {
-                totalReceived: stats.totalReceived,
+                totalAllocated: stats.totalAllocated,
                 totalUtilized: stats.totalUtilized,
-                totalBalance: stats.totalBalance,
+                totalObligated: stats.totalObligated,
+                averageUtilizationRate,
                 totalProjects: yearFilteredFunds.length,
             },
             statusCounts: stats.counts
@@ -176,9 +182,10 @@ export default function YearSpecialHealthFundsPage({ params }: PageProps) {
 
             {showDetails && (
                 <FundsStatistics
-                    totalReceived={yearStatistics.totalReceived}
+                    totalAllocated={yearStatistics.totalAllocated}
                     totalUtilized={yearStatistics.totalUtilized}
-                    totalBalance={yearStatistics.totalBalance}
+                    totalObligated={yearStatistics.totalObligated}
+                    averageUtilizationRate={yearStatistics.averageUtilizationRate}
                     totalProjects={yearStatistics.totalProjects}
                     statusCounts={statusCounts}
                 />

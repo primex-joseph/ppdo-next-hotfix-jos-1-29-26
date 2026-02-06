@@ -1,6 +1,6 @@
 
 import React, { useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { StatCard } from "@/components/ppdo/shared";
 import { TwentyPercentDF } from "../types";
 
 interface TwentyPercentDFStatisticsProps {
@@ -132,29 +132,4 @@ export function TwentyPercentDFStatistics({
     );
 }
 
-const StatCard = React.memo(function StatCard({
-    label,
-    value,
-    subContent,
-}: {
-    label: string;
-    value: string;
-    subContent?: React.ReactNode;
-}) {
-    return (
-        <Card role="group" aria-label={label} className="h-full">
-            <CardContent className="py-6 px-6 no-click">
-                <p className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
-                    {label}
-                </p>
-                <p
-                    className="text-2xl font-bold text-zinc-900 dark:text-zinc-100"
-                    aria-live="polite"
-                >
-                    {value}
-                </p>
-                {subContent}
-            </CardContent>
-        </Card>
-    );
-});
+
