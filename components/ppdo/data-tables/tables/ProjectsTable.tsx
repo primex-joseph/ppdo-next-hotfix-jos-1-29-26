@@ -222,7 +222,7 @@ export function ProjectsTable({
 
     return (
         <ResizableTableContainer>
-            <table className="w-full" style={{ borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+            <table style={{ borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                 <ResizableTableHeader
                     columns={visibleColumns}
                     canEditLayout={canEditLayout}
