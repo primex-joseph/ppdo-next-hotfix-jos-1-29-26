@@ -11,7 +11,9 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
-import { Trash2, Printer, Plus, LayoutGrid, Table2, MoreVertical } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Trash2, Printer, Plus, LayoutGrid, Table2, FileSpreadsheet, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { useAccentColor } from "@/contexts/AccentColorContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -20,7 +22,6 @@ import { StatusVisibilityMenu } from "../../shared/toolbar";
 import { KanbanFieldVisibilityMenu } from "../../shared/kanban/KanbanFieldVisibilityMenu";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ResponsiveMoreMenu } from "@/components/shared/table/ResponsiveMoreMenu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // Import types
 import {
@@ -64,6 +65,7 @@ import { TableRow } from "./TableRow";
 import { TableTotalsRow } from "./TableTotalsRow";
 import { EmptyState } from "./EmptyState";
 import { GenericPrintPreviewModal } from "@/components/ppdo/print";
+import { exportToCSV, createBreakdownExportConfig } from "@/services";
 
 // Import print adapter
 import { BreakdownPrintAdapter } from "../lib/print-adapters/BreakdownPrintAdapter";
@@ -91,15 +93,26 @@ export function BreakdownHistoryTable({
   // Column visibility state
   const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
 
+  // Row selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
   // Print preview state
   const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
   const [printAdapter, setPrintAdapter] = useState<BreakdownPrintAdapter | null>(null);
+
+  // Share modal state
+  const [showShareModal, setShowShareModal] = useState(false);
 
   // View state
   const [viewMode, setViewMode] = useState<"table" | "kanban">(
     (searchParams.get("view") as "table" | "kanban") || "table"
   );
   const [showViewToggle, setShowViewToggle] = useState(false);
+
+  // User permissions for share button
+  const currentUser = useQuery(api.users.current, {});
+  const isAdmin = currentUser?.role === "admin" || currentUser?.role === "super_admin";
+  const pendingRequestsCount = useQuery(api.accessRequests.getPendingCount);
 
   // Keyboard shortcut to toggle view tabs visibility
   useEffect(() => {
@@ -205,6 +218,33 @@ export function BreakdownHistoryTable({
     setVisibleStatuses(newVisible);
   };
 
+  /* =======================
+     ROW SELECTION HANDLERS
+  ======================= */
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      const allIds = new Set(filteredRows.map(b => b._id));
+      setSelectedIds(allIds);
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const handleSelectRow = (id: string, checked: boolean) => {
+    const newSelected = new Set(selectedIds);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
   const handleStatusChange = (itemId: string, newStatus: string) => {
     if (onStatusChange) {
       onStatusChange(itemId, newStatus);
@@ -303,9 +343,46 @@ export function BreakdownHistoryTable({
     return filterBreakdowns(breakdowns, search);
   }, [breakdowns, search]);
 
+  // Selection state
+  const isAllSelected = filteredRows.length > 0 && selectedIds.size === filteredRows.length;
+  const isIndeterminate = selectedIds.size > 0 && selectedIds.size < filteredRows.length;
+
   const totals = useMemo(() => {
     return calculateColumnTotals(filteredRows, visibleColumns);
   }, [filteredRows, visibleColumns]);
+
+  /* =======================
+     EXPORT CSV HANDLER (defined after filteredRows)
+  ======================= */
+
+  const handleExportCSV = useCallback(() => {
+    try {
+      const selectedItems = selectedIds.size > 0
+        ? filteredRows.filter(b => selectedIds.has(b._id))
+        : filteredRows;
+
+      exportToCSV(
+        selectedItems,
+        createBreakdownExportConfig(columns, hiddenColumns)
+      );
+
+      toast.success(selectedIds.size > 0
+        ? `Exported ${selectedIds.size} selected rows`
+        : `Exported ${filteredRows.length} rows`
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to export CSV");
+    }
+  }, [filteredRows, selectedIds, columns, hiddenColumns]);
+
+  /* =======================
+     BULK TRASH HANDLER
+  ======================= */
+
+  const handleBulkTrash = useCallback(() => {
+    if (selectedIds.size === 0) return;
+    toast.info(`Selected ${selectedIds.size} items for trash`);
+  }, [selectedIds]);
 
   /* =======================
      RENDER
@@ -339,6 +416,21 @@ export function BreakdownHistoryTable({
           <GenericTableToolbar
             actions={
               <div className="flex items-center gap-1 sm:gap-2">
+                {/* Selection Info */}
+                {selectedIds.size > 0 && (
+                  <div className="hidden sm:flex items-center gap-2 mr-2">
+                    <span className="text-sm text-zinc-600 dark:text-zinc-400">
+                      {selectedIds.size} selected
+                    </span>
+                    <button
+                      onClick={handleClearSelection}
+                      className="text-xs text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 underline"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+
                 <ColumnVisibilityMenu
                   columns={columns.map(col => ({ key: col.key, label: col.label }))}
                   hiddenColumns={hiddenColumns}
@@ -364,6 +456,20 @@ export function BreakdownHistoryTable({
                     onClick={handlePrint}
                     title="Print"
                   />
+                  <TableActionButton
+                    icon={FileSpreadsheet}
+                    label="Export CSV"
+                    onClick={handleExportCSV}
+                    title="Export to CSV"
+                  />
+                  {isAdmin && (
+                    <TableActionButton
+                      icon={Share2}
+                      label="Share"
+                      onClick={() => setShowShareModal(true)}
+                      title="Share & Manage Access"
+                    />
+                  )}
                 </div>
 
                 {/* Mobile/Tablet more menu */}
@@ -379,6 +485,16 @@ export function BreakdownHistoryTable({
                       <Printer className="w-4 h-4 mr-2" />
                       Print
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportCSV}>
+                      <FileSpreadsheet className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </DropdownMenuItem>
+                    {isAdmin && (
+                      <DropdownMenuItem onClick={() => setShowShareModal(true)}>
+                        <Share2 className="w-4 h-4 mr-2" />
+                        Share
+                      </DropdownMenuItem>
+                    )}
                   </ResponsiveMoreMenu>
                 </div>
 
@@ -424,13 +540,16 @@ export function BreakdownHistoryTable({
                 onDragOver={onDragOver}
                 onDrop={onDrop}
                 onStartResize={startResizeColumn}
+                isAllSelected={isAllSelected}
+                isIndeterminate={isIndeterminate}
+                onSelectAll={handleSelectAll}
               />
 
               {/* BODY */}
               {filteredRows.length === 0 ? (
                 <tbody>
                   <tr>
-                    <td colSpan={visibleColumns.length + 2}>
+                    <td colSpan={visibleColumns.length + 3}>
                       <EmptyState />
                     </td>
                   </tr>
@@ -455,6 +574,8 @@ export function BreakdownHistoryTable({
                         onDelete={onDelete}
                         onStartRowResize={startResizeRow}
                         entityType={entityType}
+                        isSelected={selectedIds.has(breakdown._id)}
+                        onSelectRow={handleSelectRow}
                       />
                     );
                   })}
@@ -595,6 +716,28 @@ export function BreakdownHistoryTable({
             sortDirection: null,
           }}
         />
+      )}
+
+      {/* SHARE MODAL PLACEHOLDER */}
+      {/* TODO: Implement breakdown-specific share modal */}
+      {/* This would require backend support for breakdown-level access control */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 max-w-md w-full">
+            <h2 className="text-lg font-semibold mb-4">Share Breakdown</h2>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400 mb-4">
+              Share functionality for breakdowns is coming soon. This will allow you to share access to specific breakdown records with other users.
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowShareModal(false)}
+                className="px-4 py-2 bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-lg"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </Tabs>
   );

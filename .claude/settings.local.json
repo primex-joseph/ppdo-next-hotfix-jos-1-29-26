@@ -6,7 +6,10 @@
       "Bash(npx convex dev:*)",
       "Bash(npm run build:*)",
       "Bash(findstr:*)",
-      "Bash(npx convex codegen:*)"
+      "Bash(npx convex codegen:*)",
+      "Bash(dir:*)",
+      "Bash(ls:*)",
+      "Bash(tree:*)"
     ]
   }
 }

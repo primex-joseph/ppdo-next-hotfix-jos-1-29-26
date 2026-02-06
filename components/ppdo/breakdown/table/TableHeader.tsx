@@ -3,6 +3,7 @@
 "use client";
 
 import { GripVertical } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ColumnConfig } from "../types/breakdown.types";
 
 interface TableHeaderProps {
@@ -13,6 +14,10 @@ interface TableHeaderProps {
   onDragOver: (e: React.DragEvent) => void;
   onDrop: (index: number) => void;
   onStartResize: (e: React.MouseEvent, index: number) => void;
+  // Selection props
+  isAllSelected?: boolean;
+  isIndeterminate?: boolean;
+  onSelectAll?: (checked: boolean) => void;
 }
 
 export function TableHeader({
@@ -23,17 +28,38 @@ export function TableHeader({
   onDragOver,
   onDrop,
   onStartResize,
+  isAllSelected,
+  isIndeterminate,
+  onSelectAll,
 }: TableHeaderProps) {
   return (
     <thead
       className="sticky top-0 z-10 bg-zinc-50 dark:bg-zinc-800"
     >
       <tr>
+        {/* Checkbox Column */}
+        <th
+          className="text-center py-2 px-2"
+          style={{
+            width: '40px',
+            border: '1px solid rgb(228 228 231 / 1)',
+          }}
+        >
+          {onSelectAll && (
+            <Checkbox
+              checked={isAllSelected}
+              onCheckedChange={onSelectAll}
+              aria-label="Select all"
+              className={isIndeterminate ? "opacity-50" : ""}
+            />
+          )}
+        </th>
+
         {/* Row Number Column */}
         <th
           className="text-center py-2 text-[11px] sm:text-xs font-semibold text-zinc-600 dark:text-zinc-300 uppercase tracking-wide"
           style={{
-            width: '48px',
+            width: '40px',
             border: '1px solid rgb(228 228 231 / 1)',
             borderColor: 'rgb(228 228 231 / 1)',
           }}

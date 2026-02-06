@@ -20,6 +20,16 @@ export function TableTotalsRow({
     <tr
       className="sticky bottom-0 bg-zinc-50 dark:bg-zinc-800"
     >
+      {/* Empty Checkbox Cell */}
+      <td
+        className="text-center py-2"
+        style={{
+          border: '2px solid rgb(228 228 231 / 1)',
+        }}
+      >
+        {/* Empty */}
+      </td>
+
       {/* Empty Row Number Cell */}
       <td
         className="text-center py-2 text-[11px] sm:text-xs font-bold text-zinc-700 dark:text-zinc-200"

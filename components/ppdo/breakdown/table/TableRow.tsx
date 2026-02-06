@@ -3,7 +3,7 @@
 "use client";
 
 import { useState } from "react";
-import { Edit, Trash2, Eye, Loader2, Calculator } from "lucide-react";
+import { Edit, Trash2, Eye, Loader2 } from "lucide-react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
@@ -23,13 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Breakdown, ColumnConfig } from "../types/breakdown.types";
 import { formatCellValue } from "../utils/formatters";
 
@@ -46,6 +40,9 @@ interface TableRowProps {
   onStartRowResize: (e: React.MouseEvent, rowId: string) => void;
   /** Entity type for status update mutation */
   entityType?: "project" | "trustfund" | "specialeducationfund" | "specialhealthfund" | "twentyPercentDF";
+  /** Selection props */
+  isSelected?: boolean;
+  onSelectRow?: (id: string, checked: boolean) => void;
 }
 
 export function TableRow({
@@ -60,6 +57,8 @@ export function TableRow({
   onDelete,
   onStartRowResize,
   entityType = "project",
+  isSelected = false,
+  onSelectRow,
 }: TableRowProps) {
   const [isHoveringStatus, setIsHoveringStatus] = useState(false);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
@@ -116,10 +115,31 @@ export function TableRow({
     <ContextMenu>
       <ContextMenuTrigger asChild>
         <tr
-          className="bg-white dark:bg-zinc-900 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 cursor-pointer transition-colors"
+          className={`cursor-pointer transition-colors ${
+            isSelected
+              ? "bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30"
+              : "bg-white dark:bg-zinc-900 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30"
+          }`}
           style={{ height: rowHeight }}
           onClick={(e) => onRowClick(breakdown, e)}
         >
+          {/* Checkbox */}
+          <td
+            className="text-center px-2"
+            style={{
+              border: '1px solid rgb(228 228 231 / 1)',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {onSelectRow && (
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onSelectRow(breakdown._id, checked as boolean)}
+                aria-label={`Select row ${index + 1}`}
+              />
+            )}
+          </td>
+
           {/* Row Number */}
           <td
             className="text-center text-[11px] sm:text-xs text-zinc-500 dark:text-zinc-400 relative"
