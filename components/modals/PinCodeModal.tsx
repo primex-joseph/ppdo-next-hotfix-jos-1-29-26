@@ -1,6 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "@/convex/_generated/api"
 import {
   Dialog,
   DialogContent,
@@ -18,8 +20,6 @@ import { REGEXP_ONLY_DIGITS } from "input-otp"
 import { Lock, Unlock, AlertCircle, Timer, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-// Default PIN code - in production, this should come from environment variables or secure storage
-const DEFAULT_PIN = "123456"
 const MAX_ATTEMPTS = 3
 const LOCKOUT_DURATION = 60 // seconds
 
@@ -47,6 +47,13 @@ export function PinCodeModal({
   const [lockoutTimeLeft, setLockoutTimeLeft] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [isVerifying, setIsVerifying] = useState(false)
+
+  // Get PIN status from server
+  const pinStatus = useQuery(api.userPin.getPinStatus)
+  
+  // Mutation for verifying PIN
+  const verifyPinMutation = useMutation(api.userPin.verifyPinMutation)
 
   // Load lockout state from localStorage on mount
   useEffect(() => {
@@ -111,45 +118,57 @@ export function PinCodeModal({
     }
   }, [isOpen])
 
-  const handleVerify = useCallback(() => {
-    if (isLocked) return
+  const handleVerify = useCallback(async () => {
+    if (isLocked || isVerifying) return
     if (pin.length !== 6) {
       setError("Please enter a 6-digit PIN")
       return
     }
 
-    if (pin === DEFAULT_PIN) {
-      // Success
-      setIsSuccess(true)
-      setError(null)
-      setAttempts(0)
-      localStorage.removeItem(getStorageKey("attempts"))
-      
-      // Small delay to show success state before closing
-      setTimeout(() => {
-        onSuccess()
-        setPin("")
-        setIsSuccess(false)
-      }, 500)
-    } else {
-      // Wrong PIN
-      const newAttempts = attempts + 1
-      setAttempts(newAttempts)
-      localStorage.setItem(getStorageKey("attempts"), newAttempts.toString())
-      
-      if (newAttempts >= MAX_ATTEMPTS) {
-        // Lock out the user
-        const unlockTime = Date.now() + LOCKOUT_DURATION * 1000
-        localStorage.setItem(getStorageKey("locked_until"), unlockTime.toString())
-        setIsLocked(true)
-        setLockoutTimeLeft(LOCKOUT_DURATION)
-        setError(`Too many failed attempts. Please wait ${LOCKOUT_DURATION} seconds.`)
+    setIsVerifying(true)
+    setError(null)
+
+    try {
+      // Verify PIN using Convex mutation
+      const result = await verifyPinMutation({ pin })
+
+      if (result.valid) {
+        // Success
+        setIsSuccess(true)
+        setError(null)
+        setAttempts(0)
+        localStorage.removeItem(getStorageKey("attempts"))
+        
+        // Small delay to show success state before closing
+        setTimeout(() => {
+          onSuccess()
+          setPin("")
+          setIsSuccess(false)
+        }, 500)
       } else {
-        setError(`Incorrect PIN. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`)
-        setPin("")
+        // Wrong PIN
+        const newAttempts = attempts + 1
+        setAttempts(newAttempts)
+        localStorage.setItem(getStorageKey("attempts"), newAttempts.toString())
+        
+        if (newAttempts >= MAX_ATTEMPTS) {
+          // Lock out the user
+          const unlockTime = Date.now() + LOCKOUT_DURATION * 1000
+          localStorage.setItem(getStorageKey("locked_until"), unlockTime.toString())
+          setIsLocked(true)
+          setLockoutTimeLeft(LOCKOUT_DURATION)
+          setError(`Too many failed attempts. Please wait ${LOCKOUT_DURATION} seconds.`)
+        } else {
+          setError(`Incorrect PIN. ${MAX_ATTEMPTS - newAttempts} attempts remaining.`)
+          setPin("")
+        }
       }
+    } catch (err) {
+      setError("Failed to verify PIN. Please try again.")
+    } finally {
+      setIsVerifying(false)
     }
-  }, [pin, attempts, isLocked, onSuccess])
+  }, [pin, attempts, isLocked, isVerifying, verifyPinMutation, onSuccess])
 
   const handlePinChange = (value: string) => {
     if (isLocked) return
@@ -289,9 +308,11 @@ export function PinCodeModal({
             </div>
           )}
 
-          {/* Hint (for development - remove in production) */}
+          {/* Security Note */}
           <p className="text-center text-xs text-zinc-400 dark:text-zinc-600">
-            Default PIN: <span className="font-mono">123456</span>
+            {pinStatus?.hasCustomPin 
+              ? "Your account is protected with a custom PIN" 
+              : "Tip: Set a custom PIN in Account Settings for better security"}
           </p>
         </div>
 

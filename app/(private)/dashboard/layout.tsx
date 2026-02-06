@@ -17,6 +17,7 @@ import { BreadcrumbProvider } from "../../../contexts/BreadcrumbContext";
 import { OnboardingModal } from "@/components/modals/OnboardingModal";
 import { Sidebar } from "../../../components/sidebar/Sidebar";
 import { BetaBanner } from "@/components/ui/beta-banner";
+import { PinReminderProvider } from "@/components/providers/PinReminderProvider";
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -115,7 +116,9 @@ export default function DashboardLayout({
       <SidebarProvider>
         <AccentColorProvider>
           <BreadcrumbProvider>
-            <DashboardContent>{children}</DashboardContent>
+            <PinReminderProvider>
+              <DashboardContent>{children}</DashboardContent>
+            </PinReminderProvider>
           </BreadcrumbProvider>
         </AccentColorProvider>
       </SidebarProvider>

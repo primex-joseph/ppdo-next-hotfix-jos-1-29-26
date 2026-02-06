@@ -5,13 +5,15 @@
 import { useState } from "react";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 import { ProfileDetailsTab } from "./ProfileDetailsTab";
+import { SecurityTab } from "./SecurityTab";
 
 interface AccountModalProps {
   onClose: () => void;
+  initialTab?: "profile" | "security";
 }
 
-export function AccountModal({ onClose }: AccountModalProps) {
-  const [activeTab, setActiveTab] = useState<"profile" | "security">("profile");
+export function AccountModal({ onClose, initialTab = "profile" }: AccountModalProps) {
+  const [activeTab, setActiveTab] = useState<"profile" | "security">(initialTab);
   const { user, isLoading } = useCurrentUser();
 
   if (isLoading) {
@@ -109,13 +111,7 @@ export function AccountModal({ onClose }: AccountModalProps) {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {activeTab === "profile" && <ProfileDetailsTab user={user} />}
-        {activeTab === "security" && (
-          <div className="p-6">
-            <p className="text-zinc-600 dark:text-zinc-400">
-              Security settings coming soon...
-            </p>
-          </div>
-        )}
+        {activeTab === "security" && <SecurityTab user={user} />}
       </div>
     </div>
   );
