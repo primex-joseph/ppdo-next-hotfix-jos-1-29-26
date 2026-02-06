@@ -1,5 +1,16 @@
-export * from "./FundTitleCell";
-export * from "./FundStatusCell";
-export * from "./FundAmountCell";
-export * from "./FundDateCell";
-export * from "./FundRemarksCell";
+/**
+ * @deprecated These cells have been moved to @/components/ppdo/data-tables/cells
+ * Please update your imports to use the new centralized location.
+ * 
+ * Before: import { ... } from "@/components/ppdo/funds/components/cells";
+ * After:  import { ... } from "@/components/ppdo/data-tables";
+ */
+
+// Re-export from new centralized location for backward compatibility
+export {
+    FundTitleCell,
+    FundStatusCell,
+    FundAmountCell,
+    FundDateCell,
+    FundRemarksCell,
+} from "@/components/ppdo/data-tables/cells";

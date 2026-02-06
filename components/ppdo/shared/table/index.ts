@@ -1,12 +1,11 @@
 
-export * from "./ResizableTableContainer";
-export * from "./ResizableTableHeader";
-export * from "./ResizableTableRow";
-export * from "./hooks/useResizableColumns";
-export * from "./hooks/useTableSelection";
-export * from "./hooks/useTableSettings";
-export * from "./hooks/useTableResize";
-export * from "./hooks/useColumnDragDrop";
-export * from "./types/resizableTable.types";
-export * from "./utils/table.utils";
-export * from "./constants/table.constants";
+/**
+ * @deprecated This module has been moved to @/components/ppdo/data-tables/core
+ * Please update your imports to use the new centralized location.
+ * 
+ * Before: import { ... } from "@/components/ppdo/shared/table";
+ * After:  import { ... } from "@/components/ppdo/data-tables";
+ */
+
+// Re-export from new centralized location for backward compatibility
+export * from "@/components/ppdo/data-tables/core";

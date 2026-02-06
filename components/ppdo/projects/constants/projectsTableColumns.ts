@@ -1,68 +1,11 @@
 
-import { ColumnConfig } from "@/components/ppdo/shared/table/types/resizableTable.types";
+/**
+ * @deprecated This file has been moved to @/components/ppdo/data-tables/configs
+ * Please update your imports to use the new centralized location.
+ * 
+ * Before: import { PROJECT_TABLE_COLUMNS } from "@/components/ppdo/projects/constants/projectsTableColumns";
+ * After:  import { PROJECT_TABLE_COLUMNS } from "@/components/ppdo/data-tables";
+ */
 
-export const PROJECT_TABLE_COLUMNS: ColumnConfig[] = [
-    {
-        key: "particulars",
-        label: "Project Name",
-        width: 300,
-        type: "text",
-        align: "left"
-    },
-    {
-        key: "implementingOffice",
-        label: "Implementing Office",
-        width: 200,
-        type: "text",
-        align: "left"
-    },
-    {
-        key: "year",
-        label: "Year",
-        width: 80,
-        type: "number",
-        align: "center"
-    },
-    {
-        key: "status",
-        label: "Status",
-        width: 120,
-        type: "status",
-        align: "center"
-    },
-    {
-        key: "totalBudgetAllocated",
-        label: "Allocated Budget",
-        width: 150,
-        type: "currency",
-        align: "right"
-    },
-    {
-        key: "obligatedBudget",
-        label: "Obligated Budget",
-        width: 150,
-        type: "currency",
-        align: "right"
-    },
-    {
-        key: "totalBudgetUtilized",
-        label: "Utilized Budget",
-        width: 150,
-        type: "currency",
-        align: "right"
-    },
-    {
-        key: "utilizationRate",
-        label: "Utilization Rate",
-        width: 120,
-        type: "percentage",
-        align: "right"
-    },
-    {
-        key: "remarks",
-        label: "Remarks",
-        width: 200,
-        type: "text",
-        align: "left"
-    },
-];
+// Re-export from new centralized location for backward compatibility
+export { PROJECT_TABLE_COLUMNS } from "@/components/ppdo/data-tables/configs";
