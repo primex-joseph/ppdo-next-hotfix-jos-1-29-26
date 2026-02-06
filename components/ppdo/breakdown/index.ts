@@ -33,6 +33,9 @@ export type { EntityOverviewCardsProps } from "./shared/EntityOverviewCards";
 export { BreakdownStatsAccordion } from "./shared/BreakdownStatsAccordion";
 export type { BreakdownStatsAccordionProps } from "./shared/BreakdownStatsAccordion";
 
+export { BreakdownStatistics } from "./shared/BreakdownStatistics";
+
+
 // ============================================================================
 // TABLE COMPONENTS
 // ============================================================================
